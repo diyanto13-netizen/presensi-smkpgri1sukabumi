@@ -76,6 +76,8 @@ test('parseStudentRows correctly parses worksheet, catches duplicates and missin
   assert.equal(result.validRows.length, 1);
   assert.equal(result.validRows[0].data.nama, 'Budi Santoso');
   assert.equal(result.validRows[0].data.nis, '23249001');
+  assert.equal(result.validRows[0].data.no_wa_ortu, '08123456789');
+  assert.equal(result.validRows[0].data.nama_ortu, 'Santoso');
 
   assert.equal(result.duplicateRows.length, 1);
   assert.equal(result.duplicateRows[0].data.nis, '23241001');

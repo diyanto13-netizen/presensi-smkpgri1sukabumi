@@ -53,16 +53,31 @@ export interface ImportParseResult {
 }
 
 /**
- * Normalizes Indonesian phone numbers
+ * Normalizes Indonesian phone numbers accurately
  */
-export function cleanPhoneNumber(phoneStr: string): string {
-  if (!phoneStr) return '081234567890';
-  let cleaned = String(phoneStr).trim().replace(/[^\d+]/g, '');
+export function cleanPhoneNumber(phoneStr: string | number | undefined | null): string {
+  if (phoneStr === undefined || phoneStr === null) return '';
+  let str = String(phoneStr).trim();
+  if (!str) return '';
+
+  // In Excel, exponential notation may appear for large numbers (e.g. 6.28123E+11)
+  if (str.includes('E+') || str.includes('e+')) {
+    const num = Number(str);
+    if (!isNaN(num)) {
+      str = num.toLocaleString('fullwide', { useGrouping: false });
+    }
+  }
+
+  // Remove all non-numeric characters except leading plus
+  let cleaned = str.replace(/[^\d+]/g, '');
+  if (!cleaned) return '';
+
   if (cleaned.startsWith('+62')) {
     cleaned = '0' + cleaned.substring(3);
   } else if (cleaned.startsWith('62')) {
     cleaned = '0' + cleaned.substring(2);
   }
+
   if (!cleaned.startsWith('0')) {
     cleaned = '0' + cleaned;
   }
@@ -114,23 +129,78 @@ export function parseStudentRows(
   let headerRowIndex = 1;
   let headerMap: { [key: string]: number } = {};
 
-  // Check row 1 or row 2 for standard headers
+  // Check row 1, 2, or 3 for standard headers
   for (let r = 1; r <= 3; r++) {
     const row = worksheet.getRow(r);
     const map: { [key: string]: number } = {};
     row.eachCell((cell, colNumber) => {
       const val = String(cell.value || '').trim().toUpperCase();
-      if (val.includes('ORTU') || val.includes('WALI')) map['ortu'] = colNumber;
-      else if (val.includes('NISN')) map['nisn'] = colNumber;
-      else if (val.includes('NIS')) map['nis'] = colNumber;
-      else if (val.includes('NAMA')) map['nama'] = colNumber;
-      else if (val.includes('KELAMIN') || val === 'L/P' || val === 'JK') map['jk'] = colNumber;
-      else if (val.includes('KELAS')) map['kelas'] = colNumber;
-      else if (val.includes('JURUSAN')) map['jurusan'] = colNumber;
-      else if (val.includes('WA') || val.includes('HP') || val.includes('TELEPON')) map['wa'] = colNumber;
-      else if (val.includes('PULANG') || val.includes('JADWAL')) map['jam_pulang'] = colNumber;
-      else if (val.includes('ALAMAT')) map['alamat'] = colNumber;
-      else if (val.includes('FOTO')) map['foto'] = colNumber;
+
+      // 1. Phone / WhatsApp (CHECK BEFORE ORTU because headers often say 'NO WA ORTU' or 'NO HP ORTU')
+      if (
+        val.includes('WA') ||
+        val.includes('WHATSAPP') ||
+        val.includes('HP') ||
+        val.includes('TELEPON') ||
+        val.includes('TELP') ||
+        val.includes('NO TEL') ||
+        val.includes('NO HP') ||
+        val.includes('KONTAK')
+      ) {
+        map['wa'] = colNumber;
+      }
+      // 2. Parent Name (NAMA ORTU / WALI)
+      else if (
+        val.includes('NAMA ORTU') ||
+        val.includes('NAMA WALI') ||
+        val.includes('NAMA ORANG TUA') ||
+        val.includes('ORTU') ||
+        val.includes('WALI') ||
+        val.includes('ORANG TUA')
+      ) {
+        map['ortu'] = colNumber;
+      }
+      // 3. NISN (must check before NIS)
+      else if (val.includes('NISN')) {
+        map['nisn'] = colNumber;
+      }
+      // 4. NIS
+      else if (val.includes('NIS') || val.includes('NO INDUK') || val.includes('NOMOR INDUK')) {
+        map['nis'] = colNumber;
+      }
+      // 5. Nama Lengkap Siswa
+      else if (val.includes('NAMA') || val.includes('SISWA') || val.includes('PESERTA')) {
+        map['nama'] = colNumber;
+      }
+      // 6. Jenis Kelamin
+      else if (val.includes('KELAMIN') || val === 'L/P' || val === 'JK' || val.includes('GENDER')) {
+        map['jk'] = colNumber;
+      }
+      // 7. Kelas
+      else if (val.includes('KELAS') || val.includes('ROMBEL')) {
+        map['kelas'] = colNumber;
+      }
+      // 8. Jurusan
+      else if (
+        val.includes('JURUSAN') ||
+        val.includes('KOMPETENSI') ||
+        val.includes('KEAHLIAN') ||
+        val.includes('KONSENTRASI')
+      ) {
+        map['jurusan'] = colNumber;
+      }
+      // 9. Jam Pulang
+      else if (val.includes('PULANG') || val.includes('JADWAL')) {
+        map['jam_pulang'] = colNumber;
+      }
+      // 10. Alamat
+      else if (val.includes('ALAMAT') || val.includes('DOMISILI') || val.includes('TINGGAL')) {
+        map['alamat'] = colNumber;
+      }
+      // 11. Foto URL
+      else if (val.includes('FOTO') || val.includes('PHOTO') || val.includes('GAMBAR') || val.includes('IMAGE')) {
+        map['foto'] = colNumber;
+      }
     });
 
     if (map['nis'] && map['nama']) {
@@ -174,9 +244,27 @@ export function parseStudentRows(
       if (!colIdx) return '';
       const cell = row.getCell(colIdx);
       if (cell.value === null || cell.value === undefined) return '';
-      if (typeof cell.value === 'object' && 'text' in cell.value) {
-        return String((cell.value as { text: string }).text).trim();
+
+      if (typeof cell.value === 'object') {
+        const valObj = cell.value as any;
+        if ('text' in valObj && valObj.text !== undefined) {
+          return String(valObj.text).trim();
+        }
+        if ('result' in valObj && valObj.result !== undefined) {
+          return String(valObj.result).trim();
+        }
+        if ('richText' in valObj && Array.isArray(valObj.richText)) {
+          return valObj.richText.map((t: any) => t.text || '').join('').trim();
+        }
       }
+
+      if (typeof cell.value === 'number') {
+        // Prevent scientific notation for large numbers like phone numbers / NIS
+        return Number.isInteger(cell.value)
+          ? cell.value.toLocaleString('fullwide', { useGrouping: false })
+          : String(cell.value);
+      }
+
       return String(cell.value).trim();
     };
 
@@ -217,7 +305,7 @@ export function parseStudentRows(
 
     const cleanNis = String(rawNis).replace(/[^\w-]/g, '');
     const cleanJk: 'L' | 'P' = rawJk.startsWith('P') ? 'P' : 'L';
-    const cleanWa = cleanPhoneNumber(rawWa);
+    const cleanWa = cleanPhoneNumber(rawWa) || '-';
     const cleanPulang = rawJamPulang
       ? cleanTimeString(rawJamPulang)
       : getDefaultDepartureForClass(rawKelas);

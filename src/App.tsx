@@ -345,7 +345,11 @@ export default function App() {
         )}
 
         {activeTab === 'generator' && (
-          <CardGenerator students={students} config={schoolConfig} />
+          <CardGenerator
+            students={students}
+            config={schoolConfig}
+            onUpdateStudents={handleUpdateStudents}
+          />
         )}
 
         {activeTab === 'students' && (

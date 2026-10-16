@@ -21,6 +21,10 @@ import {
   AlertCircle,
   FileCheck,
   RefreshCw,
+  Upload,
+  Image as ImageIcon,
+  Camera,
+  RotateCcw,
 } from 'lucide-react';
 import { Siswa, SchoolConfig } from '../types';
 import { IdCard } from './IdCard';
@@ -39,6 +43,7 @@ import {
   ImportParseResult,
 } from '../utils/studentExcel';
 import { deleteStudentApi } from '../services/api';
+import { compressAndFormatStudentPhoto } from '../utils/imageUtils';
 
 interface StudentManagerProps {
   students: Siswa[];
@@ -72,6 +77,12 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
 
   // WA Test status state
   const [waTestStatus, setWaTestStatus] = useState<string | null>(null);
+
+  // Photo Upload States
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [isPhotoLoading, setIsPhotoLoading] = useState<boolean>(false);
+  const [showUrlInput, setShowUrlInput] = useState<boolean>(false);
+  const photoFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Form State for Single Add / Edit
   const [formData, setFormData] = useState<Partial<Siswa>>({
@@ -231,6 +242,33 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
       onUpdateStudents(updated);
       deleteStudentApi(id);
     }
+  };
+
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsPhotoLoading(true);
+      setPhotoError(null);
+      const compressedDataUrl = await compressAndFormatStudentPhoto(file);
+      setFormData(prev => ({ ...prev, foto_url: compressedDataUrl }));
+    } catch (err: any) {
+      console.error('Error processing student photo:', err);
+      setPhotoError(err.message || 'Gagal memproses file foto siswa.');
+    } finally {
+      setIsPhotoLoading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleResetToDefaultPhoto = () => {
+    const defaultPhoto =
+      formData.jenis_kelamin === 'P'
+        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=240&auto=format&fit=crop&q=80';
+    setFormData(prev => ({ ...prev, foto_url: defaultPhoto }));
+    setPhotoError(null);
   };
 
   const handleSaveStudent = (e: React.FormEvent) => {
@@ -465,11 +503,20 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
                   <tr key={student.id} className="hover:bg-blue-50/50 transition">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3.5">
-                        <img
-                          src={student.foto_url}
-                          alt={student.nama}
-                          className="w-12 h-12 rounded-xl object-cover border border-slate-300 shadow-sm shrink-0"
-                        />
+                        <div
+                          onClick={() => handleOpenEditModal(student)}
+                          className="relative group cursor-pointer shrink-0"
+                          title="Klik untuk ganti pas foto / edit data siswa"
+                        >
+                          <img
+                            src={student.foto_url}
+                            alt={student.nama}
+                            className="w-12 h-14 rounded-xl object-cover border-2 border-amber-300/80 shadow-xs group-hover:border-blue-600 transition"
+                          />
+                          <div className="absolute inset-0 bg-blue-950/50 opacity-0 group-hover:opacity-100 rounded-xl flex items-center justify-center transition">
+                            <Camera className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
                         <div>
                           <p className="font-bold text-slate-900 text-base">{student.nama}</p>
                           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
@@ -987,15 +1034,108 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-800 block mb-1">URL Foto Siswa</label>
-                <input
-                  type="url"
-                  value={formData.foto_url || ''}
-                  onChange={e => setFormData({ ...formData, foto_url: e.target.value })}
-                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none text-xs font-mono"
-                  placeholder="https://..."
-                />
+              {/* Foto Siswa & Pas Foto Kartu Absensi */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <label className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                      <Camera className="w-4 h-4 text-blue-900" />
+                      <span>Pas Foto Kartu Absensi (Standar 3:4)</span>
+                    </label>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Foto langsung tersimpan ke database & tampil di kartu absensi QR
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                    Auto-Crop 3:4
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  {/* Preview Pas Foto */}
+                  <div className="relative group shrink-0">
+                    <div className="w-20 h-26 rounded-xl overflow-hidden border-2 border-amber-400 bg-slate-200 shadow-sm flex items-center justify-center">
+                      {isPhotoLoading ? (
+                        <div className="flex flex-col items-center justify-center p-2 text-center text-slate-600 text-xs">
+                          <RefreshCw className="w-5 h-5 animate-spin text-blue-900 mb-1" />
+                          <span>Memproses...</span>
+                        </div>
+                      ) : formData.foto_url ? (
+                        <img
+                          src={formData.foto_url}
+                          alt={formData.nama || 'Preview Foto'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-center text-slate-400 text-xs p-1">
+                          <ImageIcon className="w-6 h-6 mx-auto mb-1 text-slate-300" />
+                          <span>Belum Ada Foto</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions & Buttons */}
+                  <div className="flex-1 w-full space-y-2">
+                    <input
+                      ref={photoFileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      onChange={handlePhotoFileChange}
+                      className="hidden"
+                    />
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => photoFileInputRef.current?.click()}
+                        disabled={isPhotoLoading}
+                        className="px-4 py-2 rounded-xl bg-blue-950 hover:bg-black text-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Unggah Foto dari HP / Komputer</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleResetToDefaultPhoto}
+                        className="px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                        title="Gunakan avatar standar"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Reset Default</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowUrlInput(!showUrlInput)}
+                        className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium transition cursor-pointer"
+                      >
+                        {showUrlInput ? 'Tutup URL' : 'Input URL Web'}
+                      </button>
+                    </div>
+
+                    {photoError && (
+                      <p className="text-xs text-rose-600 font-semibold">{photoError}</p>
+                    )}
+
+                    {showUrlInput && (
+                      <div className="mt-2">
+                        <input
+                          type="url"
+                          value={formData.foto_url || ''}
+                          onChange={e => setFormData({ ...formData, foto_url: e.target.value })}
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none text-xs font-mono"
+                          placeholder="https://contoh-domain.com/foto.jpg"
+                        />
+                      </div>
+                    )}
+
+                    <p className="text-[11px] text-slate-500">
+                      Mendukung format JPG, PNG, atau WebP. Gambar otomatis disesuaikan dengan rasio pas foto 3:4 kartu pelajar.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
