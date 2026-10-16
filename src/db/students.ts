@@ -1,6 +1,6 @@
 import { db } from './index.ts';
 import { students } from './schema.ts';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { Siswa } from '../types';
 
 export async function getAllStudents(): Promise<Siswa[]> {
@@ -112,3 +112,15 @@ export async function deleteStudentById(id: string): Promise<boolean> {
     throw new Error('Gagal menghapus data siswa dari database.', { cause: error });
   }
 }
+
+export async function bulkDeleteStudentsByIds(ids: string[]): Promise<number> {
+  try {
+    if (!ids || ids.length === 0) return 0;
+    const result = await db.delete(students).where(inArray(students.id, ids)).returning();
+    return result.length;
+  } catch (error) {
+    console.error('Database bulkDeleteStudentsByIds failed:', error);
+    throw new Error('Gagal menghapus data siswa massal dari database.', { cause: error });
+  }
+}
+

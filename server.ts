@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { getAllStudents, upsertStudent, bulkUpsertStudents, deleteStudentById } from './src/db/students.ts';
+import { getAllStudents, upsertStudent, bulkUpsertStudents, deleteStudentById, bulkDeleteStudentsByIds } from './src/db/students.ts';
 import { getAttendanceByDate, recordAttendanceLog, bulkUpdateAttendanceLogs, getAttendanceRecapStats } from './src/db/attendance.ts';
 import { getDbSchoolConfig, saveDbSchoolConfig } from './src/db/config.ts';
 import { getOrCreateUser } from './src/db/users.ts';
@@ -89,6 +89,17 @@ async function startServer() {
       res.json({ success });
     } catch (error: any) {
       console.error('Error deleting student from PostgreSQL:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.post('/api/students/bulk-delete', async (req, res) => {
+    try {
+      const ids: string[] = Array.isArray(req.body) ? req.body : req.body.ids;
+      const count = await bulkDeleteStudentsByIds(ids || []);
+      res.json({ success: true, count });
+    } catch (error: any) {
+      console.error('Error bulk deleting students from PostgreSQL:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   });

@@ -82,6 +82,21 @@ export async function deleteStudentApi(id: string): Promise<boolean> {
   }
 }
 
+export async function bulkDeleteStudentsApi(ids: string[]): Promise<boolean> {
+  try {
+    if (!ids || ids.length === 0) return true;
+    const res = await fetch('/api/students/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('API bulkDeleteStudents failed:', err);
+    return false;
+  }
+}
+
 export async function fetchAttendanceApi(tanggal: string): Promise<Absensi[] | null> {
   try {
     const res = await fetch(`/api/attendance?tanggal=${encodeURIComponent(tanggal)}`);

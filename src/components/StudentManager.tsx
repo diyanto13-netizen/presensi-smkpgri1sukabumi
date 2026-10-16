@@ -25,6 +25,8 @@ import {
   Image as ImageIcon,
   Camera,
   RotateCcw,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { Siswa, SchoolConfig } from '../types';
 import { IdCard } from './IdCard';
@@ -42,7 +44,7 @@ import {
   parseStudentFile,
   ImportParseResult,
 } from '../utils/studentExcel';
-import { deleteStudentApi } from '../services/api';
+import { deleteStudentApi, bulkDeleteStudentsApi } from '../services/api';
 import { compressAndFormatStudentPhoto } from '../utils/imageUtils';
 
 interface StudentManagerProps {
@@ -83,6 +85,10 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   const [isPhotoLoading, setIsPhotoLoading] = useState<boolean>(false);
   const [showUrlInput, setShowUrlInput] = useState<boolean>(false);
   const photoFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Bulk Selection & Deletion States
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
 
   // Form State for Single Add / Edit
   const [formData, setFormData] = useState<Partial<Siswa>>({
@@ -128,6 +134,68 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
       return matchClass && matchSearch;
     });
   }, [students, selectedClass, searchQuery]);
+
+  // Bulk Selection Helpers
+  const isAllFilteredSelected = useMemo(() => {
+    if (filteredStudents.length === 0) return false;
+    return filteredStudents.every(s => selectedStudentIds.has(s.id));
+  }, [filteredStudents, selectedStudentIds]);
+
+  const toggleSelectStudent = (id: string) => {
+    setSelectedStudentIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    if (isAllFilteredSelected) {
+      setSelectedStudentIds(prev => {
+        const next = new Set(prev);
+        filteredStudents.forEach(s => next.delete(s.id));
+        return next;
+      });
+    } else {
+      setSelectedStudentIds(prev => {
+        const next = new Set(prev);
+        filteredStudents.forEach(s => next.add(s.id));
+        return next;
+      });
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedStudentIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    const count = selectedStudentIds.size;
+    if (count === 0) return;
+
+    const confirmMsg = `Yakin ingin menghapus ${count} data siswa yang ditandai dari tabel dan database?\n\nData yang telah dihapus tidak dapat dipulihkan.`;
+    if (!confirm(confirmMsg)) return;
+
+    setIsBulkDeleting(true);
+    try {
+      const idsToDelete = Array.from(selectedStudentIds);
+      const updated = students.filter(s => !selectedStudentIds.has(s.id));
+      onUpdateStudents(updated);
+      await bulkDeleteStudentsApi(idsToDelete);
+      setSelectedStudentIds(new Set());
+      setImportNotification(`Berhasil menghapus ${count} data siswa secara massal dari database.`);
+      setTimeout(() => setImportNotification(null), 5000);
+    } catch (err) {
+      console.error('Failed to bulk delete students:', err);
+      alert('Terjadi kesalahan saat menghapus data siswa massal.');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
 
   // 1. Download Template Excel
   const handleDownloadTemplate = async () => {
@@ -477,12 +545,73 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
         </div>
       </div>
 
+      {/* Floating Bulk Action Bar (when students are marked) */}
+      {selectedStudentIds.size > 0 && (
+        <div className="bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 text-white p-4 rounded-2xl shadow-lg border border-rose-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-300 shrink-0">
+              <Trash2 className="w-5 h-5 text-rose-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm sm:text-base">
+                  {selectedStudentIds.size} Siswa Ditandai
+                </span>
+                <span className="text-xs bg-rose-500/30 text-rose-200 px-2 py-0.5 rounded-full font-semibold border border-rose-500/40">
+                  Siap Dihapus
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Centang kotak pada baris siswa untuk menambah atau mengurangi pilihan.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+            >
+              Batal Tandai
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{isBulkDeleting ? 'Menghapus...' : `Hapus ${selectedStudentIds.size} Siswa`}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Students Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="bg-slate-950 border-b border-slate-900 text-amber-300 uppercase font-heading text-xs font-bold tracking-wider">
+                <th className="py-3.5 px-3 text-center w-12">
+                  <button
+                    type="button"
+                    onClick={handleToggleSelectAll}
+                    className="p-1 rounded-lg hover:bg-slate-800 text-amber-300 transition cursor-pointer flex items-center justify-center mx-auto"
+                    title={isAllFilteredSelected ? 'Batalkan tandai semua' : 'Tandai semua siswa'}
+                  >
+                    {isAllFilteredSelected ? (
+                      <CheckSquare className="w-5 h-5 text-amber-400" />
+                    ) : selectedStudentIds.size > 0 ? (
+                      <div className="w-5 h-5 rounded bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center">
+                        <div className="w-2.5 h-0.5 bg-amber-400 rounded-full" />
+                      </div>
+                    ) : (
+                      <Square className="w-5 h-5 text-slate-400 hover:text-amber-300" />
+                    )}
+                  </button>
+                </th>
                 <th className="py-3.5 px-4">Siswa</th>
                 <th className="py-3.5 px-4">NIS / NISN</th>
                 <th className="py-3.5 px-4">Kelas &amp; Jurusan</th>
@@ -494,14 +623,41 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
             <tbody className="divide-y divide-slate-100">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 text-base">
+                  <td colSpan={7} className="py-12 text-center text-slate-400 text-base">
                     Tidak ada siswa ditemukan.
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map(student => (
-                  <tr key={student.id} className="hover:bg-blue-50/50 transition">
-                    <td className="py-3.5 px-4">
+                filteredStudents.map(student => {
+                  const isRowSelected = selectedStudentIds.has(student.id);
+                  return (
+                    <tr
+                      key={student.id}
+                      className={
+                        isRowSelected
+                          ? 'bg-amber-50/70 border-l-4 border-l-amber-500 transition'
+                          : 'hover:bg-blue-50/50 transition'
+                      }
+                    >
+                      <td className="py-3.5 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => toggleSelectStudent(student.id)}
+                          className={`p-1.5 rounded-lg transition cursor-pointer flex items-center justify-center mx-auto ${
+                            isRowSelected
+                              ? 'text-blue-900 bg-blue-100'
+                              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                          }`}
+                          title={isRowSelected ? 'Batalkan tanda' : 'Tandai siswa ini'}
+                        >
+                          {isRowSelected ? (
+                            <CheckSquare className="w-5 h-5 text-blue-950" />
+                          ) : (
+                            <Square className="w-5 h-5 text-slate-400" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3.5">
                         <div
                           onClick={() => handleOpenEditModal(student)}
@@ -595,8 +751,9 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              })
+            )}
             </tbody>
           </table>
         </div>
