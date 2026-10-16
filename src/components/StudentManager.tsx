@@ -1,0 +1,1059 @@
+import React, { useState, useMemo, useRef } from 'react';
+import {
+  UserPlus,
+  Search,
+  Edit2,
+  Trash2,
+  QrCode,
+  Send,
+  X,
+  Save,
+  CheckCircle,
+  CheckCircle2,
+  ExternalLink,
+  Users,
+  Clock,
+  Phone,
+  FileSpreadsheet,
+  Download,
+  UploadCloud,
+  AlertTriangle,
+  AlertCircle,
+  FileCheck,
+  RefreshCw,
+} from 'lucide-react';
+import { Siswa, SchoolConfig } from '../types';
+import { IdCard } from './IdCard';
+import { sendWhatsAppNotification, formatPhoneNumber } from '../utils/fonnte';
+import { INITIAL_STUDENTS, applyClassScheduleToStudents } from '../utils/storage';
+import {
+  MASTER_KELAS_LIST,
+  ALL_CLASS_NAMES,
+  DAFTAR_JURUSAN,
+  getJurusanByClassName,
+  getDefaultDepartureForClass,
+} from '../utils/classConfig';
+import {
+  downloadStudentImportTemplate,
+  parseStudentFile,
+  ImportParseResult,
+} from '../utils/studentExcel';
+import { deleteStudentApi } from '../services/api';
+
+interface StudentManagerProps {
+  students: Siswa[];
+  config: SchoolConfig;
+  onUpdateStudents: (updated: Siswa[]) => void;
+}
+
+export const StudentManager: React.FC<StudentManagerProps> = ({
+  students,
+  config,
+  onUpdateStudents,
+}) => {
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedClass, setSelectedClass] = useState<string>('ALL');
+
+  // Modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingStudent, setEditingStudent] = useState<Siswa | null>(null);
+  const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
+  const [viewingStudent, setViewingStudent] = useState<Siswa | null>(null);
+
+  // Bulk Import Modal States
+  const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
+  const [isProcessingFile, setIsProcessingFile] = useState<boolean>(false);
+  const [importResult, setImportResult] = useState<ImportParseResult | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [duplicateMode, setDuplicateMode] = useState<'SKIP' | 'OVERWRITE'>('SKIP');
+  const [importNotification, setImportNotification] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // WA Test status state
+  const [waTestStatus, setWaTestStatus] = useState<string | null>(null);
+
+  // Form State for Single Add / Edit
+  const [formData, setFormData] = useState<Partial<Siswa>>({
+    nis: '',
+    nisn: '',
+    nama: '',
+    jenis_kelamin: 'L',
+    kelas: 'XII TKJ 1',
+    jurusan: 'Teknik Komputer & Jaringan',
+    no_wa_ortu: '',
+    nama_ortu: '',
+    jam_pulang: '15:30',
+    foto_url: '',
+    alamat: '',
+  });
+
+  // Extract all available classes (21 official classes + any extra)
+  const classes = useMemo(() => {
+    const set = new Set<string>(ALL_CLASS_NAMES);
+    students.forEach(s => set.add(s.kelas));
+    return Array.from(set);
+  }, [students]);
+
+  // Sync class departure times to all students
+  const handleSyncClassSchedule = () => {
+    if (!config.jam_pulang_per_kelas) return;
+    if (confirm('Sinkronkan jam pulang seluruh data siswa dengan jadwal resmi per kelas saat ini?')) {
+      const updated = applyClassScheduleToStudents(students, config.jam_pulang_per_kelas);
+      onUpdateStudents(updated);
+      setImportNotification('Berhasil menyinkronkan jam pulang seluruh siswa sesuai jadwal resmi kelas!');
+      setTimeout(() => setImportNotification(null), 4000);
+    }
+  };
+
+  // Filtered
+  const filteredStudents = useMemo(() => {
+    return students.filter(s => {
+      const matchClass = selectedClass === 'ALL' || s.kelas === selectedClass;
+      const matchSearch =
+        searchQuery === '' ||
+        s.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.nis.includes(searchQuery);
+      return matchClass && matchSearch;
+    });
+  }, [students, selectedClass, searchQuery]);
+
+  // 1. Download Template Excel
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadStudentImportTemplate(config);
+    } catch (err) {
+      console.error('Failed to download template:', err);
+      alert('Gagal mengunduh template: ' + (err as Error).message);
+    }
+  };
+
+  // 2. Open Import Modal
+  const handleOpenImportModal = () => {
+    setImportResult(null);
+    setUploadedFileName('');
+    setIsImportModalOpen(true);
+  };
+
+  // 3. Handle File Upload & Parse
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    setUploadedFileName(file.name);
+    setIsProcessingFile(true);
+
+    try {
+      const parsed = await parseStudentFile(file, students);
+      setImportResult(parsed);
+    } catch (err) {
+      console.error('Failed to parse excel:', err);
+      alert('Gagal membaca file Excel. Pastikan file berformat .xlsx, .xls, atau .csv yang valid.');
+    } finally {
+      setIsProcessingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // 4. Execute Bulk Import
+  const handleExecuteImport = () => {
+    if (!importResult) return;
+
+    const newValidStudents = importResult.validRows.map(r => r.data);
+    const duplicateRows = importResult.duplicateRows.map(r => r.data);
+
+    let finalStudents = [...students];
+    let insertedCount = newValidStudents.length;
+    let updatedCount = 0;
+
+    if (duplicateMode === 'OVERWRITE') {
+      duplicateRows.forEach(dup => {
+        const idx = finalStudents.findIndex(s => s.nis === dup.nis);
+        if (idx >= 0) {
+          finalStudents[idx] = {
+            ...finalStudents[idx],
+            ...dup,
+            id: finalStudents[idx].id,
+          };
+          updatedCount++;
+        }
+      });
+      finalStudents = [...newValidStudents, ...finalStudents];
+    } else {
+      finalStudents = [...newValidStudents, ...finalStudents];
+    }
+
+    onUpdateStudents(finalStudents);
+    setIsImportModalOpen(false);
+
+    const message =
+      duplicateMode === 'OVERWRITE'
+        ? `Berhasil mengimpor massal! ${insertedCount} siswa baru ditambahkan, dan ${updatedCount} siswa diperbarui.`
+        : `Berhasil mengimpor massal! ${insertedCount} siswa baru berhasil ditambahkan ke database.`;
+
+    setImportNotification(message);
+    setTimeout(() => setImportNotification(null), 6000);
+  };
+
+  const handleOpenAddModal = () => {
+    setEditingStudent(null);
+    const initialClass = 'XII TKJ 1';
+    const initialTime = config.jam_pulang_per_kelas?.[initialClass] || '15:30';
+    setFormData({
+      nis: String(Math.floor(23241000 + students.length + 1)),
+      nisn: '00681' + Math.floor(10000 + Math.random() * 90000),
+      nama: '',
+      jenis_kelamin: 'L',
+      kelas: initialClass,
+      jurusan: getJurusanByClassName(initialClass),
+      no_wa_ortu: '081234567890',
+      nama_ortu: '',
+      jam_pulang: initialTime,
+      foto_url:
+        'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=240&auto=format&fit=crop&q=80',
+      alamat: 'Kota Sukabumi',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleOpenEditModal = (student: Siswa) => {
+    setEditingStudent(student);
+    setFormData({ ...student });
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteStudent = (id: string) => {
+    if (confirm('Yakin ingin menghapus data siswa ini?')) {
+      const updated = students.filter(s => s.id !== id);
+      onUpdateStudents(updated);
+      deleteStudentApi(id);
+    }
+  };
+
+  const handleSaveStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.nis || !formData.nama || !formData.kelas || !formData.jam_pulang) {
+      alert('Mohon lengkapi data NIS, Nama, Kelas, dan Jam Pulang!');
+      return;
+    }
+
+    if (editingStudent) {
+      const updated = students.map(s =>
+        s.id === editingStudent.id ? ({ ...s, ...formData } as Siswa) : s
+      );
+      onUpdateStudents(updated);
+    } else {
+      const newStudent: Siswa = {
+        id: 's-' + Date.now(),
+        nis: formData.nis!,
+        nisn: formData.nisn || '',
+        nama: formData.nama!,
+        jenis_kelamin: formData.jenis_kelamin || 'L',
+        kelas: formData.kelas!,
+        jurusan: formData.jurusan || 'Rekayasa Perangkat Lunak',
+        no_wa_ortu: formData.no_wa_ortu || '081234567890',
+        nama_ortu: formData.nama_ortu || '',
+        jam_pulang: formData.jam_pulang || '15:00',
+        foto_url:
+          formData.foto_url ||
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&auto=format&fit=crop&q=80',
+        alamat: formData.alamat || '',
+      };
+      onUpdateStudents([newStudent, ...students]);
+    }
+
+    setIsEditModalOpen(false);
+  };
+
+  const handleTestWhatsApp = async (student: Siswa) => {
+    setWaTestStatus(`Mengirim notifikasi tes ke ${student.no_wa_ortu}...`);
+    const testMessage = `*SMKS PGRI 1 SUKABUMI*
+Halo Bapak/Ibu ${student.nama_ortu || 'Orang Tua Siswa'},
+Ini adalah pesan uji coba integrasi WhatsApp Fonnte untuk siswa: *${student.nama}* (NIS: ${student.nis}, Kelas: ${student.kelas}).
+Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
+
+    const res = await sendWhatsAppNotification({
+      target: student.no_wa_ortu,
+      message: testMessage,
+      token: config.fonnte_token,
+      isTestMode: config.fonnte_test_mode,
+    });
+
+    if (res.status) {
+      setWaTestStatus(`Berhasil! ${res.message}`);
+    } else {
+      setWaTestStatus(`Gagal: ${res.message}`);
+    }
+    setTimeout(() => setWaTestStatus(null), 4000);
+  };
+
+  const handleResetDemoData = () => {
+    if (confirm('Kembalikan data siswa ke data bawaan demo SMKS PGRI 1 Sukabumi?')) {
+      onUpdateStudents(INITIAL_STUDENTS);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Top Banner */}
+      <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
+              DATA MASTER SISWA
+            </span>
+            <span className="text-xs sm:text-sm text-slate-600 font-semibold">{config.nama_sekolah}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-heading font-black text-blue-950 mt-1.5">
+            Manajemen &amp; Import Siswa
+          </h1>
+          <p className="text-sm sm:text-base text-slate-600 mt-1 leading-relaxed font-medium">
+            Kelola data siswa, jadwal pulang khusus, nomor WhatsApp wali murid, serta import massal data rombel langsung dari file Excel.
+          </p>
+        </div>
+
+        {/* Action Toolbar */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Download Template Excel */}
+          <button
+            onClick={handleDownloadTemplate}
+            className="px-4 py-3 text-sm font-bold text-slate-800 hover:text-blue-950 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition flex items-center gap-2 shadow-xs cursor-pointer"
+            title="Download Template Format Excel (.xlsx) untuk pengisian data siswa"
+          >
+            <Download className="w-4 h-4 text-blue-700" />
+            <span>Download Template Excel</span>
+          </button>
+
+          {/* Import Excel Massal */}
+          <button
+            onClick={handleOpenImportModal}
+            className="px-5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-md flex items-center gap-2 transition cursor-pointer"
+            title="Import banyak data siswa sekaligus dari file Excel (.xlsx / .csv)"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+            <span>Import Siswa Massal (Excel)</span>
+          </button>
+
+          {/* Add Single Student */}
+          <button
+            onClick={handleOpenAddModal}
+            className="px-5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-700 to-blue-950 text-amber-300 hover:from-blue-800 hover:to-black shadow-md flex items-center gap-2 transition cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Tambah Siswa Manual</span>
+          </button>
+
+          {/* Reset Demo Data */}
+          <button
+            onClick={handleResetDemoData}
+            className="px-3.5 py-3 text-xs font-semibold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition cursor-pointer"
+            title="Reset ke siswa demo PGRI 1"
+          >
+            Reset Demo
+          </button>
+        </div>
+      </div>
+
+      {/* Import Notification Toast */}
+      {importNotification && (
+        <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-950 rounded-xl text-sm flex items-center justify-between gap-3 animate-fadeIn shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <span className="font-semibold">{importNotification}</span>
+          </div>
+          <button
+            onClick={() => setImportNotification(null)}
+            className="text-emerald-700 hover:text-emerald-900 cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* WhatsApp Test Feedback Toast */}
+      {waTestStatus && (
+        <div className="p-4 bg-blue-50 border border-blue-300 text-blue-900 rounded-xl text-sm flex items-center gap-2.5 animate-bounce shadow-xs">
+          <CheckCircle className="w-5 h-5 text-blue-600 shrink-0" />
+          <span className="font-semibold">{waTestStatus}</span>
+        </div>
+      )}
+
+      {/* Filters & Search Toolbar */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative w-full md:w-80">
+          <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Cari berdasarkan NIS atau Nama Siswa..."
+            className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 font-medium"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-bold text-slate-700 shrink-0">Filter Kelas:</label>
+            <select
+              value={selectedClass}
+              onChange={e => setSelectedClass(e.target.value)}
+              className="py-2.5 px-3.5 text-sm bg-slate-50 border border-slate-300 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900"
+            >
+              <option value="ALL">Semua Kelas ({students.length} Siswa)</option>
+              <optgroup label="Kelas XII (7 Rombel)">
+                {MASTER_KELAS_LIST.filter(k => k.tingkat === 'XII').map(k => (
+                  <option key={k.kelas} value={k.kelas}>
+                    {k.kelas} - {k.namaJurusan}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Kelas XI (7 Rombel)">
+                {MASTER_KELAS_LIST.filter(k => k.tingkat === 'XI').map(k => (
+                  <option key={k.kelas} value={k.kelas}>
+                    {k.kelas} - {k.namaJurusan}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Kelas X (7 Rombel)">
+                {MASTER_KELAS_LIST.filter(k => k.tingkat === 'X').map(k => (
+                  <option key={k.kelas} value={k.kelas}>
+                    {k.kelas} - {k.namaJurusan}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSyncClassSchedule}
+            className="px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-950 border border-blue-200 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition cursor-pointer"
+            title="Perbarui jam pulang semua siswa agar sesuai dengan jam pulang resmi masing-masing kelas"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-blue-800" />
+            <span>Sinkronkan Jadwal Kelas</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Students Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="bg-slate-950 border-b border-slate-900 text-amber-300 uppercase font-heading text-xs font-bold tracking-wider">
+                <th className="py-3.5 px-4">Siswa</th>
+                <th className="py-3.5 px-4">NIS / NISN</th>
+                <th className="py-3.5 px-4">Kelas &amp; Jurusan</th>
+                <th className="py-3.5 px-4">No. WA Orang Tua</th>
+                <th className="py-3.5 px-4">Jadwal Pulang</th>
+                <th className="py-3.5 px-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredStudents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400 text-base">
+                    Tidak ada siswa ditemukan.
+                  </td>
+                </tr>
+              ) : (
+                filteredStudents.map(student => (
+                  <tr key={student.id} className="hover:bg-blue-50/50 transition">
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3.5">
+                        <img
+                          src={student.foto_url}
+                          alt={student.nama}
+                          className="w-12 h-12 rounded-xl object-cover border border-slate-300 shadow-sm shrink-0"
+                        />
+                        <div>
+                          <p className="font-bold text-slate-900 text-base">{student.nama}</p>
+                          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+                            {student.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                            {student.nama_ortu ? ` • Ortu: ${student.nama_ortu}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 font-mono font-bold text-blue-950">
+                      <div className="text-sm sm:text-base">{student.nis}</div>
+                      {student.nisn && (
+                        <div className="text-xs text-slate-500 font-normal">
+                          NISN: {student.nisn}
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <span className="inline-block px-3 py-1 rounded-full font-bold bg-blue-100 text-blue-950 text-xs">
+                        {student.kelas}
+                      </span>
+                      <p className="text-xs sm:text-sm text-slate-600 mt-1 truncate max-w-[200px] font-medium">
+                        {student.jurusan}
+                      </p>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2 font-mono text-slate-900 font-semibold text-sm">
+                        <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{student.no_wa_ortu}</span>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
+                        <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>{student.jam_pulang} WIB</span>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => {
+                            setViewingStudent(student);
+                            setIsQrModalOpen(true);
+                          }}
+                          className="p-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition cursor-pointer"
+                          title="Lihat Kartu QR"
+                        >
+                          <QrCode className="w-4.5 h-4.5" />
+                        </button>
+                        <button
+                          onClick={() => handleTestWhatsApp(student)}
+                          className="p-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                          title="Uji Kirim WhatsApp Orang Tua"
+                        >
+                          <Send className="w-4.5 h-4.5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(student)}
+                          className="p-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 transition cursor-pointer"
+                          title="Edit Data Siswa"
+                        >
+                          <Edit2 className="w-4.5 h-4.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(student.id)}
+                          className="p-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                          title="Hapus Siswa"
+                        >
+                          <Trash2 className="w-4.5 h-4.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ==================== MODAL IMPORT SISWA MASSAL (EXCEL) ==================== */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-900 flex items-center justify-center shrink-0">
+                  <FileSpreadsheet className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-heading font-black text-xl text-blue-950">
+                    Import Siswa Massal dari Excel
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                    Unggah file Excel (.xlsx / .xls) untuk menambahkan data siswa secara cepat
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 cursor-pointer"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto py-5 space-y-5 text-sm">
+              {/* Step 1: Upload Box & Template Link */}
+              <div className="p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 transition text-center space-y-4">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".xlsx, .xls, .csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="excel-file-input"
+                />
+
+                <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
+                  <UploadCloud className="w-7 h-7" />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="excel-file-input"
+                    className="cursor-pointer inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-blue-950 text-white font-bold hover:bg-black transition shadow-sm text-sm"
+                  >
+                    <FileSpreadsheet className="w-5 h-5 text-amber-300" />
+                    <span>{isProcessingFile ? 'Membaca File...' : 'Pilih File Excel (.xlsx / .csv)'}</span>
+                  </label>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-2 font-medium">
+                    {uploadedFileName ? (
+                      <span className="font-bold text-emerald-700">File terpilih: {uploadedFileName}</span>
+                    ) : (
+                      'Format yang didukung: .xlsx, .xls, .csv'
+                    )}
+                  </p>
+                </div>
+
+                {/* Template download link inside upload box */}
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                  <span className="text-slate-600 font-medium">Belum memiliki format yang sesuai?</span>
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="text-blue-700 hover:text-blue-950 font-bold underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Template Resmi (.xlsx)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Step 2: Validation Results & Preview */}
+              {importResult && (
+                <div className="space-y-4">
+                  {/* Summary Metric Chips */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3.5 bg-slate-100 rounded-xl border border-slate-200">
+                      <span className="text-xs uppercase font-bold text-slate-600">Total Baris</span>
+                      <p className="text-2xl font-heading font-black text-slate-900 mt-1">
+                        {importResult.totalRows}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200">
+                      <span className="text-xs uppercase font-bold text-emerald-800">Siap Diimpor (Valid)</span>
+                      <p className="text-2xl font-heading font-black text-emerald-900 mt-1">
+                        {importResult.validRows.length}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200">
+                      <span className="text-xs uppercase font-bold text-amber-800">Duplikat NIS</span>
+                      <p className="text-2xl font-heading font-black text-amber-900 mt-1">
+                        {importResult.duplicateRows.length}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 bg-rose-50 rounded-xl border border-rose-200">
+                      <span className="text-xs uppercase font-bold text-rose-800">Format Salah / Kosong</span>
+                      <p className="text-2xl font-heading font-black text-rose-900 mt-1">
+                        {importResult.invalidRows.length}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Duplicate Handling Option if duplicates exist */}
+                  {importResult.duplicateRows.length > 0 && (
+                    <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-xl space-y-2.5">
+                      <p className="font-bold text-amber-950 flex items-center gap-2 text-sm">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        <span>Ditemukan {importResult.duplicateRows.length} siswa dengan NIS yang sudah ada di database:</span>
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3 pl-6 text-sm">
+                        <label className="flex items-center gap-2 cursor-pointer font-medium">
+                          <input
+                            type="radio"
+                            name="duplicateMode"
+                            checked={duplicateMode === 'SKIP'}
+                            onChange={() => setDuplicateMode('SKIP')}
+                            className="text-blue-950 focus:ring-blue-700"
+                          />
+                          <span className="text-slate-800">
+                            <strong>Lewati</strong> (Hanya tambahkan siswa baru)
+                          </span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer font-medium">
+                          <input
+                            type="radio"
+                            name="duplicateMode"
+                            checked={duplicateMode === 'OVERWRITE'}
+                            onChange={() => setDuplicateMode('OVERWRITE')}
+                            className="text-blue-950 focus:ring-blue-700"
+                          />
+                          <span className="text-slate-800">
+                            <strong>Perbarui / Timpa</strong> data lama dengan data baru dari file
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview Table */}
+                  <div>
+                    <h4 className="font-bold text-slate-800 uppercase tracking-wider text-xs mb-2">
+                      Pratinjau Data yang Terdeteksi:
+                    </h4>
+                    <div className="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                      <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead className="bg-slate-100 sticky top-0 border-b border-slate-200 text-slate-800 font-bold">
+                          <tr>
+                            <th className="py-2.5 px-3 text-center">Status</th>
+                            <th className="py-2.5 px-3">NIS</th>
+                            <th className="py-2.5 px-3">Nama Siswa</th>
+                            <th className="py-2.5 px-3">Kelas</th>
+                            <th className="py-2.5 px-3">No WA Ortu</th>
+                            <th className="py-2.5 px-3">Jam Pulang</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {importResult.validRows.map(r => (
+                            <tr key={'val-' + r.rowNumber} className="bg-emerald-50/20">
+                              <td className="py-2 px-3 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-900">
+                                  Valid
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 font-mono font-bold text-blue-950">{r.data.nis}</td>
+                              <td className="py-2 px-3 font-semibold text-slate-900">{r.data.nama}</td>
+                              <td className="py-2 px-3">{r.data.kelas}</td>
+                              <td className="py-2 px-3 font-mono">{r.data.no_wa_ortu}</td>
+                              <td className="py-2 px-3 font-bold text-amber-800">{r.data.jam_pulang}</td>
+                            </tr>
+                          ))}
+
+                          {importResult.duplicateRows.map(r => (
+                            <tr key={'dup-' + r.rowNumber} className="bg-amber-50/30">
+                              <td className="py-2 px-3 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-950">
+                                  {duplicateMode === 'OVERWRITE' ? 'Akan Ditimpa' : 'Dilewati'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 font-mono font-bold text-amber-950">{r.data.nis}</td>
+                              <td className="py-2 px-3 font-semibold text-slate-800">{r.data.nama}</td>
+                              <td className="py-2 px-3">{r.data.kelas}</td>
+                              <td className="py-2 px-3 font-mono">{r.data.no_wa_ortu}</td>
+                              <td className="py-2 px-3 font-bold text-amber-800">{r.data.jam_pulang}</td>
+                            </tr>
+                          ))}
+
+                          {importResult.invalidRows.map(r => (
+                            <tr key={'inv-' + r.rowNumber} className="bg-rose-50/30">
+                              <td className="py-2 px-3 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-900">
+                                  Error
+                                </span>
+                              </td>
+                              <td colSpan={5} className="py-2 px-3 text-rose-800 font-medium italic">
+                                Baris {r.rowNumber}: {r.error}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+              <span className="text-xs sm:text-sm text-slate-600 font-medium">
+                {importResult ? (
+                  <>
+                    Akan menambahkan{' '}
+                    <strong className="text-emerald-800 font-bold">
+                      {duplicateMode === 'OVERWRITE'
+                        ? importResult.validRows.length + importResult.duplicateRows.length
+                        : importResult.validRows.length}
+                    </strong>{' '}
+                    siswa ke sistem.
+                  </>
+                ) : (
+                  'Pilih file Excel untuk memulai pratinjau'
+                )}
+              </span>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsImportModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-bold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteImport}
+                  disabled={
+                    !importResult ||
+                    (importResult.validRows.length === 0 &&
+                      (duplicateMode === 'SKIP' || importResult.duplicateRows.length === 0))
+                  }
+                  className="px-5 py-2.5 rounded-xl font-bold bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <FileCheck className="w-4 h-4" />
+                  <span>Simpan &amp; Impor Siswa Sekarang</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit / Add Single Student Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <h3 className="font-heading font-black text-xl text-blue-950">
+                {editingStudent ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
+              </h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStudent} className="space-y-4 mt-4 text-sm">
+              <div className="grid grid-cols-2 gap-3.5">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">
+                    NIS (Nomor Induk Siswa) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.nis || ''}
+                    onChange={e => setFormData({ ...formData, nis: e.target.value })}
+                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    placeholder="23241001"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">NISN (Opsional)</label>
+                  <input
+                    type="text"
+                    value={formData.nisn || ''}
+                    onChange={e => setFormData({ ...formData, nisn: e.target.value })}
+                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    placeholder="0068123456"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">Nama Lengkap Siswa *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.nama || ''}
+                  onChange={e => setFormData({ ...formData, nama: e.target.value })}
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-bold text-slate-900"
+                  placeholder="Muhammad Rizky Pratama"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-800">Kelas *</label>
+                    <span className="text-[11px] text-blue-900 font-semibold">21 Rombel Resmi</span>
+                  </div>
+                  <select
+                    required
+                    value={formData.kelas || 'XII TKJ 1'}
+                    onChange={e => {
+                      const selectedKls = e.target.value;
+                      const autoJurusan = getJurusanByClassName(selectedKls);
+                      const autoPulang =
+                        config.jam_pulang_per_kelas?.[selectedKls] ||
+                        getDefaultDepartureForClass(selectedKls);
+                      setFormData({
+                        ...formData,
+                        kelas: selectedKls,
+                        jurusan: autoJurusan,
+                        jam_pulang: autoPulang,
+                      });
+                    }}
+                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-bold text-slate-900"
+                  >
+                    <optgroup label="Kelas XII (7 Rombel)">
+                      {MASTER_KELAS_LIST.filter(k => k.tingkat === 'XII').map(k => (
+                        <option key={k.kelas} value={k.kelas}>
+                          {k.kelas} - {k.namaJurusan}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Kelas XI (7 Rombel)">
+                      {MASTER_KELAS_LIST.filter(k => k.tingkat === 'XI').map(k => (
+                        <option key={k.kelas} value={k.kelas}>
+                          {k.kelas} - {k.namaJurusan}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Kelas X (7 Rombel)">
+                      {MASTER_KELAS_LIST.filter(k => k.tingkat === 'X').map(k => (
+                        <option key={k.kelas} value={k.kelas}>
+                          {k.kelas} - {k.namaJurusan}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">Jurusan / Kompetensi *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.jurusan || ''}
+                    onChange={e => setFormData({ ...formData, jurusan: e.target.value })}
+                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-medium text-slate-900"
+                    placeholder="Teknik Komputer & Jaringan"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3.5">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">
+                    Jadwal Pulang Khusus *
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formData.jam_pulang || '15:00'}
+                    onChange={e => setFormData({ ...formData, jam_pulang: e.target.value })}
+                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                  <span className="text-xs text-slate-500 mt-1 block">
+                    Batas waktu minimal siswa boleh scan pulang.
+                  </span>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">Jenis Kelamin</label>
+                  <select
+                    value={formData.jenis_kelamin || 'L'}
+                    onChange={e =>
+                      setFormData({ ...formData, jenis_kelamin: e.target.value as 'L' | 'P' })
+                    }
+                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-bold"
+                  >
+                    <option value="L">Laki-laki (L)</option>
+                    <option value="P">Perempuan (P)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3.5">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">
+                    No. WhatsApp Orang Tua *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.no_wa_ortu || ''}
+                    onChange={e => setFormData({ ...formData, no_wa_ortu: e.target.value })}
+                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono font-semibold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    placeholder="081234567890"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">Nama Orang Tua / Wali</label>
+                  <input
+                    type="text"
+                    value={formData.nama_ortu || ''}
+                    onChange={e => setFormData({ ...formData, nama_ortu: e.target.value })}
+                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    placeholder="Bambang Pratama"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">URL Foto Siswa</label>
+                <input
+                  type="url"
+                  value={formData.foto_url || ''}
+                  onChange={e => setFormData({ ...formData, foto_url: e.target.value })}
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none text-xs font-mono"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-bold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl font-bold bg-blue-950 hover:bg-black text-amber-300 flex items-center gap-2 shadow-md transition cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Perubahan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Single Student Card Preview Modal */}
+      {isQrModalOpen && viewingStudent && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 max-w-md w-full space-y-4">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200">
+              <h3 className="font-heading font-black text-base sm:text-lg text-blue-950">
+                Kartu Absensi: {viewingStudent.nama}
+              </h3>
+              <button
+                onClick={() => setIsQrModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex justify-center py-2">
+              <IdCard siswa={viewingStudent} config={config} orientation="landscape" side="front" />
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-sm">
+              <span className="text-slate-600 font-mono font-bold">NIS: {viewingStudent.nis}</span>
+              <a
+                href={`https://wa.me/${formatPhoneNumber(viewingStudent.no_wa_ortu)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-emerald-700 hover:text-emerald-950 font-bold flex items-center gap-1.5"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>Hubungi Orang Tua</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

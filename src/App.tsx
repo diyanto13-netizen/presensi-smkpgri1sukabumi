@@ -1,0 +1,396 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import {
+  Camera,
+  CreditCard,
+  Users,
+  BarChart3,
+  Settings,
+  BookOpen,
+  School,
+  Clock,
+  Sparkles,
+  ShieldCheck,
+  CheckCircle2,
+} from 'lucide-react';
+import { Siswa, Absensi, SchoolConfig } from './types';
+import {
+  getStoredStudents,
+  saveStudents,
+  getStoredAttendance,
+  saveAttendance,
+  getSchoolConfig,
+  saveSchoolConfig,
+  applyClassScheduleToStudents,
+  getTodayDateString,
+} from './utils/storage';
+import {
+  fetchSchoolConfigApi,
+  saveSchoolConfigApi,
+  fetchStudentsApi,
+  bulkSaveStudentsApi,
+  fetchAttendanceApi,
+  recordAttendanceApi,
+  bulkSaveAttendanceApi,
+} from './services/api';
+import { ScannerTerminal } from './components/ScannerTerminal';
+import { CardGenerator } from './components/CardGenerator';
+import { StudentManager } from './components/StudentManager';
+import { AttendanceRecap } from './components/AttendanceRecap';
+import { SettingsModal } from './components/SettingsModal';
+import { SqlSchemaGuide } from './components/SqlSchemaGuide';
+import { SchoolLogo } from './components/SchoolLogo';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<
+    'scanner' | 'generator' | 'students' | 'recap' | 'docs'
+  >('scanner');
+
+  const [students, setStudents] = useState<Siswa[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<Absensi[]>([]);
+  const [schoolConfig, setSchoolConfig] = useState<SchoolConfig>(getSchoolConfig());
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [headerTime, setHeaderTime] = useState<string>('');
+
+  // Live ticking clock in header
+  useEffect(() => {
+    const updateHeaderClock = () => {
+      const now = new Date();
+      setHeaderTime(
+        now.toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        })
+      );
+    };
+    updateHeaderClock();
+    const timer = setInterval(updateHeaderClock, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Load stored state on initial render and sync with Cloud SQL PostgreSQL backend
+  useEffect(() => {
+    // 1. Initial instant load from localStorage
+    const localStudents = getStoredStudents();
+    const localAttendance = getStoredAttendance();
+    const localConfig = getSchoolConfig();
+
+    setStudents(localStudents);
+    setAttendanceRecords(localAttendance);
+    setSchoolConfig(localConfig);
+
+    // 2. Background sync from Cloud SQL PostgreSQL database
+    const syncFromDatabase = async () => {
+      try {
+        const [remoteConfig, remoteStudents, remoteAttendance] = await Promise.all([
+          fetchSchoolConfigApi(),
+          fetchStudentsApi(),
+          fetchAttendanceApi(getTodayDateString()),
+        ]);
+
+        if (remoteConfig) {
+          setSchoolConfig(remoteConfig);
+          saveSchoolConfig(remoteConfig);
+        } else if (localConfig) {
+          saveSchoolConfigApi(localConfig);
+        }
+
+        if (remoteStudents && remoteStudents.length > 0) {
+          setStudents(remoteStudents);
+          saveStudents(remoteStudents);
+        } else if (localStudents.length > 0) {
+          bulkSaveStudentsApi(localStudents);
+        }
+
+        if (remoteAttendance && remoteAttendance.length > 0) {
+          setAttendanceRecords(remoteAttendance);
+          saveAttendance(remoteAttendance);
+        }
+      } catch (err) {
+        console.warn('Database background sync notice:', err);
+      }
+    };
+
+    syncFromDatabase();
+  }, []);
+
+  // Update students handler (persisted locally and in PostgreSQL)
+  const handleUpdateStudents = (updated: Siswa[]) => {
+    setStudents(updated);
+    saveStudents(updated);
+    bulkSaveStudentsApi(updated);
+  };
+
+  // Record single attendance event handler (persisted locally and in PostgreSQL)
+  const handleRecordAttendance = (record: Absensi) => {
+    setAttendanceRecords(prev => {
+      const existingIdx = prev.findIndex(
+        r => r.nis === record.nis && r.tanggal === record.tanggal
+      );
+      let nextRecords: Absensi[];
+      if (existingIdx >= 0) {
+        nextRecords = [...prev];
+        nextRecords[existingIdx] = record;
+      } else {
+        nextRecords = [...prev, record];
+      }
+      saveAttendance(nextRecords);
+      return nextRecords;
+    });
+    recordAttendanceApi(record);
+  };
+
+  // Bulk update attendance (persisted locally and in PostgreSQL)
+  const handleBulkUpdateAttendance = (records: Absensi[]) => {
+    setAttendanceRecords(records);
+    saveAttendance(records);
+    bulkSaveAttendanceApi(records);
+  };
+
+  // Save config (persisted locally and in PostgreSQL)
+  const handleSaveConfig = (newConfig: SchoolConfig) => {
+    setSchoolConfig(newConfig);
+    saveSchoolConfig(newConfig);
+    saveSchoolConfigApi(newConfig);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-900 flex flex-col font-sans selection:bg-amber-400 selection:text-blue-950">
+      {/* Global Navigation Header (Hidden on print) */}
+      <header className="no-print sticky top-0 z-40 glass-nav shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20 gap-4">
+            {/* School Branding with Official Insignia */}
+            <div className="flex items-center gap-3.5">
+              <div className="relative group shrink-0">
+                <div className="w-13 h-14 p-0.5 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-500 shadow-md flex items-center justify-center border border-amber-300">
+                  <div className="w-full h-full rounded-xl bg-white/95 flex items-center justify-center p-1 overflow-hidden">
+                    <SchoolLogo
+                      src={schoolConfig.logo_url}
+                      className="w-full h-full object-contain drop-shadow-xs"
+                      alt={schoolConfig.nama_sekolah}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="leading-tight">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300">
+                    PRESENSI QR RESMI
+                  </span>
+                  <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                    NPSN: <strong className="text-slate-900">{schoolConfig.npsn}</strong>
+                  </span>
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300 hidden md:inline">
+                    {schoolConfig.akreditasi}
+                  </span>
+                </div>
+                <h1 className="text-base sm:text-xl font-heading font-black tracking-tight text-slate-950 mt-1">
+                  {schoolConfig.nama_sekolah}
+                </h1>
+              </div>
+            </div>
+
+            {/* Navigation Tabs (Spacious, Modern & High Legibility) */}
+            <nav className="hidden lg:flex items-center gap-1.5 p-1.5 bg-slate-200/60 rounded-2xl border border-slate-300/80 shadow-inner">
+              <button
+                onClick={() => setActiveTab('scanner')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                  activeTab === 'scanner'
+                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                }`}
+              >
+                <Camera className="w-4 h-4 text-amber-400" />
+                <span>Terminal Scanner</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('generator')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                  activeTab === 'generator'
+                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                }`}
+              >
+                <CreditCard className="w-4 h-4 text-amber-400" />
+                <span>Cetak Kartu QR</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('students')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                  activeTab === 'students'
+                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                }`}
+              >
+                <Users className="w-4 h-4 text-amber-400" />
+                <span>Data Siswa</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('recap')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                  activeTab === 'recap'
+                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4 text-amber-400" />
+                <span>Rekap Absensi</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('docs')}
+                className={`px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                  activeTab === 'docs'
+                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                }`}
+                title="Panduan Skema Database SQL & API"
+              >
+                <BookOpen className="w-4 h-4 text-amber-400" />
+                <span>SQL &amp; Docs</span>
+              </button>
+            </nav>
+
+            {/* Header Right Actions & Live Clock */}
+            <div className="flex items-center gap-3">
+              {/* Live WIB Clock badge */}
+              <div className="hidden sm:flex items-center gap-2 bg-slate-950 text-amber-300 px-3.5 py-2 rounded-xl border border-amber-400/30 shadow-xs">
+                <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span className="font-mono text-sm font-bold tracking-wider">
+                  {headerTime || '07:00:00'} <span className="text-xs text-amber-400/80">WIB</span>
+                </span>
+              </div>
+
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="px-3.5 py-2.5 text-slate-800 hover:text-slate-950 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition flex items-center gap-2 text-sm font-bold shadow-xs cursor-pointer"
+                title="Pengaturan Jam Masuk & Konfigurasi Fonnte"
+              >
+                <Settings className="w-4 h-4 text-slate-600" />
+                <span className="hidden md:inline">Pengaturan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Bar */}
+        <div className="lg:hidden border-t border-slate-200 px-3 py-2.5 flex items-center justify-around bg-white/95 text-xs font-bold">
+          <button
+            onClick={() => setActiveTab('scanner')}
+            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
+              activeTab === 'scanner' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>Scanner</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('generator')}
+            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
+              activeTab === 'generator' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            }`}
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Kartu QR</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('students')}
+            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
+              activeTab === 'students' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Siswa</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('recap')}
+            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
+              activeTab === 'recap' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Rekap</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('docs')}
+            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
+              activeTab === 'docs' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>SQL Docs</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+        {activeTab === 'scanner' && (
+          <ScannerTerminal
+            students={students}
+            attendanceRecords={attendanceRecords}
+            config={schoolConfig}
+            onRecordAttendance={handleRecordAttendance}
+          />
+        )}
+
+        {activeTab === 'generator' && (
+          <CardGenerator students={students} config={schoolConfig} />
+        )}
+
+        {activeTab === 'students' && (
+          <StudentManager
+            students={students}
+            config={schoolConfig}
+            onUpdateStudents={handleUpdateStudents}
+          />
+        )}
+
+        {activeTab === 'recap' && (
+          <AttendanceRecap
+            students={students}
+            attendanceRecords={attendanceRecords}
+            config={schoolConfig}
+            onUpdateAttendance={handleBulkUpdateAttendance}
+          />
+        )}
+
+        {activeTab === 'docs' && <SqlSchemaGuide />}
+      </main>
+
+      {/* Footer (Hidden on print) */}
+      <footer className="no-print mt-auto border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-600">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="font-semibold text-slate-800 text-sm">
+            © 2026 <strong className="text-blue-950 font-black">{schoolConfig.nama_sekolah}</strong>. Sistem Absensi &amp; Generator Kartu Pelajar QR.
+          </p>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium">
+            NPSN: <span className="font-bold text-slate-800">{schoolConfig.npsn}</span> • {schoolConfig.alamat}
+          </p>
+        </div>
+      </footer>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        config={schoolConfig}
+        onSaveConfig={handleSaveConfig}
+        onApplyScheduleToStudents={scheduleMap => {
+          const updated = applyClassScheduleToStudents(students, scheduleMap);
+          handleUpdateStudents(updated);
+        }}
+      />
+    </div>
+  );
+}

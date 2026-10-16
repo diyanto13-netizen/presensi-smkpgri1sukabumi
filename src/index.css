@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-heading: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  html {
+    font-size: 15px; /* Comfortable legible base font size */
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #f8fafc;
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+  letter-spacing: -0.025em;
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+/* Premium Card & Glassmorphism Styling */
+.premium-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 8px -1px rgba(15, 23, 42, 0.04);
+  border-radius: 1.25rem;
+}
+
+.premium-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -4px rgba(15, 23, 42, 0.1), 0 6px 14px -2px rgba(15, 23, 42, 0.05);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+/* ID-1 Card Exact Dimensions: 85.6mm x 54mm (Landscape) and 54mm x 85.6mm (Portrait) */
+.id-card-landscape {
+  width: 85.6mm;
+  height: 54mm;
+  min-width: 85.6mm;
+  min-height: 54mm;
+  max-width: 85.6mm;
+  max-height: 54mm;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.id-card-portrait {
+  width: 54mm;
+  height: 85.6mm;
+  min-width: 54mm;
+  min-height: 85.6mm;
+  max-width: 54mm;
+  max-height: 85.6mm;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Horizontal Camera Viewport Rules for QR Scanner */
+.scanner-camera-view {
+  width: 100% !important;
+  border: none !important;
+}
+
+#qr-reader-container {
+  border: none !important;
+  width: 100% !important;
+}
+
+#qr-reader-container video {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 270px !important;
+  object-fit: cover !important;
+  border-radius: 0.75rem !important;
+}
+
+#qr-reader-container__scan_region {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#qr-reader-container__dashboard_section {
+  display: none !important;
+}
+
+@keyframes laser-sweep {
+  0% {
+    top: 8%;
+    opacity: 0.4;
+  }
+  50% {
+    top: 90%;
+    opacity: 1;
+  }
+  100% {
+    top: 8%;
+    opacity: 0.4;
+  }
+}
+
+.animate-laser-sweep {
+  animation: laser-sweep 2.4s ease-in-out infinite;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print CSS */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .no-print,
+  nav,
+  header,
+  footer,
+  aside,
+  button:not(.print-include),
+  .scanner-camera-view {
+    display: none !important;
+  }
+
+  .print-only-container {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .id-cards-print-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 6mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .id-card-landscape,
+  .id-card-portrait {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Absensi & Kartu Pelajar QR SMKS PGRI 1 Sukabumi",
+  "description": "Sistem absensi QR code modern dengan notifikasi WhatsApp Fonnte otomatis dan generator cetak kartu pelajar standar ISO/IEC 7810 ID-1 untuk SMKS PGRI 1 Sukabumi.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
