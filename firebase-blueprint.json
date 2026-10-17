@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Master data siswa SMKS PGRI 1 Sukabumi",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nis": { "type": "string" },
+        "nisn": { "type": "string" },
+        "nama": { "type": "string" },
+        "jenis_kelamin": { "type": "string", "enum": ["L", "P"] },
+        "kelas": { "type": "string" },
+        "jurusan": { "type": "string" },
+        "no_wa_ortu": { "type": "string" },
+        "nama_ortu": { "type": "string" },
+        "jam_pulang": { "type": "string" },
+        "foto_url": { "type": "string" },
+        "alamat": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "nis", "nama", "kelas", "no_wa_ortu"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Log presensi harian siswa (masuk, pulang, status)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nis": { "type": "string" },
+        "nama": { "type": "string" },
+        "kelas": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "jam_masuk": { "type": "string" },
+        "status_masuk": { "type": "string" },
+        "jam_pulang": { "type": "string" },
+        "status_pulang": { "type": "string" },
+        "status_akhir": { "type": "string" },
+        "keterangan": { "type": "string" },
+        "notifikasi_wa_terkirim": { "type": "boolean" },
+        "notifikasi_wa_detail": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["nis", "nama", "kelas", "tanggal", "status_akhir"]
+    },
+    "SchoolConfig": {
+      "title": "SchoolConfig",
+      "description": "Konfigurasi identitas sekolah dan jam kepulangan",
+      "type": "object",
+      "properties": {
+        "nama_sekolah": { "type": "string" },
+        "yayasan": { "type": "string" },
+        "npsn": { "type": "string" },
+        "akreditasi": { "type": "string" },
+        "alamat": { "type": "string" },
+        "telepon": { "type": "string" },
+        "email": { "type": "string" },
+        "kepala_sekolah": { "type": "string" },
+        "nip_kepsek": { "type": "string" },
+        "logo_url": { "type": "string" },
+        "jam_masuk_batas": { "type": "string" },
+        "jam_pulang_per_kelas": { "type": "object" },
+        "jam_pulang_harian_per_kelas": { "type": "object" },
+        "fonnte_token": { "type": "string" },
+        "fonnte_test_mode": { "type": "boolean" },
+        "sound_enabled": { "type": "boolean" },
+        "voice_announcement_enabled": { "type": "boolean" }
+      },
+      "required": ["nama_sekolah", "npsn", "jam_masuk_batas"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Koleksi data master seluruh siswa"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": { "$ref": "#/entities/Attendance" },
+      "description": "Koleksi log dan catatan presensi siswa"
+    },
+    "/school_config/{configId}": {
+      "schema": { "$ref": "#/entities/SchoolConfig" },
+      "description": "Konfigurasi sekolah dan jam kepulangan per rombel"
+    }
+  }
+}

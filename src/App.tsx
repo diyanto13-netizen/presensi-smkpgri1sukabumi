@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   RotateCw,
   Database,
+  Laptop,
 } from 'lucide-react';
 import { Siswa, Absensi, SchoolConfig } from './types';
 import {
@@ -40,6 +41,11 @@ import {
   recordAttendanceApi,
   bulkSaveAttendanceApi,
 } from './services/api';
+import {
+  syncStudentsToFirestore,
+  saveAttendanceToFirestore,
+  saveSchoolConfigToFirestore,
+} from './services/firestoreService';
 import { ScannerTerminal } from './components/ScannerTerminal';
 import { CardGenerator } from './components/CardGenerator';
 import { StudentManager } from './components/StudentManager';
@@ -47,6 +53,7 @@ import { AttendanceRecap } from './components/AttendanceRecap';
 import { SettingsModal } from './components/SettingsModal';
 import { SqlSchemaGuide } from './components/SqlSchemaGuide';
 import { SchoolLogo } from './components/SchoolLogo';
+import { DataTransferModal } from './components/DataTransferModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
@@ -57,6 +64,7 @@ export default function App() {
   const [attendanceRecords, setAttendanceRecords] = useState<Absensi[]>([]);
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig>(getSchoolConfig());
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
   const [headerTime, setHeaderTime] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState<boolean>(true);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
@@ -147,12 +155,14 @@ export default function App() {
   const handlePushLocalToCloud = async () => {
     setIsSyncing(true);
     try {
-      await Promise.all([
+      await Promise.allSettled([
         saveSchoolConfigApi(schoolConfig),
         syncAllStudentsApi(students),
         attendanceRecords.length > 0 ? bulkSaveAttendanceApi(attendanceRecords) : Promise.resolve(true),
+        syncStudentsToFirestore(students),
+        saveSchoolConfigToFirestore(schoolConfig),
       ]);
-      setSyncNotice(`Berhasil mengunggah ${students.length} data siswa dan konfigurasi ke Cloud PostgreSQL!`);
+      setSyncNotice(`Berhasil mengunggah ${students.length} data siswa dan konfigurasi ke Cloud Database (PostgreSQL & Firebase Firestore)!`);
       setTimeout(() => setSyncNotice(null), 4000);
     } catch (e) {
       console.error(e);
@@ -162,14 +172,15 @@ export default function App() {
     }
   };
 
-  // Update students handler (persisted locally and in PostgreSQL)
+  // Update students handler (persisted locally, PostgreSQL, and Firestore)
   const handleUpdateStudents = (updated: Siswa[]) => {
     setStudents(updated);
     saveStudents(updated);
     syncAllStudentsApi(updated);
+    syncStudentsToFirestore(updated).catch(e => console.warn('Firestore sync students warning:', e));
   };
 
-  // Record single attendance event handler (persisted locally and in PostgreSQL)
+  // Record single attendance event handler (persisted locally, PostgreSQL, and Firestore)
   const handleRecordAttendance = (record: Absensi) => {
     setAttendanceRecords(prev => {
       const existingIdx = prev.findIndex(
@@ -186,22 +197,25 @@ export default function App() {
       return nextRecords;
     });
     recordAttendanceApi(record);
+    saveAttendanceToFirestore(record).catch(e => console.warn('Firestore sync attendance warning:', e));
   };
 
-  // Bulk update attendance (persisted locally and in PostgreSQL)
+  // Bulk update attendance (persisted locally, PostgreSQL, and Firestore)
   const handleBulkUpdateAttendance = (records: Absensi[]) => {
     setAttendanceRecords(records);
     saveAttendance(records);
     bulkSaveAttendanceApi(records);
+    records.forEach(r => saveAttendanceToFirestore(r).catch(() => {}));
   };
 
-  // Save config (persisted locally and in PostgreSQL)
+  // Save config (persisted locally, PostgreSQL, and Firestore)
   const handleSaveConfig = async (newConfig: SchoolConfig) => {
     setSchoolConfig(newConfig);
     saveSchoolConfig(newConfig);
     const ok = await saveSchoolConfigApi(newConfig);
+    saveSchoolConfigToFirestore(newConfig).catch(e => console.warn('Firestore sync config warning:', e));
     if (ok) {
-      setSyncNotice('Pengaturan sekolah & jadwal jam pulang tersimpan di Cloud Database PostgreSQL!');
+      setSyncNotice('Pengaturan sekolah & jadwal jam pulang tersimpan di Cloud Database (PostgreSQL & Firestore)!');
       setTimeout(() => setSyncNotice(null), 4000);
     }
   };
@@ -308,18 +322,30 @@ export default function App() {
             </nav>
 
             {/* Header Right Actions & Live Clock */}
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              {/* Transfer Data Antar-Browser Button (Chrome <-> Edge) */}
+              <button
+                type="button"
+                onClick={() => setIsTransferModalOpen(true)}
+                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-950 border border-amber-300 hover:bg-amber-100 transition shadow-xs cursor-pointer"
+                title="Pindahkan atau sinkronkan data siswa antar browser (Chrome ↔ Edge) di Vercel"
+              >
+                <Laptop className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                <span className="hidden sm:inline">Sync Antar-Browser ({students.length} Siswa)</span>
+                <span className="sm:hidden font-mono font-bold">Sync ({students.length})</span>
+              </button>
+
               {/* Cloud Database Sync Status Badge */}
               <button
                 type="button"
                 onClick={handleManualSync}
                 disabled={isSyncing}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100 transition shadow-xs cursor-pointer disabled:opacity-60"
+                className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100 transition shadow-xs cursor-pointer disabled:opacity-60"
                 title="Klik untuk menyinkronkan data terbaru dari Cloud SQL PostgreSQL"
               >
                 <Database className="w-3.5 h-3.5 text-emerald-700" />
-                <span className="hidden md:inline">
-                  {isSyncing ? 'Sinkronisasi...' : `Cloud SQL (${students.length} Siswa)`}
+                <span>
+                  {isSyncing ? 'Sinkronisasi...' : `Cloud SQL`}
                 </span>
                 <RotateCw className={`w-3.5 h-3.5 text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
               </button>
@@ -334,7 +360,7 @@ export default function App() {
 
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="px-3.5 py-2.5 text-slate-800 hover:text-slate-950 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition flex items-center gap-2 text-sm font-bold shadow-xs cursor-pointer"
+                className="px-3 py-2 sm:px-3.5 sm:py-2.5 text-slate-800 hover:text-slate-950 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition flex items-center gap-2 text-sm font-bold shadow-xs cursor-pointer"
                 title="Pengaturan Jam Masuk & Konfigurasi Fonnte"
               >
                 <Settings className="w-4 h-4 text-slate-600" />
@@ -438,6 +464,7 @@ export default function App() {
             onUpdateStudents={handleUpdateStudents}
             onSyncCloud={handlePushLocalToCloud}
             isSyncing={isSyncing}
+            onOpenTransferModal={() => setIsTransferModalOpen(true)}
           />
         )}
 
@@ -480,6 +507,22 @@ export default function App() {
         studentsCount={students.length}
         attendanceCount={attendanceRecords.length}
         isSyncing={isSyncing}
+      />
+
+      {/* Data Transfer Modal (Chrome <-> Edge Sync) */}
+      <DataTransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        students={students}
+        config={schoolConfig}
+        attendanceRecords={attendanceRecords}
+        onApplyImportedData={({ students: importedStudents, config: importedConfig, attendanceRecords: importedAtt }) => {
+          setStudents(importedStudents);
+          setSchoolConfig(importedConfig);
+          setAttendanceRecords(importedAtt);
+          setSyncNotice(`Berhasil memindahkan ${importedStudents.length} siswa ke browser ini!`);
+          setTimeout(() => setSyncNotice(null), 5000);
+        }}
       />
     </div>
   );

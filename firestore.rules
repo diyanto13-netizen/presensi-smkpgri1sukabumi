@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny all unlisted paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive validation helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Health check endpoint for testing connection
+    match /test/{testId} {
+      allow get: if true;
+    }
+
+    // Validation for Student entity
+    function isValidStudent(data) {
+      return data.keys().hasAll(['id', 'nis', 'nama', 'kelas', 'no_wa_ortu']) &&
+             data.keys().hasOnly(['id', 'nis', 'nisn', 'nama', 'jenis_kelamin', 'kelas', 'jurusan', 'no_wa_ortu', 'nama_ortu', 'jam_pulang', 'foto_url', 'alamat', 'updatedAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.nis is string && data.nis.size() > 0 && data.nis.size() <= 64 &&
+             data.nama is string && data.nama.size() > 0 && data.nama.size() <= 150 &&
+             data.kelas is string && data.kelas.size() > 0 && data.kelas.size() <= 64 &&
+             data.no_wa_ortu is string && data.no_wa_ortu.size() <= 32 &&
+             (!('jenis_kelamin' in data) || data.jenis_kelamin in ['L', 'P', '']) &&
+             (!('jurusan' in data) || (data.jurusan is string && data.jurusan.size() <= 100)) &&
+             (!('jam_pulang' in data) || (data.jam_pulang is string && data.jam_pulang.size() <= 16));
+    }
+
+    match /students/{studentId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(studentId) && isValidStudent(incoming()) && incoming().id == studentId;
+      allow update: if isSignedIn() && isValidId(studentId) && isValidStudent(incoming()) && incoming().id == existing().id &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['nis', 'nisn', 'nama', 'jenis_kelamin', 'kelas', 'jurusan', 'no_wa_ortu', 'nama_ortu', 'jam_pulang', 'foto_url', 'alamat', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(studentId);
+    }
+
+    // Validation for Attendance entity
+    function isValidAttendance(data) {
+      return data.keys().hasAll(['nis', 'nama', 'kelas', 'tanggal', 'status_akhir']) &&
+             data.keys().hasOnly(['id', 'nis', 'nama', 'kelas', 'jurusan', 'tanggal', 'jam_masuk', 'status_masuk', 'jam_pulang', 'status_pulang', 'status_akhir', 'keterangan', 'notifikasi_wa_terkirim', 'notifikasi_wa_detail', 'created_at', 'student_id']) &&
+             data.nis is string && data.nis.size() > 0 && data.nis.size() <= 64 &&
+             data.nama is string && data.nama.size() > 0 && data.nama.size() <= 150 &&
+             data.kelas is string && data.kelas.size() > 0 && data.kelas.size() <= 64 &&
+             data.tanggal is string && data.tanggal.size() >= 8 && data.tanggal.size() <= 32 &&
+             data.status_akhir is string && data.status_akhir.size() <= 32;
+    }
+
+    match /attendance/{attendanceId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(attendanceId) && isValidAttendance(incoming());
+      allow update: if isSignedIn() && isValidId(attendanceId) && isValidAttendance(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['jam_masuk', 'status_masuk', 'jam_pulang', 'status_pulang', 'status_akhir', 'keterangan', 'notifikasi_wa_terkirim', 'notifikasi_wa_detail', 'created_at']);
+      allow delete: if isSignedIn() && isValidId(attendanceId);
+    }
+
+    // Validation for SchoolConfig entity
+    function isValidSchoolConfig(data) {
+      return data.keys().hasAll(['nama_sekolah', 'npsn', 'jam_masuk_batas']) &&
+             data.keys().hasOnly(['nama_sekolah', 'yayasan', 'npsn', 'akreditasi', 'alamat', 'telepon', 'email', 'kepala_sekolah', 'nip_kepsek', 'logo_url', 'jam_masuk_batas', 'jam_pulang_per_kelas', 'jam_pulang_harian_per_kelas', 'fonnte_token', 'fonnte_test_mode', 'sound_enabled', 'voice_announcement_enabled']) &&
+             data.nama_sekolah is string && data.nama_sekolah.size() > 0 && data.nama_sekolah.size() <= 200 &&
+             data.npsn is string && data.npsn.size() > 0 && data.npsn.size() <= 32 &&
+             data.jam_masuk_batas is string && data.jam_masuk_batas.size() > 0 && data.jam_masuk_batas.size() <= 16;
+    }
+
+    match /school_config/{configId} {
+      allow get: if true;
+      allow list: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(configId) && isValidSchoolConfig(incoming());
+      allow delete: if isSignedIn() && isValidId(configId);
+    }
+  }
+}

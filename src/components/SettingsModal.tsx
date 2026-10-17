@@ -700,14 +700,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {/* Cloud Status Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1">
                     <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Status Database
+                      Cloud SQL
                     </span>
                     <div className="text-base font-bold text-emerald-950">Online &amp; Terhubung</div>
-                    <p className="text-[11px] text-emerald-700">Cloud SQL PostgreSQL</p>
+                    <p className="text-[11px] text-emerald-700">PostgreSQL Relational DB</p>
+                  </div>
+
+                  <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                      Firebase
+                    </span>
+                    <div className="text-base font-bold text-amber-950">Aktif &amp; Terkoneksi</div>
+                    <p className="text-[11px] text-amber-700">Firestore Cloud Database</p>
                   </div>
 
                   <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1">
@@ -720,14 +729,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <p className="text-[11px] text-blue-700">Tersedia untuk semua browser</p>
                   </div>
 
-                  <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
+                  <div className="p-4 bg-indigo-50/80 border border-indigo-200 rounded-xl space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-800">
                       Log Presensi
                     </span>
-                    <div className="text-xl font-heading font-black text-amber-950">
+                    <div className="text-xl font-heading font-black text-indigo-950">
                       {attendanceCount} <span className="text-xs font-normal text-slate-600">rekaman</span>
                     </div>
-                    <p className="text-[11px] text-amber-700">Histori kehadiran lengkap</p>
+                    <p className="text-[11px] text-indigo-700">Histori kehadiran lengkap</p>
                   </div>
                 </div>
 

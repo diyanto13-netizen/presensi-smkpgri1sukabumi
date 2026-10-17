@@ -329,3 +329,52 @@ export function formatIndonesianDate(dateStr: string): string {
     return dateStr;
   }
 }
+
+export interface AppBackupData {
+  version: string;
+  exportedAt: string;
+  schoolName: string;
+  config: SchoolConfig;
+  students: Siswa[];
+  attendanceRecords: Absensi[];
+}
+
+export function exportAppDataToJson(
+  students: Siswa[],
+  config: SchoolConfig,
+  attendanceRecords: Absensi[]
+): void {
+  const data: AppBackupData = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    schoolName: config.nama_sekolah || 'SMKS PGRI 1 KOTA SUKABUMI',
+    config,
+    students,
+    attendanceRecords,
+  };
+
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = getTodayDateString();
+  a.download = `backup_data_siswa_pgri1_${dateStr}_${students.length}siswa.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function parseAppDataFromJson(jsonString: string): AppBackupData {
+  try {
+    const data = JSON.parse(jsonString);
+    if (!data.students || !Array.isArray(data.students)) {
+      throw new Error('Format cadangan tidak valid (tidak ditemukan array data siswa).');
+    }
+    return data;
+  } catch (err: any) {
+    throw new Error('Gagal membaca file cadangan JSON: ' + err.message);
+  }
+}
+
