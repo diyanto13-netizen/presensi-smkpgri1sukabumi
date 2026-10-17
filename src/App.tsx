@@ -18,7 +18,6 @@ import {
   CheckCircle2,
   RotateCw,
   Database,
-  Laptop,
 } from 'lucide-react';
 import { Siswa, Absensi, SchoolConfig } from './types';
 import {
@@ -53,7 +52,6 @@ import { AttendanceRecap } from './components/AttendanceRecap';
 import { SettingsModal } from './components/SettingsModal';
 import { SqlSchemaGuide } from './components/SqlSchemaGuide';
 import { SchoolLogo } from './components/SchoolLogo';
-import { DataTransferModal } from './components/DataTransferModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
@@ -64,7 +62,6 @@ export default function App() {
   const [attendanceRecords, setAttendanceRecords] = useState<Absensi[]>([]);
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig>(getSchoolConfig());
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
   const [headerTime, setHeaderTime] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState<boolean>(true);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
@@ -323,17 +320,6 @@ export default function App() {
 
             {/* Header Right Actions & Live Clock */}
             <div className="flex items-center gap-2 sm:gap-2.5">
-              {/* Transfer Data Antar-Browser Button (Chrome <-> Edge) */}
-              <button
-                type="button"
-                onClick={() => setIsTransferModalOpen(true)}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-950 border border-amber-300 hover:bg-amber-100 transition shadow-xs cursor-pointer"
-                title="Pindahkan atau sinkronkan data siswa antar browser (Chrome ↔ Edge) di Vercel"
-              >
-                <Laptop className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                <span className="hidden sm:inline">Sync Antar-Browser ({students.length} Siswa)</span>
-                <span className="sm:hidden font-mono font-bold">Sync ({students.length})</span>
-              </button>
 
               {/* Cloud Database Sync Status Badge */}
               <button
@@ -464,7 +450,6 @@ export default function App() {
             onUpdateStudents={handleUpdateStudents}
             onSyncCloud={handlePushLocalToCloud}
             isSyncing={isSyncing}
-            onOpenTransferModal={() => setIsTransferModalOpen(true)}
           />
         )}
 
@@ -507,22 +492,6 @@ export default function App() {
         studentsCount={students.length}
         attendanceCount={attendanceRecords.length}
         isSyncing={isSyncing}
-      />
-
-      {/* Data Transfer Modal (Chrome <-> Edge Sync) */}
-      <DataTransferModal
-        isOpen={isTransferModalOpen}
-        onClose={() => setIsTransferModalOpen(false)}
-        students={students}
-        config={schoolConfig}
-        attendanceRecords={attendanceRecords}
-        onApplyImportedData={({ students: importedStudents, config: importedConfig, attendanceRecords: importedAtt }) => {
-          setStudents(importedStudents);
-          setSchoolConfig(importedConfig);
-          setAttendanceRecords(importedAtt);
-          setSyncNotice(`Berhasil memindahkan ${importedStudents.length} siswa ke browser ini!`);
-          setTimeout(() => setSyncNotice(null), 5000);
-        }}
       />
     </div>
   );

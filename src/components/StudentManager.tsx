@@ -27,7 +27,6 @@ import {
   RotateCcw,
   CheckSquare,
   Square,
-  Laptop,
 } from 'lucide-react';
 import { Siswa, SchoolConfig } from '../types';
 import { IdCard } from './IdCard';
@@ -54,7 +53,6 @@ interface StudentManagerProps {
   onUpdateStudents: (updated: Siswa[]) => void;
   onSyncCloud?: () => Promise<void>;
   isSyncing?: boolean;
-  onOpenTransferModal?: () => void;
 }
 
 export const StudentManager: React.FC<StudentManagerProps> = ({
@@ -63,7 +61,6 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   onUpdateStudents,
   onSyncCloud,
   isSyncing,
-  onOpenTransferModal,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
@@ -469,18 +466,6 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
             >
               <RefreshCw className={`w-4 h-4 text-blue-700 ${isSyncing ? 'animate-spin' : ''}`} />
               <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud'}</span>
-            </button>
-          )}
-
-          {/* Transfer / Sync Chrome to Edge Button */}
-          {onOpenTransferModal && (
-            <button
-              onClick={onOpenTransferModal}
-              className="px-4 py-3 rounded-xl font-bold text-sm bg-amber-50 text-amber-950 border border-amber-300 hover:bg-amber-100 transition flex items-center gap-2 cursor-pointer shadow-xs"
-              title="Pindahkan atau sinkronkan data 23 siswa antar browser (Chrome ↔ Edge) di Vercel"
-            >
-              <Laptop className="w-4 h-4 text-amber-700" />
-              <span>Sync Chrome ↔ Edge</span>
             </button>
           )}
 

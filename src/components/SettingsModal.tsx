@@ -234,7 +234,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             <Database className="w-4 h-4 text-amber-400" />
-            <span>Database Cloud &amp; Multi-Browser Sync</span>
+            <span>Database Cloud</span>
           </button>
         </div>
 
@@ -691,10 +691,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <Database className="w-5 h-5 text-blue-800 shrink-0 mt-0.5" />
                   <div className="text-xs sm:text-sm text-slate-800 space-y-1">
                     <p className="font-bold text-blue-950">
-                      Sinkronisasi Data Multi-Browser &amp; Perangkat (Cloud SQL PostgreSQL)
+                      Koneksi Basis Data Cloud (Cloud SQL PostgreSQL &amp; Firebase Firestore)
                     </p>
                     <p className="text-slate-600 leading-relaxed font-medium">
-                      Aplikasi ini terhubung langsung ke basis data relasional PostgreSQL. Setiap data siswa, jam kepulangan per kelas, dan rekaman presensi yang disimpan akan tersinkronisasi otomatis saat aplikasi dibuka di browser manapun (Google Chrome, Microsoft Edge, Mozilla Firefox, maupun Ponsel Guru).
+                      Aplikasi ini terhubung langsung ke basis data relasional PostgreSQL dan Firebase Firestore. Seluruh perubahan data siswa, konfigurasi sekolah, jam kepulangan per kelas, dan rekaman presensi tersimpan otomatis dan persisten di cloud server.
                     </p>
                   </div>
                 </div>
@@ -726,7 +726,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="text-xl font-heading font-black text-blue-950">
                       {studentsCount} <span className="text-xs font-normal text-slate-600">siswa</span>
                     </div>
-                    <p className="text-[11px] text-blue-700">Tersedia untuk semua browser</p>
+                    <p className="text-[11px] text-blue-700">Tersimpan di Cloud Database</p>
                   </div>
 
                   <div className="p-4 bg-indigo-50/80 border border-indigo-200 rounded-xl space-y-1">
@@ -743,9 +743,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Manual Sync Actions */}
                 <div className="p-5 bg-white border border-slate-200 rounded-2xl space-y-4">
                   <div>
-                    <h4 className="font-bold text-slate-900 text-sm">Tindakan Sinkronisasi Cepat</h4>
+                    <h4 className="font-bold text-slate-900 text-sm">Pembaruan &amp; Sinkronisasi Cloud</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Gunakan tombol di bawah jika Anda baru saja mengubah data di browser lain (misal Google Chrome) dan ingin memuatnya di browser ini (misal Microsoft Edge), atau sebaliknya.
+                      Gunakan tombol di bawah untuk menyegarkan data langsung dari server cloud atau mengunggah pembaruan ke database server.
                     </p>
                   </div>
 
