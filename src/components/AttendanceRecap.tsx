@@ -19,6 +19,7 @@ import { getTodayDateString, formatIndonesianDate } from '../utils/storage';
 import { exportAttendanceToExcel } from '../utils/excelExport';
 import { MASTER_KELAS_LIST } from '../utils/classConfig';
 import { SchoolLogo } from './SchoolLogo';
+import { AttendanceTrendChart } from './AttendanceTrendChart';
 
 interface AttendanceRecapProps {
   students: Siswa[];
@@ -335,6 +336,15 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
           </div>
           <span className="text-xs text-slate-600 font-medium mt-1">Rasio siswa hadir</span>
         </div>
+      </div>
+
+      {/* Recharts Visual Trend Chart Component */}
+      <div className="no-print">
+        <AttendanceTrendChart
+          attendanceRecords={attendanceRecords}
+          students={students}
+          selectedClass={selectedClass}
+        />
       </div>
 
       {/* Date & Class Filter Bar */}

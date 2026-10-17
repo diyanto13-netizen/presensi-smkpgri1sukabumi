@@ -16,6 +16,8 @@ import {
   Sparkles,
   ShieldCheck,
   CheckCircle2,
+  RotateCw,
+  Database,
 } from 'lucide-react';
 import { Siswa, Absensi, SchoolConfig } from './types';
 import {
@@ -33,6 +35,7 @@ import {
   saveSchoolConfigApi,
   fetchStudentsApi,
   bulkSaveStudentsApi,
+  syncAllStudentsApi,
   fetchAttendanceApi,
   recordAttendanceApi,
   bulkSaveAttendanceApi,
@@ -55,6 +58,8 @@ export default function App() {
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig>(getSchoolConfig());
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [headerTime, setHeaderTime] = useState<string>('');
+  const [isSyncing, setIsSyncing] = useState<boolean>(true);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   // Live ticking clock in header
   useEffect(() => {
@@ -74,6 +79,52 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Sync from Cloud SQL PostgreSQL database
+  const syncFromDatabase = async (showNotice: boolean = false) => {
+    setIsSyncing(true);
+    try {
+      const [remoteConfig, remoteStudents, remoteAttendance] = await Promise.all([
+        fetchSchoolConfigApi(),
+        fetchStudentsApi(),
+        fetchAttendanceApi('all'),
+      ]);
+
+      if (remoteConfig) {
+        setSchoolConfig(remoteConfig);
+        saveSchoolConfig(remoteConfig);
+      }
+
+      if (remoteStudents && remoteStudents.length > 0) {
+        setStudents(remoteStudents);
+        saveStudents(remoteStudents);
+      } else {
+        // If remote database has no students yet, push existing local students to cloud
+        const local = getStoredStudents();
+        if (local && local.length > 0) {
+          await syncAllStudentsApi(local);
+        }
+      }
+
+      if (remoteAttendance && remoteAttendance.length > 0) {
+        setAttendanceRecords(remoteAttendance);
+        saveAttendance(remoteAttendance);
+      }
+
+      if (showNotice) {
+        setSyncNotice(`Sinkronisasi Cloud berhasil! ${remoteStudents?.length || 0} siswa dan ${remoteAttendance?.length || 0} log absensi aktif.`);
+        setTimeout(() => setSyncNotice(null), 4000);
+      }
+    } catch (err) {
+      console.warn('Database background sync notice:', err);
+      if (showNotice) {
+        setSyncNotice('Koneksi ke database sedang dicoba kembali...');
+        setTimeout(() => setSyncNotice(null), 3000);
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Load stored state on initial render and sync with Cloud SQL PostgreSQL backend
   useEffect(() => {
     // 1. Initial instant load from localStorage
@@ -86,45 +137,36 @@ export default function App() {
     setSchoolConfig(localConfig);
 
     // 2. Background sync from Cloud SQL PostgreSQL database
-    const syncFromDatabase = async () => {
-      try {
-        const [remoteConfig, remoteStudents, remoteAttendance] = await Promise.all([
-          fetchSchoolConfigApi(),
-          fetchStudentsApi(),
-          fetchAttendanceApi(getTodayDateString()),
-        ]);
-
-        if (remoteConfig) {
-          setSchoolConfig(remoteConfig);
-          saveSchoolConfig(remoteConfig);
-        } else if (localConfig) {
-          saveSchoolConfigApi(localConfig);
-        }
-
-        if (remoteStudents && remoteStudents.length > 0) {
-          setStudents(remoteStudents);
-          saveStudents(remoteStudents);
-        } else if (localStudents.length > 0) {
-          bulkSaveStudentsApi(localStudents);
-        }
-
-        if (remoteAttendance && remoteAttendance.length > 0) {
-          setAttendanceRecords(remoteAttendance);
-          saveAttendance(remoteAttendance);
-        }
-      } catch (err) {
-        console.warn('Database background sync notice:', err);
-      }
-    };
-
-    syncFromDatabase();
+    syncFromDatabase(false);
   }, []);
+
+  const handleManualSync = async () => {
+    await syncFromDatabase(true);
+  };
+
+  const handlePushLocalToCloud = async () => {
+    setIsSyncing(true);
+    try {
+      await Promise.all([
+        saveSchoolConfigApi(schoolConfig),
+        syncAllStudentsApi(students),
+        attendanceRecords.length > 0 ? bulkSaveAttendanceApi(attendanceRecords) : Promise.resolve(true),
+      ]);
+      setSyncNotice(`Berhasil mengunggah ${students.length} data siswa dan konfigurasi ke Cloud PostgreSQL!`);
+      setTimeout(() => setSyncNotice(null), 4000);
+    } catch (e) {
+      console.error(e);
+      alert('Gagal mengunggah ke Cloud Database.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Update students handler (persisted locally and in PostgreSQL)
   const handleUpdateStudents = (updated: Siswa[]) => {
     setStudents(updated);
     saveStudents(updated);
-    bulkSaveStudentsApi(updated);
+    syncAllStudentsApi(updated);
   };
 
   // Record single attendance event handler (persisted locally and in PostgreSQL)
@@ -154,10 +196,14 @@ export default function App() {
   };
 
   // Save config (persisted locally and in PostgreSQL)
-  const handleSaveConfig = (newConfig: SchoolConfig) => {
+  const handleSaveConfig = async (newConfig: SchoolConfig) => {
     setSchoolConfig(newConfig);
     saveSchoolConfig(newConfig);
-    saveSchoolConfigApi(newConfig);
+    const ok = await saveSchoolConfigApi(newConfig);
+    if (ok) {
+      setSyncNotice('Pengaturan sekolah & jadwal jam pulang tersimpan di Cloud Database PostgreSQL!');
+      setTimeout(() => setSyncNotice(null), 4000);
+    }
   };
 
   return (
@@ -262,7 +308,22 @@ export default function App() {
             </nav>
 
             {/* Header Right Actions & Live Clock */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              {/* Cloud Database Sync Status Badge */}
+              <button
+                type="button"
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100 transition shadow-xs cursor-pointer disabled:opacity-60"
+                title="Klik untuk menyinkronkan data terbaru dari Cloud SQL PostgreSQL"
+              >
+                <Database className="w-3.5 h-3.5 text-emerald-700" />
+                <span className="hidden md:inline">
+                  {isSyncing ? 'Sinkronisasi...' : `Cloud SQL (${students.length} Siswa)`}
+                </span>
+                <RotateCw className={`w-3.5 h-3.5 text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
+              </button>
+
               {/* Live WIB Clock badge */}
               <div className="hidden sm:flex items-center gap-2 bg-slate-950 text-amber-300 px-3.5 py-2 rounded-xl border border-amber-400/30 shadow-xs">
                 <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
@@ -310,7 +371,7 @@ export default function App() {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Siswa</span>
+            <span>Data Siswa</span>
           </button>
           <button
             onClick={() => setActiveTab('recap')}
@@ -332,6 +393,24 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {/* Cloud Sync Alert Toast */}
+      {syncNotice && (
+        <div className="no-print bg-blue-900 text-amber-200 px-4 py-2.5 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-md border-b border-blue-800 animate-fadeIn">
+          <div className="max-w-7xl mx-auto flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{syncNotice}</span>
+            </div>
+            <button
+              onClick={() => setSyncNotice(null)}
+              className="text-amber-300 hover:text-white text-xs underline cursor-pointer ml-3"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
@@ -357,6 +436,8 @@ export default function App() {
             students={students}
             config={schoolConfig}
             onUpdateStudents={handleUpdateStudents}
+            onSyncCloud={handlePushLocalToCloud}
+            isSyncing={isSyncing}
           />
         )}
 
@@ -394,6 +475,11 @@ export default function App() {
           const updated = applyClassScheduleToStudents(students, scheduleMap);
           handleUpdateStudents(updated);
         }}
+        onManualSync={handleManualSync}
+        onPushLocalToCloud={handlePushLocalToCloud}
+        studentsCount={students.length}
+        attendanceCount={attendanceRecords.length}
+        isSyncing={isSyncing}
       />
     </div>
   );

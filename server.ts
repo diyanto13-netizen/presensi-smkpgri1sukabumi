@@ -3,10 +3,11 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { getAllStudents, upsertStudent, bulkUpsertStudents, deleteStudentById, bulkDeleteStudentsByIds } from './src/db/students.ts';
-import { getAttendanceByDate, recordAttendanceLog, bulkUpdateAttendanceLogs, getAttendanceRecapStats } from './src/db/attendance.ts';
+import { getAllStudents, upsertStudent, bulkUpsertStudents, deleteStudentById, bulkDeleteStudentsByIds, syncAllStudents } from './src/db/students.ts';
+import { getAttendanceByDate, getAllAttendanceLogs, recordAttendanceLog, bulkUpdateAttendanceLogs, getAttendanceRecapStats } from './src/db/attendance.ts';
 import { getDbSchoolConfig, saveDbSchoolConfig } from './src/db/config.ts';
 import { getOrCreateUser } from './src/db/users.ts';
+import { Absensi } from './src/types';
 
 dotenv.config();
 
@@ -83,6 +84,17 @@ async function startServer() {
     }
   });
 
+  app.post('/api/students/sync', async (req, res) => {
+    try {
+      const studentsList = Array.isArray(req.body) ? req.body : req.body.students;
+      const result = await syncAllStudents(studentsList || []);
+      res.json({ success: true, count: result.count, deleted: result.deleted });
+    } catch (error: any) {
+      console.error('Error syncing students to PostgreSQL:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   app.delete('/api/students/:id', async (req, res) => {
     try {
       const success = await deleteStudentById(req.params.id);
@@ -107,8 +119,13 @@ async function startServer() {
   // 3. Attendance Routes (Presensi & Rekapitulasi)
   app.get('/api/attendance', async (req, res) => {
     try {
-      const tanggal = (req.query.tanggal as string) || new Date().toISOString().split('T')[0];
-      const records = await getAttendanceByDate(tanggal);
+      const tanggal = req.query.tanggal as string | undefined;
+      let records: Absensi[];
+      if (tanggal && tanggal !== 'all') {
+        records = await getAttendanceByDate(tanggal);
+      } else {
+        records = await getAllAttendanceLogs(1000);
+      }
       res.json({ success: true, data: records });
     } catch (error: any) {
       console.error('Error fetching attendance from PostgreSQL:', error);

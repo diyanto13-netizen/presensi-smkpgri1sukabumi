@@ -15,6 +15,8 @@ import {
   Upload,
   Image as ImageIcon,
   RotateCcw,
+  Database,
+  CloudCheck,
 } from 'lucide-react';
 import { SchoolConfig } from '../types';
 import { SchoolLogo } from './SchoolLogo';
@@ -30,6 +32,11 @@ interface SettingsModalProps {
   config: SchoolConfig;
   onSaveConfig: (newConfig: SchoolConfig) => void;
   onApplyScheduleToStudents?: (scheduleMap: Record<string, string>) => void;
+  onManualSync?: () => Promise<void>;
+  onPushLocalToCloud?: () => Promise<void>;
+  studentsCount?: number;
+  attendanceCount?: number;
+  isSyncing?: boolean;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -38,8 +45,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   config,
   onSaveConfig,
   onApplyScheduleToStudents,
+  onManualSync,
+  onPushLocalToCloud,
+  studentsCount = 0,
+  attendanceCount = 0,
+  isSyncing = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'umum' | 'fonnte'>('jadwal_pulang');
+  const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'umum' | 'fonnte' | 'database'>('jadwal_pulang');
   
   // Ensure jam_pulang_per_kelas exists
   const [formData, setFormData] = useState<SchoolConfig>(() => ({
@@ -210,6 +222,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <Key className="w-4 h-4 text-amber-400" />
             <span>WhatsApp Gateway (Fonnte)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('database')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+              activeTab === 'database'
+                ? 'bg-blue-950 text-amber-300 shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <Database className="w-4 h-4 text-amber-400" />
+            <span>Database Cloud &amp; Multi-Browser Sync</span>
           </button>
         </div>
 
@@ -654,6 +679,92 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <p className="text-xs sm:text-sm text-emerald-800 leading-relaxed font-medium">
                     * Dapatkan token di <a href="https://fonnte.com" target="_blank" rel="noreferrer" className="underline font-bold">fonnte.com</a>. Notifikasi otomatis dikirimkan ke nomor WhatsApp orang tua saat siswa berhasil scan Masuk atau Pulang. Jika mode simulasi aktif, aplikasi menyediakan tautan direct-chat WhatsApp Web.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 4: DATABASE CLOUD & MULTI-BROWSER SYNC ================= */}
+            {activeTab === 'database' && (
+              <div className="space-y-4">
+                {/* Intro banner */}
+                <div className="p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-slate-50 border border-blue-200 rounded-2xl flex items-start gap-3">
+                  <Database className="w-5 h-5 text-blue-800 shrink-0 mt-0.5" />
+                  <div className="text-xs sm:text-sm text-slate-800 space-y-1">
+                    <p className="font-bold text-blue-950">
+                      Sinkronisasi Data Multi-Browser &amp; Perangkat (Cloud SQL PostgreSQL)
+                    </p>
+                    <p className="text-slate-600 leading-relaxed font-medium">
+                      Aplikasi ini terhubung langsung ke basis data relasional PostgreSQL. Setiap data siswa, jam kepulangan per kelas, dan rekaman presensi yang disimpan akan tersinkronisasi otomatis saat aplikasi dibuka di browser manapun (Google Chrome, Microsoft Edge, Mozilla Firefox, maupun Ponsel Guru).
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cloud Status Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Status Database
+                    </span>
+                    <div className="text-base font-bold text-emerald-950">Online &amp; Terhubung</div>
+                    <p className="text-[11px] text-emerald-700">Cloud SQL PostgreSQL</p>
+                  </div>
+
+                  <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-800">
+                      Data Siswa
+                    </span>
+                    <div className="text-xl font-heading font-black text-blue-950">
+                      {studentsCount} <span className="text-xs font-normal text-slate-600">siswa</span>
+                    </div>
+                    <p className="text-[11px] text-blue-700">Tersedia untuk semua browser</p>
+                  </div>
+
+                  <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
+                      Log Presensi
+                    </span>
+                    <div className="text-xl font-heading font-black text-amber-950">
+                      {attendanceCount} <span className="text-xs font-normal text-slate-600">rekaman</span>
+                    </div>
+                    <p className="text-[11px] text-amber-700">Histori kehadiran lengkap</p>
+                  </div>
+                </div>
+
+                {/* Manual Sync Actions */}
+                <div className="p-5 bg-white border border-slate-200 rounded-2xl space-y-4">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm">Tindakan Sinkronisasi Cepat</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Gunakan tombol di bawah jika Anda baru saja mengubah data di browser lain (misal Google Chrome) dan ingin memuatnya di browser ini (misal Microsoft Edge), atau sebaliknya.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {onManualSync && (
+                      <button
+                        type="button"
+                        onClick={onManualSync}
+                        disabled={isSyncing}
+                        className="px-5 py-3 rounded-xl font-bold text-xs sm:text-sm bg-blue-900 hover:bg-blue-950 text-white shadow-sm flex items-center justify-center gap-2 cursor-pointer transition disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-4 h-4 text-blue-300 ${isSyncing ? 'animate-spin' : ''}`} />
+                        <span>{isSyncing ? 'Menyinkronkan...' : 'Unduh & Perbarui Data dari Cloud'}</span>
+                      </button>
+                    )}
+
+                    {onPushLocalToCloud && (
+                      <button
+                        type="button"
+                        onClick={onPushLocalToCloud}
+                        disabled={isSyncing}
+                        className="px-5 py-3 rounded-xl font-bold text-xs sm:text-sm bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm flex items-center justify-center gap-2 cursor-pointer transition disabled:opacity-50"
+                      >
+                        <Upload className="w-4 h-4 text-emerald-200" />
+                        <span>Upload Data Browser Ini ke Cloud</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

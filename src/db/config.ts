@@ -1,8 +1,8 @@
 import { db } from './index.ts';
 import { schoolConfigTable } from './schema.ts';
 import { desc, eq } from 'drizzle-orm';
-import { SchoolConfig } from '../types';
-import { DEFAULT_JAM_PULANG_PER_KELAS } from '../utils/classConfig.ts';
+import { SchoolConfig, JamPulangHarian } from '../types';
+import { DEFAULT_JAM_PULANG_PER_KELAS, DEFAULT_JAM_PULANG_HARIAN_PER_KELAS } from '../utils/classConfig.ts';
 
 export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
   try {
@@ -16,9 +16,17 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
     const r = rows[0];
 
     let jamPulangMap: Record<string, string> = { ...DEFAULT_JAM_PULANG_PER_KELAS };
+    let jamPulangHarianMap: Record<string, JamPulangHarian> = { ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS };
+
     if (r.jamPulangPerKelas) {
       try {
-        jamPulangMap = JSON.parse(r.jamPulangPerKelas);
+        const parsed = JSON.parse(r.jamPulangPerKelas);
+        if (parsed.flat || parsed.daily) {
+          jamPulangMap = parsed.flat || jamPulangMap;
+          jamPulangHarianMap = parsed.daily || jamPulangHarianMap;
+        } else {
+          jamPulangMap = parsed;
+        }
       } catch (e) {
         // fallback
       }
@@ -37,6 +45,7 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
       logo_url: r.logoUrl || undefined,
       jam_masuk_batas: r.jamMasukBatas || '07:00',
       jam_pulang_per_kelas: jamPulangMap,
+      jam_pulang_harian_per_kelas: jamPulangHarianMap,
       fonnte_token: r.fonnteToken || '',
       fonnte_test_mode: r.fonnteTestMode ?? true,
       sound_enabled: r.soundEnabled ?? true,
@@ -50,7 +59,10 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
 
 export async function saveDbSchoolConfig(cfg: SchoolConfig): Promise<SchoolConfig> {
   try {
-    const jamPulangJson = JSON.stringify(cfg.jam_pulang_per_kelas || DEFAULT_JAM_PULANG_PER_KELAS);
+    const jamPulangJson = JSON.stringify({
+      flat: cfg.jam_pulang_per_kelas || DEFAULT_JAM_PULANG_PER_KELAS,
+      daily: cfg.jam_pulang_harian_per_kelas || DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
+    });
     
     // Check if row exists
     const existing = await db

@@ -56,6 +56,20 @@ export async function bulkSaveStudentsApi(students: Siswa[]): Promise<boolean> {
   }
 }
 
+export async function syncAllStudentsApi(students: Siswa[]): Promise<boolean> {
+  try {
+    const res = await fetch('/api/students/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ students }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('API syncAllStudents failed:', err);
+    return false;
+  }
+}
+
 export async function saveStudentApi(student: Siswa): Promise<boolean> {
   try {
     const res = await fetch('/api/students', {
@@ -97,9 +111,10 @@ export async function bulkDeleteStudentsApi(ids: string[]): Promise<boolean> {
   }
 }
 
-export async function fetchAttendanceApi(tanggal: string): Promise<Absensi[] | null> {
+export async function fetchAttendanceApi(tanggal?: string): Promise<Absensi[] | null> {
   try {
-    const res = await fetch(`/api/attendance?tanggal=${encodeURIComponent(tanggal)}`);
+    const url = tanggal && tanggal !== 'all' ? `/api/attendance?tanggal=${encodeURIComponent(tanggal)}` : '/api/attendance';
+    const res = await fetch(url);
     if (!res.ok) return null;
     const json = await res.json();
     return json.success && Array.isArray(json.data) ? (json.data as Absensi[]) : null;

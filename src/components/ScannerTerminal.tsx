@@ -25,6 +25,7 @@ import { processAttendanceRules, formatWhatsAppMessage } from '../utils/attendan
 import { soundService } from '../utils/audio';
 import { sendWhatsAppNotification } from '../utils/fonnte';
 import { getTodayDateString, formatIndonesianDate } from '../utils/storage';
+import { getEffectiveJamPulang } from '../utils/classConfig';
 import { SchoolLogo } from './SchoolLogo';
 
 interface ScannerTerminalProps {
@@ -134,9 +135,8 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
       const hasCheckedIn = Boolean(existingRecord?.jam_masuk);
       const hasCheckedOut = Boolean(existingRecord?.jam_pulang);
 
-      // Determine effective class departure time from school schedule or student profile
-      const classDepartureTime = config.jam_pulang_per_kelas?.[student.kelas];
-      const effectiveJamPulang = classDepartureTime || student.jam_pulang || '15:00';
+      // Determine effective class departure time from daily schedule (Senin - Jum'at) or config
+      const effectiveJamPulang = getEffectiveJamPulang(student.kelas, todayDate, config);
 
       // Run pure business rules
       const ruleResult = processAttendanceRules({

@@ -51,12 +51,16 @@ interface StudentManagerProps {
   students: Siswa[];
   config: SchoolConfig;
   onUpdateStudents: (updated: Siswa[]) => void;
+  onSyncCloud?: () => Promise<void>;
+  isSyncing?: boolean;
 }
 
 export const StudentManager: React.FC<StudentManagerProps> = ({
   students,
   config,
   onUpdateStudents,
+  onSyncCloud,
+  isSyncing,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
@@ -451,6 +455,19 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
             <UserPlus className="w-4 h-4" />
             <span>Tambah Siswa Manual</span>
           </button>
+
+          {/* Sync to Cloud Button */}
+          {onSyncCloud && (
+            <button
+              onClick={onSyncCloud}
+              disabled={isSyncing}
+              className="px-4 py-3 rounded-xl font-bold text-sm bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100 transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+              title="Kirim dan sinkronkan data siswa tabel saat ini ke Database Cloud PostgreSQL"
+            >
+              <RefreshCw className={`w-4 h-4 text-blue-700 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud'}</span>
+            </button>
+          )}
 
           {/* Reset Demo Data */}
           <button

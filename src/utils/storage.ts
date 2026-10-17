@@ -1,8 +1,10 @@
 import { Siswa, Absensi, SchoolConfig } from '../types';
 import {
   DEFAULT_JAM_PULANG_PER_KELAS,
+  DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
   getJurusanByClassName,
   getDefaultDepartureForClass,
+  getEffectiveJamPulang,
 } from './classConfig.ts';
 
 export const INITIAL_SCHOOL_CONFIG: SchoolConfig = {
@@ -17,6 +19,7 @@ export const INITIAL_SCHOOL_CONFIG: SchoolConfig = {
   nip_kepsek: '19680512 199303 1 004',
   jam_masuk_batas: '07:00',
   jam_pulang_per_kelas: { ...DEFAULT_JAM_PULANG_PER_KELAS },
+  jam_pulang_harian_per_kelas: { ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS },
   fonnte_token: '',
   fonnte_test_mode: true,
   sound_enabled: true,
@@ -258,6 +261,10 @@ export function getSchoolConfig(): SchoolConfig {
         ...DEFAULT_JAM_PULANG_PER_KELAS,
         ...(parsed.jam_pulang_per_kelas || {}),
       },
+      jam_pulang_harian_per_kelas: {
+        ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
+        ...(parsed.jam_pulang_harian_per_kelas || {}),
+      },
     };
     return configWithSchedule;
   } catch {
@@ -270,14 +277,19 @@ export function getSchoolConfig(): SchoolConfig {
  */
 export function applyClassScheduleToStudents(
   students: Siswa[],
-  scheduleMap: Record<string, string>
+  scheduleOrConfig: Record<string, string> | SchoolConfig,
+  activeDate?: Date | string
 ): Siswa[] {
   return students.map(s => {
-    const classTime = scheduleMap[s.kelas];
-    if (classTime) {
-      return { ...s, jam_pulang: classTime };
+    let effectiveTime: string;
+    if (typeof scheduleOrConfig === 'object' && 'nama_sekolah' in scheduleOrConfig) {
+      effectiveTime = getEffectiveJamPulang(s.kelas, activeDate, scheduleOrConfig as SchoolConfig);
+    } else if (typeof scheduleOrConfig === 'object' && scheduleOrConfig[s.kelas]) {
+      effectiveTime = scheduleOrConfig[s.kelas];
+    } else {
+      effectiveTime = s.jam_pulang || '15:00';
     }
-    return s;
+    return { ...s, jam_pulang: effectiveTime };
   });
 }
 
