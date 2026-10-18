@@ -462,10 +462,10 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         <div className="lg:col-span-7 space-y-6">
           {/* Main Scanner Box */}
           <div className="premium-card overflow-hidden">
-            <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/90">
+            <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-white">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-blue-100 text-blue-950 rounded-xl">
-                  <Camera className="w-5 h-5 text-blue-900" />
+                <div className="p-2.5 bg-amber-100/80 text-amber-900 rounded-xl border border-amber-300/60">
+                  <Camera className="w-5 h-5 text-amber-700" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -492,9 +492,9 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                 ) : (
                   <button
                     onClick={startCameraScanner}
-                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-950 text-amber-400 hover:bg-black transition flex items-center gap-2 shadow-sm cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-black text-amber-300 transition flex items-center gap-2 shadow-sm cursor-pointer border border-slate-800"
                   >
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-4 h-4 text-amber-400" />
                     <span>Nyalakan Kamera</span>
                   </button>
                 )}
@@ -510,11 +510,11 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               </div>
             </div>
 
-            {/* Precision Portrait Card Camera Viewport (Exact 54 x 85.6 mm ratio) */}
-            <div className="relative bg-slate-950 min-h-[460px] sm:min-h-[490px] md:min-h-[520px] w-full flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
+            {/* Precision Portrait Card Camera Viewport (Clean, light expansive background without blue bleed) */}
+            <div className="relative bg-gradient-to-b from-slate-50 via-slate-50/80 to-white min-h-[460px] sm:min-h-[490px] md:min-h-[520px] w-full flex flex-col items-center justify-center p-5 sm:p-7 overflow-hidden border-b border-slate-200">
               
               {/* Card Container Box - Camera is strictly confined inside this yellow box with zero shadow/bleed outside */}
-              <div className="relative w-[260px] sm:w-[280px] md:w-[300px] h-[412px] sm:h-[444px] md:h-[475px] rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.35)] bg-black flex items-center justify-center shrink-0">
+              <div className="relative w-[260px] sm:w-[280px] md:w-[300px] h-[412px] sm:h-[444px] md:h-[475px] rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_12px_36px_rgba(245,158,11,0.25),0_4px_16px_rgba(15,23,42,0.12)] bg-black flex items-center justify-center shrink-0 ring-4 ring-amber-400/20">
                 
                 {/* Live Camera Viewport - Perfectly fitted inside the portrait card */}
                 <div
@@ -524,14 +524,14 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
 
                 {/* Inactive State (Displayed inside the Card Box) */}
                 {!isScannerRunning && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-between p-4 text-center bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-200 z-10">
+                  <div className="absolute inset-0 flex flex-col items-center justify-between p-4 text-center bg-slate-950 text-slate-200 z-10">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-300 uppercase tracking-wider bg-black/80 px-2.5 py-1 rounded-md border border-amber-400/40 mt-1">
                       <CreditCard className="w-3.5 h-3.5 text-amber-400" />
                       <span>Standar Portrait 54×85.6mm</span>
                     </div>
 
                     <div className="flex flex-col items-center gap-2">
-                      <div className="w-16 h-16 rounded-2xl bg-blue-950/90 border-2 border-amber-400 flex items-center justify-center text-amber-400 shadow-xl">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-900 border-2 border-amber-400 flex items-center justify-center text-amber-400 shadow-xl">
                         <Camera className="w-8 h-8" />
                       </div>
                       <h4 className="text-white font-heading font-black text-sm sm:text-base leading-tight mt-1">
@@ -545,9 +545,9 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     <div className="w-full pb-1">
                       <button
                         onClick={startCameraScanner}
-                        className="w-full py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-blue-700 via-blue-800 to-blue-950 text-amber-300 hover:from-blue-800 hover:to-black shadow-lg flex items-center justify-center gap-2 transition border border-amber-400/50 cursor-pointer"
+                        className="w-full py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 hover:from-amber-300 hover:to-yellow-400 shadow-lg flex items-center justify-center gap-2 transition cursor-pointer font-heading"
                       >
-                        <Camera className="w-3.5 h-3.5 text-amber-400" />
+                        <Camera className="w-3.5 h-3.5 text-slate-950" />
                         <span>Aktifkan Pemindai</span>
                       </button>
                     </div>
@@ -594,9 +594,9 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               </div>
 
               {/* Informative Sub-Caption outside the yellow card box */}
-              <p className="text-[11px] sm:text-xs text-slate-400 font-medium text-center mt-3 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-400/80 inline-block animate-pulse" />
-                Format Kartu Pelajar Portrait (54 × 85.6 mm) • Area pemindaian presisi
+              <p className="text-[11px] sm:text-xs text-slate-600 font-semibold text-center mt-3.5 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-pulse" />
+                Presisi Format Kartu Pelajar Portrait (54 × 85.6 mm) • Area pemindaian terfokus
               </p>
             </div>
 
