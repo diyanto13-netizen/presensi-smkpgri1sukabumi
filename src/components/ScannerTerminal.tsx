@@ -308,24 +308,23 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
       await html5QrCode.start(
         { facingMode: cameraFacing },
         {
-          fps: 15,
+          fps: 20,
           qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-            // Horizontal rectangular framing optimal for student ID cards (ISO/IEC 7810 ID-1 standard)
-            // Card ratio is 1.58:1 (horizontal landscape format)
-            const targetWidth = Math.min(Math.floor(viewfinderWidth * 0.88), 380);
-            const targetHeight = Math.min(Math.floor(targetWidth / 1.58), Math.floor(viewfinderHeight * 0.88), 185);
+            // Portrait rectangular framing matching ID-1 Portrait standard (54mm x 85.6mm, ratio 0.6308)
+            const maxBoxHeight = Math.min(Math.floor(viewfinderHeight * 0.85), 440);
+            const targetWidth = Math.min(Math.floor(maxBoxHeight * (54 / 85.6)), Math.floor(viewfinderWidth * 0.85), 280);
+            const targetHeight = Math.floor(targetWidth * (85.6 / 54));
             return {
-              width: Math.max(targetWidth, 220),
-              height: Math.max(targetHeight, 130),
+              width: Math.max(targetWidth, 180),
+              height: Math.max(targetHeight, 280),
             };
           },
-          aspectRatio: 1.777778, // 16:9 widescreen horizontal
         },
         (decodedText: string) => {
           const now = Date.now();
           if (
             decodedText === lastScannedCodeRef.current &&
-            now - lastScannedTimeRef.current < 3000
+            now - lastScannedTimeRef.current < 2500
           ) {
             return;
           }
@@ -476,12 +475,12 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     <h3 className="font-heading font-black text-slate-900 text-base sm:text-lg">
                       Pemindai Kamera QR Code
                     </h3>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-900 border border-blue-300">
-                      Format Horizontal (16:9)
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                      Format Portrait Kartu
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 font-medium">
-                    Orientasi mendatar dioptimalkan presisi untuk kartu pelajar siswa
+                    Orientasi tegak (portrait) presisi sesuai ukuran kartu pelajar siswa SMKS PGRI 1
                   </p>
                 </div>
               </div>
@@ -514,37 +513,47 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               </div>
             </div>
 
-            {/* Horizontal Video Viewport Container (Compact height, maximal wide FOV) */}
-            <div className="relative bg-slate-950 h-[210px] sm:h-[235px] md:h-[250px] w-full flex items-center justify-center overflow-hidden">
+            {/* Portrait Video Viewport Container (Matching Student ID Card 54 x 85.6 mm) */}
+            <div className="relative bg-slate-950 min-h-[460px] sm:min-h-[490px] md:min-h-[520px] w-full flex items-center justify-center overflow-hidden">
               <div
                 id="qr-reader-container"
                 className="w-full h-full scanner-camera-view flex items-center justify-center"
               />
 
               {!isScannerRunning && (
-                <div className="absolute inset-0 flex flex-col sm:flex-row items-center justify-between p-5 sm:p-7 text-left bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-slate-200 gap-4 z-10">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-blue-950 border-2 border-amber-400/80 flex items-center justify-center text-amber-400 shadow-xl shrink-0">
-                      <Camera className="w-7 h-7 sm:w-8 sm:h-8" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-200 gap-4 z-10">
+                  <div className="w-[170px] h-[270px] sm:w-[190px] sm:h-[300px] rounded-2xl border-2 border-dashed border-amber-400/70 bg-blue-950/40 p-3.5 flex flex-col items-center justify-between shadow-2xl relative">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-300 uppercase tracking-wider bg-black/60 px-2 py-0.5 rounded-md">
+                      <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Standar Portrait</span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/40 uppercase tracking-wider">
-                          Sudut Pandang Horizontal
-                        </span>
-                        <span className="text-xs text-slate-400 font-semibold">Standar ISO ID-1</span>
+
+                    <div className="w-14 h-14 rounded-2xl bg-blue-900/80 border-2 border-amber-400 flex items-center justify-center text-amber-400 shadow-xl">
+                      <Camera className="w-7 h-7" />
+                    </div>
+
+                    <div className="text-center w-full">
+                      <div className="w-12 h-12 border border-dashed border-amber-400/50 rounded-lg mx-auto flex items-center justify-center bg-black/40 mb-1">
+                        <span className="text-[8px] text-amber-300 font-mono">KODE QR</span>
                       </div>
-                      <h4 className="text-white font-heading font-black text-base sm:text-lg mt-0.5">
-                        Kamera Siap Memindai Kartu Siswa
-                      </h4>
-                      <p className="text-xs sm:text-sm text-slate-300 max-w-md mt-0.5 leading-snug">
-                        Ukuran horizontal kompak tidak memakan layar, sudut baca kartu tetap maksimal.
+                      <p className="text-[10px] font-semibold text-slate-300">
+                        Layout Kartu Tegak
                       </p>
                     </div>
                   </div>
+
+                  <div className="max-w-md">
+                    <h4 className="text-white font-heading font-black text-base sm:text-lg">
+                      Kamera Siap Memindai Kartu Siswa Portrait
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-300 mt-0.5 leading-snug">
+                      Ukuran kotak pemindai disesuaikan dengan posisi kartu pelajar portrait agar pembacaan QR cepat dan stabil.
+                    </p>
+                  </div>
+
                   <button
                     onClick={startCameraScanner}
-                    className="px-5 py-3 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-blue-700 via-blue-800 to-blue-950 text-amber-300 hover:from-blue-800 hover:to-black shadow-lg flex items-center gap-2.5 transition shrink-0 border border-amber-400/50 cursor-pointer"
+                    className="px-6 py-3.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-blue-700 via-blue-800 to-blue-950 text-amber-300 hover:from-blue-800 hover:to-black shadow-lg flex items-center gap-2.5 transition border border-amber-400/50 cursor-pointer"
                   >
                     <Camera className="w-4 h-4 text-amber-400" />
                     <span>Aktifkan Pemindai Sekarang</span>
@@ -555,29 +564,39 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               {/* Scanning Crosshair Overlay when active */}
               {isScannerRunning && (
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  {/* Horizontal Card Shape Frame (Aspect ratio 1.58:1 matching student ID card) */}
-                  <div className="w-[280px] sm:w-[330px] md:w-[360px] h-[150px] sm:h-[170px] md:h-[185px] border-2 border-amber-400/90 rounded-2xl relative shadow-[0_0_25px_rgba(251,191,36,0.3)] flex flex-col justify-between p-2.5">
+                  {/* Portrait Card Shape Frame (Aspect ratio 54:85.6 matching student ID card) */}
+                  <div className="w-[240px] sm:w-[270px] md:w-[290px] h-[380px] sm:h-[428px] md:h-[460px] border-2 border-amber-400/90 rounded-2xl relative shadow-[0_0_30px_rgba(251,191,36,0.35)] flex flex-col justify-between p-3">
                     {/* Corner Bracket Highlights */}
-                    <div className="absolute -top-1.5 -left-1.5 w-6 h-6 border-t-4 border-l-4 border-amber-400 rounded-tl-lg" />
-                    <div className="absolute -top-1.5 -right-1.5 w-6 h-6 border-t-4 border-r-4 border-amber-400 rounded-tr-lg" />
-                    <div className="absolute -bottom-1.5 -left-1.5 w-6 h-6 border-b-4 border-l-4 border-amber-400 rounded-bl-lg" />
-                    <div className="absolute -bottom-1.5 -right-1.5 w-6 h-6 border-b-4 border-r-4 border-amber-400 rounded-br-lg" />
+                    <div className="absolute -top-1.5 -left-1.5 w-7 h-7 border-t-4 border-l-4 border-amber-400 rounded-tl-xl" />
+                    <div className="absolute -top-1.5 -right-1.5 w-7 h-7 border-t-4 border-r-4 border-amber-400 rounded-tr-xl" />
+                    <div className="absolute -bottom-1.5 -left-1.5 w-7 h-7 border-b-4 border-l-4 border-amber-400 rounded-bl-xl" />
+                    <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 border-b-4 border-r-4 border-amber-400 rounded-br-xl" />
 
                     {/* Top Card Guide Header */}
-                    <div className="flex items-center justify-between text-[11px] font-bold text-amber-300 bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-amber-300 bg-black/70 px-2.5 py-1 rounded-lg backdrop-blur-xs border border-amber-400/30">
                       <span className="flex items-center gap-1.5">
                         <CreditCard className="w-3.5 h-3.5 text-amber-400" />
-                        KARTU PELAJAR HORIZONTAL
+                        KARTU PELAJAR PORTRAIT
                       </span>
-                      <span className="text-[10px] text-emerald-400 font-mono">SCAN AKTIF</span>
+                      <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        SCAN AKTIF
+                      </span>
                     </div>
 
-                    {/* Sweeping Horizontal Laser Line */}
-                    <div className="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_12px_rgba(251,191,36,1)] animate-laser-sweep pointer-events-none" />
+                    {/* Center QR Target Guide Box */}
+                    <div className="w-32 h-32 border border-dashed border-amber-400/60 rounded-xl mx-auto flex items-center justify-center bg-black/25">
+                      <span className="text-[10px] font-mono text-amber-200/90 bg-black/60 px-2 py-0.5 rounded">
+                        FOKUS KODE QR
+                      </span>
+                    </div>
+
+                    {/* Sweeping Laser Line for Portrait View */}
+                    <div className="absolute left-3 right-3 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_rgba(251,191,36,1)] animate-laser-sweep pointer-events-none" />
 
                     {/* Bottom Card Guide Footer */}
-                    <div className="text-center text-[10px] font-semibold text-slate-200 bg-black/60 px-2 py-0.5 rounded backdrop-blur-xs">
-                      Posisikan QR kartu pelajar di dalam bingkai mendatar ini
+                    <div className="text-center text-[10px] sm:text-[11px] font-semibold text-slate-100 bg-black/70 px-2.5 py-1.5 rounded-lg backdrop-blur-xs border border-slate-700">
+                      Posisikan kartu pelajar tegak (portrait) di dalam bingkai ini
                     </div>
                   </div>
                 </div>

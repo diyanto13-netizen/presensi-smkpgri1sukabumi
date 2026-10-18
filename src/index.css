@@ -76,7 +76,7 @@
   overflow: hidden;
 }
 
-/* Horizontal Camera Viewport Rules for QR Scanner */
+/* Portrait Card Camera Viewport Rules for QR Scanner */
 .scanner-camera-view {
   width: 100% !important;
   border: none !important;
@@ -85,12 +85,15 @@
 #qr-reader-container {
   border: none !important;
   width: 100% !important;
+  height: 100% !important;
+  min-height: 440px !important;
 }
 
 #qr-reader-container video {
   width: 100% !important;
   height: 100% !important;
-  max-height: 270px !important;
+  max-height: 520px !important;
+  min-height: 440px !important;
   object-fit: cover !important;
   border-radius: 0.75rem !important;
 }
@@ -99,6 +102,8 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 #qr-reader-container__dashboard_section {
@@ -107,21 +112,21 @@
 
 @keyframes laser-sweep {
   0% {
-    top: 8%;
-    opacity: 0.4;
+    top: 6%;
+    opacity: 0.35;
   }
   50% {
-    top: 90%;
+    top: 92%;
     opacity: 1;
   }
   100% {
-    top: 8%;
-    opacity: 0.4;
+    top: 6%;
+    opacity: 0.35;
   }
 }
 
 .animate-laser-sweep {
-  animation: laser-sweep 2.4s ease-in-out infinite;
+  animation: laser-sweep 2.2s ease-in-out infinite;
 }
 
 /* Custom Sleek Scrollbar */
