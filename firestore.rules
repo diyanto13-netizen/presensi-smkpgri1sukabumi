@@ -20,10 +20,6 @@ service cloud.firestore {
       return resource.data;
     }
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
     // Health check endpoint for testing connection
     match /test/{testId} {
       allow get: if true;
@@ -44,11 +40,11 @@ service cloud.firestore {
     }
 
     match /students/{studentId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(studentId) && isValidStudent(incoming()) && incoming().id == studentId;
-      allow update: if isSignedIn() && isValidId(studentId) && isValidStudent(incoming()) && incoming().id == existing().id &&
+      allow get, list: if true;
+      allow create: if isValidId(studentId) && isValidStudent(incoming()) && incoming().id == studentId;
+      allow update: if isValidId(studentId) && isValidStudent(incoming()) && incoming().id == existing().id &&
                        incoming().diff(existing()).affectedKeys().hasOnly(['nis', 'nisn', 'nama', 'jenis_kelamin', 'kelas', 'jurusan', 'no_wa_ortu', 'nama_ortu', 'jam_pulang', 'foto_url', 'alamat', 'updatedAt']);
-      allow delete: if isSignedIn() && isValidId(studentId);
+      allow delete: if isValidId(studentId);
     }
 
     // Validation for Attendance entity
@@ -63,11 +59,11 @@ service cloud.firestore {
     }
 
     match /attendance/{attendanceId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(attendanceId) && isValidAttendance(incoming());
-      allow update: if isSignedIn() && isValidId(attendanceId) && isValidAttendance(incoming()) &&
+      allow get, list: if true;
+      allow create: if isValidId(attendanceId) && isValidAttendance(incoming());
+      allow update: if isValidId(attendanceId) && isValidAttendance(incoming()) &&
                        incoming().diff(existing()).affectedKeys().hasOnly(['jam_masuk', 'status_masuk', 'jam_pulang', 'status_pulang', 'status_akhir', 'keterangan', 'notifikasi_wa_terkirim', 'notifikasi_wa_detail', 'created_at']);
-      allow delete: if isSignedIn() && isValidId(attendanceId);
+      allow delete: if isValidId(attendanceId);
     }
 
     // Validation for SchoolConfig entity
@@ -80,10 +76,9 @@ service cloud.firestore {
     }
 
     match /school_config/{configId} {
-      allow get: if true;
-      allow list: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(configId) && isValidSchoolConfig(incoming());
-      allow delete: if isSignedIn() && isValidId(configId);
+      allow get, list: if true;
+      allow create, update: if isValidId(configId) && isValidSchoolConfig(incoming());
+      allow delete: if isValidId(configId);
     }
   }
 }

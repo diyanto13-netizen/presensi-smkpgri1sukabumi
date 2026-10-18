@@ -1,14 +1,12 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   deleteDoc,
   writeBatch,
   onSnapshot,
-  query,
-  orderBy,
-  limit
 } from 'firebase/firestore';
 import { db } from '../lib/firebase.ts';
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrors.ts';
@@ -26,6 +24,7 @@ export async function getStudentsFromFirestore(): Promise<Siswa[]> {
   try {
     const colRef = collection(db, STUDENTS_COLLECTION);
     const snap = await getDocs(colRef);
+    if (snap.empty) return [];
     return snap.docs.map((d) => {
       const data = d.data();
       return {
@@ -44,7 +43,8 @@ export async function getStudentsFromFirestore(): Promise<Siswa[]> {
       } as Siswa;
     });
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, STUDENTS_COLLECTION);
+    console.warn('Firestore getStudents warning:', error);
+    return [];
   }
 }
 
@@ -54,7 +54,6 @@ export async function getStudentsFromFirestore(): Promise<Siswa[]> {
 export async function syncStudentsToFirestore(studentsList: Siswa[]): Promise<boolean> {
   if (!studentsList || studentsList.length === 0) return true;
   try {
-    // Firestore batches allow up to 500 operations
     const BATCH_SIZE = 450;
     for (let i = 0; i < studentsList.length; i += BATCH_SIZE) {
       const chunk = studentsList.slice(i, i + BATCH_SIZE);
@@ -87,7 +86,8 @@ export async function syncStudentsToFirestore(studentsList: Siswa[]): Promise<bo
     }
     return true;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, STUDENTS_COLLECTION);
+    console.warn('Firestore syncStudents warning:', error);
+    return false;
   }
 }
 
@@ -118,7 +118,8 @@ export async function saveStudentToFirestore(s: Siswa): Promise<boolean> {
     await setDoc(docRef, payload, { merge: true });
     return true;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, `${STUDENTS_COLLECTION}/${studentId}`);
+    console.warn('Firestore saveStudent warning:', error);
+    return false;
   }
 }
 
@@ -131,12 +132,47 @@ export async function deleteStudentFromFirestore(studentId: string): Promise<boo
     await deleteDoc(docRef);
     return true;
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `${STUDENTS_COLLECTION}/${studentId}`);
+    console.warn('Firestore deleteStudent warning:', error);
+    return false;
   }
 }
 
 /**
- * Save attendance record to Firestore
+ * Fetch all attendance logs from Firestore
+ */
+export async function getAttendanceFromFirestore(): Promise<Absensi[]> {
+  try {
+    const colRef = collection(db, ATTENDANCE_COLLECTION);
+    const snap = await getDocs(colRef);
+    if (snap.empty) return [];
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        siswa_id: data.student_id || data.siswa_id || '',
+        nis: data.nis || '',
+        nama: data.nama || '',
+        kelas: data.kelas || '',
+        tanggal: data.tanggal || '',
+        jam_masuk: data.jam_masuk || null,
+        status_masuk: data.status_masuk || null,
+        jam_pulang: data.jam_pulang || null,
+        status_pulang: data.status_pulang || null,
+        status_akhir: data.status_akhir || 'Hadir',
+        keterangan: data.keterangan || '',
+        notifikasi_wa_terkirim: !!data.notifikasi_wa_terkirim,
+        notifikasi_wa_detail: data.notifikasi_wa_detail || '',
+        created_at: data.created_at || new Date().toISOString(),
+      } as Absensi;
+    });
+  } catch (error) {
+    console.warn('Firestore getAttendance warning:', error);
+    return [];
+  }
+}
+
+/**
+ * Save single attendance record to Firestore
  */
 export async function saveAttendanceToFirestore(record: Absensi): Promise<boolean> {
   const docId = record.id || `att_${record.nis}_${record.tanggal.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -149,7 +185,7 @@ export async function saveAttendanceToFirestore(record: Absensi): Promise<boolea
       kelas: String(record.kelas || '').trim(),
       tanggal: String(record.tanggal || '').trim(),
       status_akhir: String(record.status_akhir || 'Hadir').trim(),
-      created_at: new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
     };
 
     if (record.siswa_id) payload.student_id = record.siswa_id;
@@ -166,7 +202,70 @@ export async function saveAttendanceToFirestore(record: Absensi): Promise<boolea
     await setDoc(docRef, payload, { merge: true });
     return true;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, `${ATTENDANCE_COLLECTION}/${docId}`);
+    console.warn('Firestore saveAttendance warning:', error);
+    return false;
+  }
+}
+
+/**
+ * Bulk save attendance records to Firestore
+ */
+export async function bulkSaveAttendanceToFirestore(records: Absensi[]): Promise<boolean> {
+  if (!records || records.length === 0) return true;
+  try {
+    const BATCH_SIZE = 450;
+    for (let i = 0; i < records.length; i += BATCH_SIZE) {
+      const chunk = records.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+
+      for (const record of chunk) {
+        const docId = record.id || `att_${record.nis}_${record.tanggal.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        const docRef = doc(db, ATTENDANCE_COLLECTION, docId);
+        const payload: Record<string, any> = {
+          id: docId,
+          nis: String(record.nis || '').trim(),
+          nama: String(record.nama || '').trim(),
+          kelas: String(record.kelas || '').trim(),
+          tanggal: String(record.tanggal || '').trim(),
+          status_akhir: String(record.status_akhir || 'Hadir').trim(),
+          created_at: record.created_at || new Date().toISOString(),
+        };
+
+        if (record.siswa_id) payload.student_id = record.siswa_id;
+        if (record.jam_masuk) payload.jam_masuk = record.jam_masuk;
+        if (record.status_masuk) payload.status_masuk = record.status_masuk;
+        if (record.jam_pulang) payload.jam_pulang = record.jam_pulang;
+        if (record.status_pulang) payload.status_pulang = record.status_pulang;
+        if (record.keterangan) payload.keterangan = record.keterangan;
+        if (typeof record.notifikasi_wa_terkirim === 'boolean') {
+          payload.notifikasi_wa_terkirim = record.notifikasi_wa_terkirim;
+        }
+        if (record.notifikasi_wa_detail) payload.notifikasi_wa_detail = record.notifikasi_wa_detail;
+
+        batch.set(docRef, payload, { merge: true });
+      }
+
+      await batch.commit();
+    }
+    return true;
+  } catch (error) {
+    console.warn('Firestore bulkSaveAttendance warning:', error);
+    return false;
+  }
+}
+
+/**
+ * Fetch SchoolConfig from Firestore
+ */
+export async function getSchoolConfigFromFirestore(): Promise<SchoolConfig | null> {
+  try {
+    const docRef = doc(db, CONFIG_COLLECTION, MAIN_CONFIG_DOC);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return null;
+    return snap.data() as SchoolConfig;
+  } catch (error) {
+    console.warn('Firestore getSchoolConfig warning:', error);
+    return null;
   }
 }
 
@@ -200,7 +299,8 @@ export async function saveSchoolConfigToFirestore(cfg: SchoolConfig): Promise<bo
     await setDoc(docRef, payload, { merge: true });
     return true;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, `${CONFIG_COLLECTION}/${MAIN_CONFIG_DOC}`);
+    console.warn('Firestore saveSchoolConfig warning:', error);
+    return false;
   }
 }
 

@@ -43,7 +43,11 @@ import {
 import {
   syncStudentsToFirestore,
   saveAttendanceToFirestore,
+  bulkSaveAttendanceToFirestore,
   saveSchoolConfigToFirestore,
+  getStudentsFromFirestore,
+  getAttendanceFromFirestore,
+  getSchoolConfigFromFirestore,
 } from './services/firestoreService';
 import { ScannerTerminal } from './components/ScannerTerminal';
 import { CardGenerator } from './components/CardGenerator';
@@ -84,39 +88,75 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Sync from Cloud SQL PostgreSQL database
+  // Sync from Cloud Database (PostgreSQL & Firebase Firestore)
   const syncFromDatabase = async (showNotice: boolean = false) => {
     setIsSyncing(true);
     try {
+      // 1. Attempt API fetch (Cloud SQL PostgreSQL)
       const [remoteConfig, remoteStudents, remoteAttendance] = await Promise.all([
         fetchSchoolConfigApi(),
         fetchStudentsApi(),
         fetchAttendanceApi('all'),
       ]);
 
-      if (remoteConfig) {
-        setSchoolConfig(remoteConfig);
-        saveSchoolConfig(remoteConfig);
-      }
+      let finalConfig = remoteConfig;
+      let finalStudents = remoteStudents;
+      let finalAttendance = remoteAttendance;
 
-      if (remoteStudents && remoteStudents.length > 0) {
-        setStudents(remoteStudents);
-        saveStudents(remoteStudents);
-      } else {
-        // If remote database has no students yet, push existing local students to cloud
-        const local = getStoredStudents();
-        if (local && local.length > 0) {
-          await syncAllStudentsApi(local);
+      // 2. If API was unavailable or returned empty (e.g. running on Vercel without express backend), fallback to Firebase Firestore
+      if (!finalStudents || finalStudents.length === 0) {
+        const firestoreStudents = await getStudentsFromFirestore();
+        if (firestoreStudents && firestoreStudents.length > 0) {
+          finalStudents = firestoreStudents;
         }
       }
 
-      if (remoteAttendance && remoteAttendance.length > 0) {
-        setAttendanceRecords(remoteAttendance);
-        saveAttendance(remoteAttendance);
+      if (!finalAttendance || finalAttendance.length === 0) {
+        const firestoreAttendance = await getAttendanceFromFirestore();
+        if (firestoreAttendance && firestoreAttendance.length > 0) {
+          finalAttendance = firestoreAttendance;
+        }
+      }
+
+      if (!finalConfig) {
+        const firestoreConfig = await getSchoolConfigFromFirestore();
+        if (firestoreConfig) {
+          finalConfig = firestoreConfig;
+        }
+      }
+
+      // 3. Apply resolved configuration
+      if (finalConfig) {
+        setSchoolConfig(finalConfig);
+        saveSchoolConfig(finalConfig);
+      }
+
+      // 4. Apply resolved students or auto-seed Firestore if local browser has real students (e.g. Chrome)
+      if (finalStudents && finalStudents.length > 0) {
+        setStudents(finalStudents);
+        saveStudents(finalStudents);
+      } else {
+        const local = getStoredStudents();
+        if (local && local.length > 0) {
+          syncAllStudentsApi(local).catch(() => {});
+          syncStudentsToFirestore(local).catch(() => {});
+        }
+      }
+
+      // 5. Apply resolved attendance records
+      if (finalAttendance && finalAttendance.length > 0) {
+        setAttendanceRecords(finalAttendance);
+        saveAttendance(finalAttendance);
+      } else {
+        const localAtt = getStoredAttendance();
+        if (localAtt && localAtt.length > 0) {
+          bulkSaveAttendanceApi(localAtt).catch(() => {});
+          bulkSaveAttendanceToFirestore(localAtt).catch(() => {});
+        }
       }
 
       if (showNotice) {
-        setSyncNotice(`Sinkronisasi Cloud berhasil! ${remoteStudents?.length || 0} siswa dan ${remoteAttendance?.length || 0} log absensi aktif.`);
+        setSyncNotice(`Sinkronisasi Cloud berhasil! ${finalStudents?.length || 0} siswa dan ${finalAttendance?.length || 0} log absensi aktif.`);
         setTimeout(() => setSyncNotice(null), 4000);
       }
     } catch (err) {
@@ -130,7 +170,7 @@ export default function App() {
     }
   };
 
-  // Load stored state on initial render and sync with Cloud SQL PostgreSQL backend
+  // Load stored state on initial render and sync with Cloud Database
   useEffect(() => {
     // 1. Initial instant load from localStorage
     const localStudents = getStoredStudents();
@@ -141,7 +181,7 @@ export default function App() {
     setAttendanceRecords(localAttendance);
     setSchoolConfig(localConfig);
 
-    // 2. Background sync from Cloud SQL PostgreSQL database
+    // 2. Background sync from Cloud SQL / Firebase Firestore
     syncFromDatabase(false);
   }, []);
 
@@ -158,6 +198,7 @@ export default function App() {
         attendanceRecords.length > 0 ? bulkSaveAttendanceApi(attendanceRecords) : Promise.resolve(true),
         syncStudentsToFirestore(students),
         saveSchoolConfigToFirestore(schoolConfig),
+        attendanceRecords.length > 0 ? bulkSaveAttendanceToFirestore(attendanceRecords) : Promise.resolve(true),
       ]);
       setSyncNotice(`Berhasil mengunggah ${students.length} data siswa dan konfigurasi ke Cloud Database (PostgreSQL & Firebase Firestore)!`);
       setTimeout(() => setSyncNotice(null), 4000);
