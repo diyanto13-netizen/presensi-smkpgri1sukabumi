@@ -289,7 +289,7 @@ export default function App() {
                     {schoolConfig.akreditasi}
                   </span>
                 </div>
-                <h1 className="text-base sm:text-xl font-heading font-black tracking-tight text-slate-950 mt-1">
+                <h1 className="text-xs sm:text-sm font-heading font-bold tracking-tight text-slate-900 mt-0.5">
                   {schoolConfig.nama_sekolah}
                 </h1>
               </div>

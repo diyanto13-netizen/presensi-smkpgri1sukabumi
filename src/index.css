@@ -79,6 +79,7 @@
 /* Portrait Card Camera Viewport Rules for QR Scanner */
 .scanner-camera-view {
   width: 100% !important;
+  height: 100% !important;
   border: none !important;
 }
 
@@ -86,16 +87,20 @@
   border: none !important;
   width: 100% !important;
   height: 100% !important;
-  min-height: 440px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background-color: #000000 !important;
 }
 
 #qr-reader-container video {
   width: 100% !important;
   height: 100% !important;
-  max-height: 520px !important;
-  min-height: 440px !important;
   object-fit: cover !important;
-  border-radius: 0.75rem !important;
+  border-radius: 0.85rem !important;
+}
+
+#qr-reader-container canvas {
+  display: none !important;
 }
 
 #qr-reader-container__scan_region {
