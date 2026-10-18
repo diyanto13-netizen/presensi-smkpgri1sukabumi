@@ -49,41 +49,82 @@ export async function getStudentsFromFirestore(): Promise<Siswa[]> {
 }
 
 /**
- * Sync batch of students to Firestore
+ * Sync batch of students to Firestore and prune any deleted documents
  */
-export async function syncStudentsToFirestore(studentsList: Siswa[]): Promise<boolean> {
-  if (!studentsList || studentsList.length === 0) return true;
+export async function syncStudentsToFirestore(
+  studentsList: Siswa[],
+  pruneDeleted: boolean = true
+): Promise<boolean> {
   try {
-    const BATCH_SIZE = 450;
-    for (let i = 0; i < studentsList.length; i += BATCH_SIZE) {
-      const chunk = studentsList.slice(i, i + BATCH_SIZE);
-      const batch = writeBatch(db);
+    const colRef = collection(db, STUDENTS_COLLECTION);
+    const snap = await getDocs(colRef);
 
-      for (const s of chunk) {
-        const studentId = s.id || `std_${s.nis.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-        const docRef = doc(db, STUDENTS_COLLECTION, studentId);
-        const payload: Record<string, any> = {
-          id: studentId,
-          nis: String(s.nis || '').trim(),
-          nama: String(s.nama || '').trim(),
-          kelas: String(s.kelas || '').trim(),
-          no_wa_ortu: String(s.no_wa_ortu || '').trim(),
-          updatedAt: new Date().toISOString(),
-        };
+    // Track active identifiers
+    const activeDocIds = new Set<string>();
+    const activeNis = new Set<string>();
+    const activeIds = new Set<string>();
 
-        if (s.jenis_kelamin) payload.jenis_kelamin = s.jenis_kelamin;
-        if (s.jurusan) payload.jurusan = s.jurusan;
-        if (s.jam_pulang) payload.jam_pulang = s.jam_pulang;
-        if (s.nisn) payload.nisn = s.nisn;
-        if (s.nama_ortu) payload.nama_ortu = s.nama_ortu;
-        if (s.foto_url) payload.foto_url = s.foto_url;
-        if (s.alamat) payload.alamat = s.alamat;
+    (studentsList || []).forEach(s => {
+      const docId = s.id || `std_${s.nis.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+      activeDocIds.add(docId);
+      if (s.id) activeIds.add(s.id);
+      if (s.nis) activeNis.add(String(s.nis).trim());
+    });
 
-        batch.set(docRef, payload, { merge: true });
+    // 1. Identify and delete documents in Firestore that are no longer in studentsList
+    if (pruneDeleted) {
+      const toDeleteDocs = snap.docs.filter(d => {
+        const data = d.data();
+        const docNis = data.nis ? String(data.nis).trim() : '';
+        const docIdVal = data.id ? String(data.id) : '';
+        return !activeDocIds.has(d.id) && !activeIds.has(docIdVal) && (!docNis || !activeNis.has(docNis));
+      });
+
+      if (toDeleteDocs.length > 0) {
+        const BATCH_SIZE = 450;
+        for (let i = 0; i < toDeleteDocs.length; i += BATCH_SIZE) {
+          const chunk = toDeleteDocs.slice(i, i + BATCH_SIZE);
+          const batch = writeBatch(db);
+          chunk.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
       }
-
-      await batch.commit();
     }
+
+    // 2. Upsert the active students
+    if (studentsList && studentsList.length > 0) {
+      const BATCH_SIZE = 450;
+      for (let i = 0; i < studentsList.length; i += BATCH_SIZE) {
+        const chunk = studentsList.slice(i, i + BATCH_SIZE);
+        const batch = writeBatch(db);
+
+        for (const s of chunk) {
+          const studentId = s.id || `std_${s.nis.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const docRef = doc(db, STUDENTS_COLLECTION, studentId);
+          const payload: Record<string, any> = {
+            id: studentId,
+            nis: String(s.nis || '').trim(),
+            nama: String(s.nama || '').trim(),
+            kelas: String(s.kelas || '').trim(),
+            no_wa_ortu: String(s.no_wa_ortu || '').trim(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          if (s.jenis_kelamin) payload.jenis_kelamin = s.jenis_kelamin;
+          if (s.jurusan) payload.jurusan = s.jurusan;
+          if (s.jam_pulang) payload.jam_pulang = s.jam_pulang;
+          if (s.nisn) payload.nisn = s.nisn;
+          if (s.nama_ortu) payload.nama_ortu = s.nama_ortu;
+          if (s.foto_url) payload.foto_url = s.foto_url;
+          if (s.alamat) payload.alamat = s.alamat;
+
+          batch.set(docRef, payload, { merge: true });
+        }
+
+        await batch.commit();
+      }
+    }
+
     return true;
   } catch (error) {
     console.warn('Firestore syncStudents warning:', error);
@@ -124,15 +165,68 @@ export async function saveStudentToFirestore(s: Siswa): Promise<boolean> {
 }
 
 /**
- * Delete student from Firestore
+ * Delete student from Firestore by ID, doc ID, or NIS
  */
-export async function deleteStudentFromFirestore(studentId: string): Promise<boolean> {
-  const docRef = doc(db, STUDENTS_COLLECTION, studentId);
+export async function deleteStudentFromFirestore(studentIdOrNis: string): Promise<boolean> {
   try {
-    await deleteDoc(docRef);
+    const colRef = collection(db, STUDENTS_COLLECTION);
+    const snap = await getDocs(colRef);
+    const batch = writeBatch(db);
+    let count = 0;
+
+    snap.docs.forEach(d => {
+      const data = d.data();
+      if (
+        d.id === studentIdOrNis ||
+        data.id === studentIdOrNis ||
+        data.nis === studentIdOrNis ||
+        d.id === `std_${studentIdOrNis.replace(/[^a-zA-Z0-9_-]/g, '_')}`
+      ) {
+        batch.delete(d.ref);
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+    }
     return true;
   } catch (error) {
     console.warn('Firestore deleteStudent warning:', error);
+    return false;
+  }
+}
+
+/**
+ * Bulk delete students from Firestore by IDs or NIS
+ */
+export async function bulkDeleteStudentsFromFirestore(idsOrNis: string[]): Promise<boolean> {
+  if (!idsOrNis || idsOrNis.length === 0) return true;
+  try {
+    const colRef = collection(db, STUDENTS_COLLECTION);
+    const snap = await getDocs(colRef);
+    const targetSet = new Set(idsOrNis);
+    const toDelete = snap.docs.filter(d => {
+      const data = d.data();
+      return (
+        targetSet.has(d.id) ||
+        (data.id && targetSet.has(data.id)) ||
+        (data.nis && targetSet.has(data.nis))
+      );
+    });
+
+    if (toDelete.length > 0) {
+      const BATCH_SIZE = 450;
+      for (let i = 0; i < toDelete.length; i += BATCH_SIZE) {
+        const chunk = toDelete.slice(i, i + BATCH_SIZE);
+        const batch = writeBatch(db);
+        chunk.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+    return true;
+  } catch (error) {
+    console.warn('Firestore bulkDeleteStudents warning:', error);
     return false;
   }
 }

@@ -45,6 +45,10 @@ import {
   ImportParseResult,
 } from '../utils/studentExcel';
 import { deleteStudentApi, bulkDeleteStudentsApi } from '../services/api';
+import {
+  deleteStudentFromFirestore,
+  bulkDeleteStudentsFromFirestore,
+} from '../services/firestoreService';
 import { compressAndFormatStudentPhoto } from '../utils/imageUtils';
 
 interface StudentManagerProps {
@@ -187,11 +191,16 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
     setIsBulkDeleting(true);
     try {
       const idsToDelete = Array.from(selectedStudentIds);
+      const studentsToDelete = students.filter(s => selectedStudentIds.has(s.id));
+      const nisToDelete = studentsToDelete.map(s => s.nis);
       const updated = students.filter(s => !selectedStudentIds.has(s.id));
+
       onUpdateStudents(updated);
-      await bulkDeleteStudentsApi(idsToDelete);
+      bulkDeleteStudentsApi(idsToDelete).catch(() => {});
+      await bulkDeleteStudentsFromFirestore([...idsToDelete, ...nisToDelete]);
+
       setSelectedStudentIds(new Set());
-      setImportNotification(`Berhasil menghapus ${count} data siswa secara massal dari database.`);
+      setImportNotification(`Berhasil menghapus ${count} data siswa secara permanen dari database.`);
       setTimeout(() => setImportNotification(null), 5000);
     } catch (err) {
       console.error('Failed to bulk delete students:', err);
@@ -310,9 +319,16 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
 
   const handleDeleteStudent = (id: string) => {
     if (confirm('Yakin ingin menghapus data siswa ini?')) {
+      const target = students.find(s => s.id === id);
       const updated = students.filter(s => s.id !== id);
       onUpdateStudents(updated);
-      deleteStudentApi(id);
+      deleteStudentApi(id).catch(() => {});
+      if (target) {
+        deleteStudentFromFirestore(target.id);
+        deleteStudentFromFirestore(target.nis);
+      } else {
+        deleteStudentFromFirestore(id);
+      }
     }
   };
 
