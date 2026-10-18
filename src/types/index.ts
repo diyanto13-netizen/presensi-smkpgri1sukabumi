@@ -57,7 +57,15 @@ export interface ScanResult {
   waNotificationStatus?: 'SENT' | 'FAILED' | 'SIMULATED';
 }
 
-export type HariSekolah = 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat' | 'sabtu';
+export type HariSekolah = 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat' | 'sabtu' | 'minggu';
+
+export type JamMasukHarian = {
+  senin?: string;
+  selasa?: string;
+  rabu?: string;
+  kamis?: string;
+  jumat?: string;
+};
 
 export type JamPulangHarian = {
   senin?: string;
@@ -66,6 +74,7 @@ export type JamPulangHarian = {
   kamis?: string;
   jumat?: string;
   sabtu?: string;
+  minggu?: string;
 };
 
 export interface SchoolConfig {
@@ -80,8 +89,10 @@ export interface SchoolConfig {
   nip_kepsek: string;
   logo_url?: string; // Optional custom logo image URL / base64
   jam_masuk_batas: string; // "07:00"
+  jam_masuk_harian?: JamMasukHarian; // Jam masuk per hari (Senin - Jum'at)
+  sabtu_minggu_libur?: boolean; // true = Sabtu & Minggu libur (5 hari sekolah)
   jam_pulang_per_kelas?: Record<string, string>; // Jadwal jam pulang default per kelas
-  jam_pulang_harian_per_kelas?: Record<string, JamPulangHarian>; // Jadwal pulang per kelas per hari (Senin-Jum'at/Sabtu)
+  jam_pulang_harian_per_kelas?: Record<string, JamPulangHarian>; // Jadwal pulang per kelas per hari (Senin-Jum'at)
   fonnte_token: string;
   fonnte_test_mode: boolean;
   sound_enabled: boolean;

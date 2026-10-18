@@ -18,6 +18,14 @@ export const INITIAL_SCHOOL_CONFIG: SchoolConfig = {
   kepala_sekolah: 'Drs. H. Mulyadi, M.M.Pd.',
   nip_kepsek: '19680512 199303 1 004',
   jam_masuk_batas: '07:00',
+  sabtu_minggu_libur: true,
+  jam_masuk_harian: {
+    senin: '07:00',
+    selasa: '07:00',
+    rabu: '07:00',
+    kamis: '07:00',
+    jumat: '07:00',
+  },
   jam_pulang_per_kelas: { ...DEFAULT_JAM_PULANG_PER_KELAS },
   jam_pulang_harian_per_kelas: { ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS },
   fonnte_token: '',
@@ -455,9 +463,18 @@ export function getSchoolConfig(): SchoolConfig {
         ...parsed,
         npsn: '20221574',
         alamat: 'Jl. Pelabuhan II Perum Cipoho Indah, Cikondang-Citamiang Kota Sukabumi',
+        sabtu_minggu_libur: parsed.sabtu_minggu_libur !== false,
+        jam_masuk_harian: {
+          ...INITIAL_SCHOOL_CONFIG.jam_masuk_harian,
+          ...(parsed.jam_masuk_harian || {}),
+        },
         jam_pulang_per_kelas: {
           ...DEFAULT_JAM_PULANG_PER_KELAS,
           ...(parsed.jam_pulang_per_kelas || {}),
+        },
+        jam_pulang_harian_per_kelas: {
+          ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
+          ...(parsed.jam_pulang_harian_per_kelas || {}),
         },
       };
       saveSchoolConfig(updated);
@@ -467,6 +484,11 @@ export function getSchoolConfig(): SchoolConfig {
     const configWithSchedule: SchoolConfig = {
       ...INITIAL_SCHOOL_CONFIG,
       ...parsed,
+      sabtu_minggu_libur: parsed.sabtu_minggu_libur !== false,
+      jam_masuk_harian: {
+        ...INITIAL_SCHOOL_CONFIG.jam_masuk_harian,
+        ...(parsed.jam_masuk_harian || {}),
+      },
       jam_pulang_per_kelas: {
         ...DEFAULT_JAM_PULANG_PER_KELAS,
         ...(parsed.jam_pulang_per_kelas || {}),

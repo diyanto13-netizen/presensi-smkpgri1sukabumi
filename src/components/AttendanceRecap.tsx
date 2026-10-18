@@ -13,11 +13,17 @@ import {
   Sparkles,
   FileText,
   ChevronDown,
+  Coffee,
 } from 'lucide-react';
 import { Siswa, Absensi, StatusAbsensi, SchoolConfig } from '../types';
 import { getTodayDateString, formatIndonesianDate } from '../utils/storage';
 import { exportAttendanceToExcel } from '../utils/excelExport';
-import { MASTER_KELAS_LIST } from '../utils/classConfig';
+import {
+  MASTER_KELAS_LIST,
+  isWeekendHoliday,
+  getEffectiveJamMasuk,
+  getHariDisplayName,
+} from '../utils/classConfig';
 import { SchoolLogo } from './SchoolLogo';
 import { AttendanceTrendChart } from './AttendanceTrendChart';
 
@@ -277,6 +283,31 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
         </div>
       )}
 
+      {/* Weekend Holiday Banner */}
+      {isWeekendHoliday(selectedDate, config) && (
+        <div className="no-print p-4 bg-gradient-to-r from-rose-50 via-amber-50/50 to-orange-50/70 border border-rose-200 text-rose-950 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-rose-100 text-rose-700 rounded-xl">
+              <Coffee className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-heading font-black text-sm text-rose-950 flex items-center gap-2">
+                <span>Hari {getHariDisplayName(selectedDate)}: Libur Akhir Pekan (5 Hari Sekolah)</span>
+                <span className="text-[10px] bg-rose-200 text-rose-900 px-2 py-0.5 rounded-full font-bold">
+                  LIBUR
+                </span>
+              </div>
+              <p className="text-xs text-rose-800 mt-0.5 font-medium">
+                Kegiatan KBM dan presensi libur pada hari Sabtu &amp; Minggu. Siswa tidak dikenakan sanksi keterlambatan atau alpa.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-slate-500 hidden sm:inline">
+            KBM Aktif: Senin–Jum'at
+          </span>
+        </div>
+      )}
+
       {/* Metric Cards Summary */}
       <div className="no-print grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
@@ -293,7 +324,9 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
           <div className="text-3xl sm:text-4xl font-heading font-black text-emerald-800 mt-1.5">
             {stats.tepatWaktu}
           </div>
-          <span className="text-xs text-emerald-700 font-bold mt-1">&le; {config.jam_masuk_batas} WIB</span>
+          <span className="text-xs text-emerald-700 font-bold mt-1">
+            {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `≤ ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur Akhir Pekan'}
+          </span>
         </div>
 
         <div className="bg-amber-50/80 p-5 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between">
@@ -304,7 +337,9 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
           <div className="text-3xl sm:text-4xl font-heading font-black text-amber-900 mt-1.5">
             {stats.terlambat}
           </div>
-          <span className="text-xs text-amber-800 font-bold mt-1">&gt; {config.jam_masuk_batas} WIB</span>
+          <span className="text-xs text-amber-800 font-bold mt-1">
+            {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `> ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur Akhir Pekan'}
+          </span>
         </div>
 
         <div className="bg-blue-50/80 p-5 rounded-2xl border border-blue-200 shadow-sm flex flex-col justify-between">

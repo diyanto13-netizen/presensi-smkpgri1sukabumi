@@ -78,11 +78,13 @@ export function evaluateCheckOutTime(
  */
 export function processAttendanceRules(params: {
   currentTime: string; // "HH:mm" or "HH:mm:ss"
-  studentJamPulang: string; // "15:00"
+  studentJamPulang: string; // "15:00" or "LIBUR"
   jamMasukBatas?: string; // "07:00"
   hasCheckedIn: boolean;
   hasCheckedOut: boolean;
   forcedMode?: 'AUTO' | 'MASUK' | 'PULANG';
+  isWeekendHoliday?: boolean;
+  dayName?: string;
 }): AttendanceRuleResult {
   const {
     currentTime,
@@ -91,7 +93,21 @@ export function processAttendanceRules(params: {
     hasCheckedIn,
     hasCheckedOut,
     forcedMode = 'AUTO',
+    isWeekendHoliday = false,
+    dayName = '',
   } = params;
+
+  // Weekend / Holiday Check in AUTO mode
+  if ((isWeekendHoliday || studentJamPulang === 'LIBUR') && forcedMode === 'AUTO') {
+    return {
+      allowed: false,
+      type: 'REJECTED',
+      status: 'REJECTED',
+      message: `Hari ini (${dayName || 'Sabtu / Minggu'}) adalah HARI LIBUR SEKOLAH. Sistem presensi aktif kembali pada hari Senin.`,
+      minutesLate: 0,
+      minutesEarly: 0,
+    };
+  }
 
   // If already checked out for today
   if (hasCheckedOut && forcedMode === 'AUTO') {

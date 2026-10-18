@@ -385,6 +385,8 @@ export async function saveSchoolConfigToFirestore(cfg: SchoolConfig): Promise<bo
     if (cfg.logo_url) payload.logo_url = cfg.logo_url;
     if (cfg.jam_pulang_per_kelas) payload.jam_pulang_per_kelas = cfg.jam_pulang_per_kelas;
     if (cfg.jam_pulang_harian_per_kelas) payload.jam_pulang_harian_per_kelas = cfg.jam_pulang_harian_per_kelas;
+    if (cfg.jam_masuk_harian) payload.jam_masuk_harian = cfg.jam_masuk_harian;
+    if (typeof cfg.sabtu_minggu_libur === 'boolean') payload.sabtu_minggu_libur = cfg.sabtu_minggu_libur;
     if (cfg.fonnte_token) payload.fonnte_token = cfg.fonnte_token;
     if (typeof cfg.fonnte_test_mode === 'boolean') payload.fonnte_test_mode = cfg.fonnte_test_mode;
     if (typeof cfg.sound_enabled === 'boolean') payload.sound_enabled = cfg.sound_enabled;

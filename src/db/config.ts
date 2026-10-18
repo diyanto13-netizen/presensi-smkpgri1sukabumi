@@ -17,6 +17,8 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
 
     let jamPulangMap: Record<string, string> = { ...DEFAULT_JAM_PULANG_PER_KELAS };
     let jamPulangHarianMap: Record<string, JamPulangHarian> = { ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS };
+    let jamMasukHarian: any = undefined;
+    let sabtuMingguLibur = true;
 
     if (r.jamPulangPerKelas) {
       try {
@@ -24,6 +26,8 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
         if (parsed.flat || parsed.daily) {
           jamPulangMap = parsed.flat || jamPulangMap;
           jamPulangHarianMap = parsed.daily || jamPulangHarianMap;
+          if (parsed.jamMasukHarian) jamMasukHarian = parsed.jamMasukHarian;
+          if (parsed.sabtuMingguLibur !== undefined) sabtuMingguLibur = parsed.sabtuMingguLibur;
         } else {
           jamPulangMap = parsed;
         }
@@ -44,6 +48,8 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
       nip_kepsek: r.nipKepsek,
       logo_url: r.logoUrl || undefined,
       jam_masuk_batas: r.jamMasukBatas || '07:00',
+      jam_masuk_harian: jamMasukHarian,
+      sabtu_minggu_libur: sabtuMingguLibur,
       jam_pulang_per_kelas: jamPulangMap,
       jam_pulang_harian_per_kelas: jamPulangHarianMap,
       fonnte_token: r.fonnteToken || '',
@@ -62,6 +68,8 @@ export async function saveDbSchoolConfig(cfg: SchoolConfig): Promise<SchoolConfi
     const jamPulangJson = JSON.stringify({
       flat: cfg.jam_pulang_per_kelas || DEFAULT_JAM_PULANG_PER_KELAS,
       daily: cfg.jam_pulang_harian_per_kelas || DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
+      jamMasukHarian: cfg.jam_masuk_harian,
+      sabtuMingguLibur: cfg.sabtu_minggu_libur !== false,
     });
     
     // Check if row exists

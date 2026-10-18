@@ -17,13 +17,19 @@ import {
   RotateCcw,
   Database,
   CloudCheck,
+  Calendar,
+  Sun,
+  Coffee,
 } from 'lucide-react';
-import { SchoolConfig } from '../types';
+import { SchoolConfig, HariSekolah, JamMasukHarian, JamPulangHarian } from '../types/index.ts';
 import { SchoolLogo } from './SchoolLogo';
 import {
   MASTER_KELAS_LIST,
   DAFTAR_JURUSAN,
+  DAFTAR_HARI,
+  DEFAULT_JAM_MASUK_HARIAN,
   DEFAULT_JAM_PULANG_PER_KELAS,
+  DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
 } from '../utils/classConfig';
 
 interface SettingsModalProps {
@@ -52,13 +58,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isSyncing = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'umum' | 'fonnte' | 'database'>('jadwal_pulang');
+  const [selectedDayTab, setSelectedDayTab] = useState<HariSekolah>('senin');
   
-  // Ensure jam_pulang_per_kelas exists
+  // Ensure jam_pulang_per_kelas, jam_masuk_harian, and jam_pulang_harian_per_kelas exist
   const [formData, setFormData] = useState<SchoolConfig>(() => ({
     ...config,
+    sabtu_minggu_libur: config.sabtu_minggu_libur !== false,
+    jam_masuk_batas: config.jam_masuk_batas || '07:00',
+    jam_masuk_harian: {
+      ...DEFAULT_JAM_MASUK_HARIAN,
+      ...(config.jam_masuk_harian || {}),
+    },
     jam_pulang_per_kelas: {
       ...DEFAULT_JAM_PULANG_PER_KELAS,
       ...(config.jam_pulang_per_kelas || {}),
+    },
+    jam_pulang_harian_per_kelas: {
+      ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
+      ...(config.jam_pulang_harian_per_kelas || {}),
     },
   }));
 
@@ -97,40 +114,148 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentSchedule = formData.jam_pulang_per_kelas || DEFAULT_JAM_PULANG_PER_KELAS;
-
+  // Handler for class dismissal time change for the currently selected day
   const handleClassTimeChange = (kelasName: string, newTime: string) => {
+    setFormData(prev => {
+      const updatedHarian = { ...(prev.jam_pulang_harian_per_kelas || {}) };
+      const currentClassDaily = { ...(updatedHarian[kelasName] || {}) };
+      currentClassDaily[selectedDayTab] = newTime;
+      updatedHarian[kelasName] = currentClassDaily;
+
+      const updatedSimple = { ...(prev.jam_pulang_per_kelas || {}) };
+      if (selectedDayTab === 'senin' || !updatedSimple[kelasName]) {
+        updatedSimple[kelasName] = newTime;
+      }
+
+      return {
+        ...prev,
+        jam_pulang_per_kelas: updatedSimple,
+        jam_pulang_harian_per_kelas: updatedHarian,
+      };
+    });
+  };
+
+  // Bulk apply to grade for currently selected day
+  const handleApplyBulkGrade = (grade: 'XII' | 'XI' | 'X', timeToSet: string) => {
+    setFormData(prev => {
+      const updatedHarian = { ...(prev.jam_pulang_harian_per_kelas || {}) };
+      const updatedSimple = { ...(prev.jam_pulang_per_kelas || {}) };
+
+      MASTER_KELAS_LIST.filter(k => k.tingkat === grade).forEach(k => {
+        const currentClassDaily = { ...(updatedHarian[k.kelas] || {}) };
+        currentClassDaily[selectedDayTab] = timeToSet;
+        updatedHarian[k.kelas] = currentClassDaily;
+        if (selectedDayTab === 'senin') {
+          updatedSimple[k.kelas] = timeToSet;
+        }
+      });
+
+      return {
+        ...prev,
+        jam_pulang_per_kelas: updatedSimple,
+        jam_pulang_harian_per_kelas: updatedHarian,
+      };
+    });
+    const dayName = DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label || 'Senin';
+    setActionNotice(`Jam pulang hari ${dayName} untuk semua kelas ${grade} berhasil diubah ke ${timeToSet} WIB.`);
+    setTimeout(() => setActionNotice(null), 3000);
+  };
+
+  // Handle daily morning check-in cutoff change for Monday - Friday
+  const handleDailyCheckInChange = (dayKey: 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat', newTime: string) => {
     setFormData(prev => ({
       ...prev,
-      jam_pulang_per_kelas: {
-        ...(prev.jam_pulang_per_kelas || {}),
-        [kelasName]: newTime,
+      jam_masuk_batas: dayKey === 'senin' ? newTime : prev.jam_masuk_batas,
+      jam_masuk_harian: {
+        ...(prev.jam_masuk_harian || DEFAULT_JAM_MASUK_HARIAN),
+        [dayKey]: newTime,
       },
     }));
   };
 
-  const handleApplyBulkGrade = (grade: 'XII' | 'XI' | 'X', timeToSet: string) => {
-    setFormData(prev => {
-      const updatedSchedule = { ...(prev.jam_pulang_per_kelas || {}) };
-      MASTER_KELAS_LIST.filter(k => k.tingkat === grade).forEach(k => {
-        updatedSchedule[k.kelas] = timeToSet;
-      });
-      return {
-        ...prev,
-        jam_pulang_per_kelas: updatedSchedule,
-      };
-    });
-    setActionNotice(`Jam pulang semua kelas ${grade} berhasil diubah ke ${timeToSet} WIB.`);
+  // Quick apply same check-in time across all 5 school days
+  const handleApplySameCheckInAllDays = (time: string) => {
+    setFormData(prev => ({
+      ...prev,
+      jam_masuk_batas: time,
+      jam_masuk_harian: {
+        senin: time,
+        selasa: time,
+        rabu: time,
+        kamis: time,
+        jumat: time,
+      },
+    }));
+    setActionNotice(`Batas jam masuk seluruh hari (Senin s.d. Jum'at) disetel ke ${time} WIB.`);
     setTimeout(() => setActionNotice(null), 3000);
   };
 
+  // Copy schedule from one day to multiple target days
+  const handleCopyScheduleToDays = (fromDay: HariSekolah, targetDays: HariSekolah[]) => {
+    setFormData(prev => {
+      const updatedHarian = { ...(prev.jam_pulang_harian_per_kelas || {}) };
+      MASTER_KELAS_LIST.forEach(k => {
+        const classDaily = { ...(updatedHarian[k.kelas] || {}) };
+        const sourceTime = classDaily[fromDay] || k.defaultJamPulang;
+        targetDays.forEach(tgt => {
+          classDaily[tgt] = sourceTime;
+        });
+        updatedHarian[k.kelas] = classDaily;
+      });
+      return {
+        ...prev,
+        jam_pulang_harian_per_kelas: updatedHarian,
+      };
+    });
+    const fromLabel = DAFTAR_HARI.find(d => d.key === fromDay)?.label || fromDay;
+    const targetLabels = targetDays.map(t => DAFTAR_HARI.find(d => d.key === t)?.label || t).join(', ');
+    setActionNotice(`Jadwal kepulangan hari ${fromLabel} berhasil disalin ke hari: ${targetLabels}.`);
+    setTimeout(() => setActionNotice(null), 3500);
+  };
+
+  // Quick set Friday schedule (pulang lebih awal untuk sholat Jum'at)
+  const handleApplyJumatSpecialSchedule = () => {
+    setFormData(prev => {
+      const updatedHarian = { ...(prev.jam_pulang_harian_per_kelas || {}) };
+      MASTER_KELAS_LIST.forEach(k => {
+        const classDaily = { ...(updatedHarian[k.kelas] || {}) };
+        classDaily.jumat = k.tingkat === 'X' ? '11:30' : '11:45';
+        updatedHarian[k.kelas] = classDaily;
+      });
+      return {
+        ...prev,
+        jam_pulang_harian_per_kelas: updatedHarian,
+      };
+    });
+    setActionNotice("Jadwal khusus Jum'at (Sholat Jum'at) diterapkan: Kelas X pukul 11:30 WIB, Kelas XI & XII pukul 11:45 WIB.");
+    setTimeout(() => setActionNotice(null), 3500);
+  };
+
+  // Toggle weekend holiday (Sabtu & Minggu libur)
+  const handleToggleSabtuMingguLibur = (enabled: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      sabtu_minggu_libur: enabled,
+    }));
+    setActionNotice(
+      enabled
+        ? 'Aturan 5 Hari Sekolah diaktifkan: Sabtu & Minggu ditetapkan sebagai HARI LIBUR AKHIR PEKAN.'
+        : 'Aturan 6 Hari Sekolah diaktifkan (Sabtu aktif).'
+    );
+    setTimeout(() => setActionNotice(null), 3500);
+  };
+
   const handleResetToDefault = () => {
-    if (window.confirm('Kembalikan semua jam pulang per kelas ke pengaturan default sekolah?')) {
+    if (window.confirm('Kembalikan semua jadwal jam masuk, jam pulang harian (Senin–Jum\'at), dan libur Sabtu–Minggu ke default sekolah?')) {
       setFormData(prev => ({
         ...prev,
+        jam_masuk_batas: '07:00',
+        sabtu_minggu_libur: true,
+        jam_masuk_harian: { ...DEFAULT_JAM_MASUK_HARIAN },
         jam_pulang_per_kelas: { ...DEFAULT_JAM_PULANG_PER_KELAS },
+        jam_pulang_harian_per_kelas: { ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS },
       }));
-      setActionNotice('Jadwal jam pulang per kelas dikembalikan ke default awal.');
+      setActionNotice('Jadwal jam masuk & pulang harian dikembalikan ke default resmi.');
       setTimeout(() => setActionNotice(null), 3000);
     }
   };
@@ -195,7 +320,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             <Clock className="w-4 h-4 text-amber-400" />
-            <span>Jam Pulang Per Kelas (21 Rombel)</span>
+            <span>Jadwal Jam Masuk &amp; Pulang (Senin–Jum'at)</span>
           </button>
 
           <button
@@ -208,7 +333,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             <School className="w-4 h-4 text-amber-400" />
-            <span>Jam Masuk &amp; Identitas Sekolah</span>
+            <span>Identitas &amp; Logo Sekolah</span>
           </button>
 
           <button
@@ -256,227 +381,464 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Modal Scrollable Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-1 py-3 text-sm flex flex-col justify-between">
           <div>
-            {/* ================= TAB 1: JADWAL PULANG PER KELAS ================= */}
+            {/* ================= TAB 1: JADWAL JAM MASUK & PULANG HARIAN ================= */}
             {activeTab === 'jadwal_pulang' && (
-              <div className="space-y-4">
-                {/* Intro banner */}
-                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50/70 border border-amber-200 rounded-2xl flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-                  <div className="text-xs sm:text-sm text-slate-800 space-y-1">
-                    <p className="font-bold text-amber-950">
-                      Pengaturan Waktu Pulang Khusus Per Kelas (Jadwal Berbeda)
-                    </p>
-                    <p className="text-slate-600 leading-relaxed font-medium">
-                      Karena setiap kelas memiliki waktu kepulangan yang berbeda (misalnya Kelas XII pulang pukul 15:30, Kelas XI pukul 15:00, Kelas X pukul 14:30), siswa hanya diizinkan scan pulang ketika jam pulang kelasnya telah tercapai.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Batch Set Shortcuts */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <Sliders className="w-3.5 h-3.5 text-blue-900" />
-                      Setel Massal Cepat Per Tingkat
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleResetToDefault}
-                      className="text-xs text-slate-500 hover:text-rose-700 flex items-center gap-1 font-semibold cursor-pointer"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      Reset ke Default
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Bulk XII */}
-                    <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
-                      <div>
-                        <span className="text-xs font-bold text-blue-950 block">Kelas XII (7 Kelas)</span>
-                        <span className="text-[11px] text-slate-500">TKJ, AKL, MP, BR</span>
+              <div className="space-y-5">
+                {/* 1. Aturan 5 Hari Sekolah & Libur Akhir Pekan */}
+                <div className="p-4 sm:p-5 bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-slate-50 border border-blue-200 rounded-2xl space-y-3.5 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-blue-950 text-amber-300 rounded-xl shadow-xs">
+                        <Calendar className="w-5 h-5" />
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="time"
-                          value={bulkTimeXII}
-                          onChange={e => setBulkTimeXII(e.target.value)}
-                          className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-slate-50 w-20"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleApplyBulkGrade('XII', bulkTimeXII)}
-                          className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
-                          title="Terapkan ke semua kelas XII"
-                        >
-                          Terapkan
-                        </button>
+                      <div>
+                        <h4 className="font-heading font-black text-sm sm:text-base text-blue-950">
+                          Aturan Hari Sekolah: 5 Hari Kerja (Senin–Jum'at Aktif, Sabtu &amp; Minggu Libur)
+                        </h4>
+                        <p className="text-xs text-slate-600 font-medium mt-0.5">
+                          Sesuai kalender akademik SMKS PGRI 1 Sukabumi, kegiatan belajar mengajar aktif pada hari Senin s.d. Jum'at.
+                        </p>
                       </div>
                     </div>
 
-                    {/* Bulk XI */}
-                    <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
-                      <div>
-                        <span className="text-xs font-bold text-blue-950 block">Kelas XI (7 Kelas)</span>
-                        <span className="text-[11px] text-slate-500">TKJ, AKL, MP, BR</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="time"
-                          value={bulkTimeXI}
-                          onChange={e => setBulkTimeXI(e.target.value)}
-                          className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-slate-50 w-20"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleApplyBulkGrade('XI', bulkTimeXI)}
-                          className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
-                          title="Terapkan ke semua kelas XI"
-                        >
-                          Terapkan
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Bulk X */}
-                    <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
-                      <div>
-                        <span className="text-xs font-bold text-blue-950 block">Kelas X (7 Kelas)</span>
-                        <span className="text-[11px] text-slate-500">TKJT, AKL, MPLB, PM</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="time"
-                          value={bulkTimeX}
-                          onChange={e => setBulkTimeX(e.target.value)}
-                          className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-slate-50 w-20"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleApplyBulkGrade('X', bulkTimeX)}
-                          className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
-                          title="Terapkan ke semua kelas X"
-                        >
-                          Terapkan
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Filters */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-bold text-slate-600 mr-1">Tingkat:</span>
-                    {(['ALL', 'XII', 'XI', 'X'] as const).map(tingkat => (
-                      <button
-                        key={tingkat}
-                        type="button"
-                        onClick={() => setFilterTingkat(tingkat)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                          filterTingkat === tingkat
-                            ? 'bg-blue-950 text-amber-300 shadow-2xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {tingkat === 'ALL' ? 'Semua (21)' : `Kelas ${tingkat} (7)`}
-                      </button>
-                    ))}
+                    <label className="inline-flex items-center gap-2.5 cursor-pointer bg-white px-3.5 py-2 rounded-xl border border-slate-300 shadow-2xs shrink-0 self-start sm:self-auto">
+                      <input
+                        type="checkbox"
+                        checked={formData.sabtu_minggu_libur !== false}
+                        onChange={e => handleToggleSabtuMingguLibur(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500 w-4.5 h-4.5 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-800">
+                        {formData.sabtu_minggu_libur !== false ? 'Sabtu & Minggu LIBUR ✅' : 'Sabtu Masuk Sekolah'}
+                      </span>
+                    </label>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-bold text-slate-600">Jurusan:</label>
-                    <select
-                      value={filterJurusan}
-                      onChange={e => setFilterJurusan(e.target.value)}
-                      className="py-1 px-2.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                    >
-                      <option value="ALL">Semua Jurusan (4)</option>
-                      {DAFTAR_JURUSAN.map(j => (
-                        <option key={j.key} value={j.nama}>
-                          {j.nama}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Class List Table */}
-                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-                  <div className="bg-slate-100/90 px-4 py-2.5 border-b border-slate-200 grid grid-cols-12 gap-2 text-xs font-bold text-slate-700">
-                    <span className="col-span-3 sm:col-span-2">Rombel</span>
-                    <span className="col-span-4 sm:col-span-5">Jurusan / Kompetensi</span>
-                    <span className="col-span-5 sm:col-span-5 text-right sm:text-center">Jam Pulang Resmi</span>
-                  </div>
-
-                  <div className="divide-y divide-slate-100 max-h-[320px] overflow-y-auto">
-                    {displayedClasses.map(item => {
-                      const timeValue = currentSchedule[item.kelas] || item.defaultJamPulang;
-                      
-                      // Find badge colors
-                      const jur = DAFTAR_JURUSAN.find(j => j.key === item.jurusanKey);
-                      const badgeBg = jur?.badgeBg || 'bg-slate-100';
-                      const badgeText = jur?.badgeText || 'text-slate-800';
-                      const badgeBorder = jur?.badgeBorder || 'border-slate-200';
+                  {/* 7-Days Strip Indicator */}
+                  <div className="grid grid-cols-7 gap-1.5 pt-1">
+                    {DAFTAR_HARI.map(h => {
+                      const isWeekend = h.key === 'sabtu' || h.key === 'minggu';
+                      const isHoliday = isWeekend && formData.sabtu_minggu_libur !== false;
+                      const checkInTime = formData.jam_masuk_harian?.[h.key as keyof JamMasukHarian] || formData.jam_masuk_batas || '07:00';
 
                       return (
                         <div
-                          key={item.kelas}
-                          className="px-4 py-2.5 grid grid-cols-12 gap-2 items-center hover:bg-blue-50/40 transition"
+                          key={h.key}
+                          className={`p-2 rounded-xl border text-center transition ${
+                            isHoliday
+                              ? 'bg-rose-50/80 border-rose-200 text-rose-950'
+                              : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                          }`}
                         >
-                          {/* Nama Rombel */}
-                          <div className="col-span-3 sm:col-span-2">
-                            <span className="font-heading font-black text-sm text-blue-950">
-                              {item.kelas}
+                          <span className="text-xs font-black block">{h.short}</span>
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-1 inline-block ${
+                              isHoliday
+                                ? 'bg-rose-200/80 text-rose-900'
+                                : 'bg-emerald-200/80 text-emerald-900'
+                            }`}
+                          >
+                            {isHoliday ? 'LIBUR' : 'AKTIF'}
+                          </span>
+                          {!isHoliday && (
+                            <span className="block text-[10px] font-mono font-bold text-slate-600 mt-0.5">
+                              {checkInTime}
                             </span>
-                          </div>
-
-                          {/* Jurusan Badge */}
-                          <div className="col-span-4 sm:col-span-5">
-                            <span
-                              className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${badgeBg} ${badgeText} ${badgeBorder}`}
-                            >
-                              {item.namaJurusan}
-                            </span>
-                          </div>
-
-                          {/* Jam Pulang Input */}
-                          <div className="col-span-5 sm:col-span-5 flex items-center justify-end sm:justify-center gap-2">
-                            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1">
-                              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                              <input
-                                type="time"
-                                required
-                                value={timeValue}
-                                onChange={e => handleClassTimeChange(item.kelas, e.target.value)}
-                                className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
-                              />
-                              <span className="text-[11px] font-bold text-slate-500">WIB</span>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Option to sync to students */}
-                <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-200 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="checkbox"
-                      id="sync-students"
-                      checked={syncToStudents}
-                      onChange={e => setSyncToStudents(e.target.checked)}
-                      className="rounded text-blue-600 focus:ring-blue-500 w-4.5 h-4.5 cursor-pointer"
-                    />
-                    <label htmlFor="sync-students" className="text-xs sm:text-sm font-bold text-blue-950 cursor-pointer">
-                      Sinkronkan jadwal jam pulang ini ke seluruh data siswa di kelas masing-masing
-                    </label>
+                {/* 2. Pengaturan Batas Jam Masuk Pagi Harian (Senin - Jum'at) */}
+                <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl space-y-3.5 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <Clock className="w-5 h-5 text-amber-600" />
+                      <div>
+                        <h4 className="font-heading font-black text-sm text-slate-900">
+                          Batas Jam Masuk Pagi Harian (Senin s.d. Jum'at)
+                        </h4>
+                        <p className="text-xs text-slate-500 font-medium">
+                          Siswa yang scan pada atau sebelum batas jam ini = Tepat Waktu. Lewat dari jam ini = Terlambat.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => handleApplySameCheckInAllDays('07:00')}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-950 hover:bg-amber-200 border border-amber-300 transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Setel Seragam Semua Hari (07:00 WIB)</span>
+                      </button>
+                    </div>
                   </div>
-                  <span className="text-[11px] text-blue-800 font-semibold hidden sm:inline">
-                    Disarankan
-                  </span>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    {(['senin', 'selasa', 'rabu', 'kamis', 'jumat'] as const).map(dayKey => {
+                      const dayLabel = DAFTAR_HARI.find(d => d.key === dayKey)?.label || dayKey;
+                      const dayNote = dayKey === 'senin' ? 'Upacara Bendera' : dayKey === 'jumat' ? 'Pembiasaan & Sholat' : 'KBM Penuh';
+                      const currentVal = formData.jam_masuk_harian?.[dayKey] || formData.jam_masuk_batas || '07:00';
+
+                      return (
+                        <div
+                          key={dayKey}
+                          className="p-3 bg-slate-50/90 rounded-xl border border-slate-200 hover:border-blue-300 transition space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-heading font-black text-xs text-blue-950">
+                              {dayLabel}
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">
+                              Aktif
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-lg px-2 py-1 shadow-2xs">
+                            <input
+                              type="time"
+                              required
+                              value={currentVal}
+                              onChange={e => handleDailyCheckInChange(dayKey, e.target.value)}
+                              className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-full"
+                            />
+                            <span className="text-[10px] font-bold text-slate-500">WIB</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-medium block truncate" title={dayNote}>
+                            {dayNote}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Pengaturan Jam Pulang Harian Per Kelas (21 Rombel) */}
+                <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div>
+                      <h4 className="font-heading font-black text-sm text-slate-900 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-blue-900" />
+                        <span>Jadwal Jam Pulang Harian Per Kelas (21 Rombel)</span>
+                      </h4>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">
+                        Pilih hari di bawah ini untuk melihat dan menyesuaikan jam pulang setiap rombel belajar.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleApplyJumatSpecialSchedule}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-100 text-blue-950 hover:bg-blue-200 border border-blue-300 transition cursor-pointer flex items-center gap-1.5"
+                        title="Terapkan jadwal kepulangan awal di hari Jum'at"
+                      >
+                        <Sun className="w-3.5 h-3.5 text-blue-700" />
+                        <span>Atur Standar Jum'at (Pulang Awal)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleResetToDefault}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 transition cursor-pointer flex items-center gap-1"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Reset Default</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Day Tabs Selector */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    {DAFTAR_HARI.map(h => {
+                      const isSelected = selectedDayTab === h.key;
+                      const isWeekend = h.key === 'sabtu' || h.key === 'minggu';
+                      const isHoliday = isWeekend && formData.sabtu_minggu_libur !== false;
+
+                      return (
+                        <button
+                          key={h.key}
+                          type="button"
+                          onClick={() => setSelectedDayTab(h.key)}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-950 text-amber-300 shadow-sm ring-1 ring-amber-400/40'
+                              : isHoliday
+                              ? 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                          }`}
+                        >
+                          <span>{h.label}</span>
+                          {isHoliday ? (
+                            <span className="text-[10px] bg-rose-200 text-rose-900 px-1 rounded font-bold">
+                              Libur
+                            </span>
+                          ) : (
+                            <span className="text-[10px] opacity-75 font-mono">
+                              ({formData.jam_masuk_harian?.[h.key as keyof JamMasukHarian] || formData.jam_masuk_batas || '07:00'})
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Content for the Selected Day */}
+                  {selectedDayTab === 'sabtu' || selectedDayTab === 'minggu' ? (
+                    <div className="p-6 bg-rose-50/70 border border-rose-200 rounded-2xl text-center space-y-2">
+                      <div className="inline-flex p-3 bg-rose-100 text-rose-700 rounded-2xl mb-1">
+                        <Coffee className="w-7 h-7" />
+                      </div>
+                      <h4 className="font-heading font-black text-base text-rose-950">
+                        Hari {DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label} adalah Hari Libur Akhir Pekan
+                      </h4>
+                      <p className="text-xs sm:text-sm text-rose-800 max-w-lg mx-auto font-medium leading-relaxed">
+                        Tidak ada aktivitas pembelajaran dan jam pulang pada hari akhir pekan. Siswa yang melakukan scan presensi akan menerima notifikasi ramah bahwa sekolah sedang libur dan kembali aktif pada hari Senin.
+                      </p>
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDayTab('senin')}
+                          className="px-4 py-2 bg-blue-950 text-amber-300 font-bold rounded-xl text-xs hover:bg-black transition cursor-pointer"
+                        >
+                          Beralih ke Jadwal Hari Senin–Jum'at
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Active Day Banner & Fast Copy */}
+                      <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Hari Aktif Terpilih:
+                          </span>
+                          <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-blue-950 text-amber-300">
+                            {DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}
+                          </span>
+                          <span className="text-xs text-slate-500 font-medium">
+                            • Batas Masuk: {formData.jam_masuk_harian?.[selectedDayTab as keyof JamMasukHarian] || formData.jam_masuk_batas || '07:00'} WIB
+                          </span>
+                        </div>
+
+                        {/* Quick Copy to Other School Days */}
+                        {selectedDayTab !== 'jumat' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const targets: HariSekolah[] = ['senin', 'selasa', 'rabu', 'kamis'].filter(
+                                d => d !== selectedDayTab
+                              ) as HariSekolah[];
+                              handleCopyScheduleToDays(selectedDayTab, targets);
+                            }}
+                            className="px-3 py-1 rounded-lg text-xs font-bold bg-white text-blue-900 border border-slate-300 hover:bg-blue-50 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                          >
+                            <CalendarCheck className="w-3.5 h-3.5 text-blue-700" />
+                            <span>Salin Jadwal {DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label} ke Hari Senin–Kamis</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Bulk Set Per Grade for Currently Selected Day */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* Bulk XII */}
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
+                          <div>
+                            <span className="text-xs font-bold text-blue-950 block">Kelas XII (7 Kelas)</span>
+                            <span className="text-[11px] text-slate-500">TKJ, AKL, MP, BR</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="time"
+                              value={bulkTimeXII}
+                              onChange={e => setBulkTimeXII(e.target.value)}
+                              className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-white w-20"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleApplyBulkGrade('XII', bulkTimeXII)}
+                              className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
+                              title={`Terapkan ke kelas XII hari ${DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}`}
+                            >
+                              Setel
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Bulk XI */}
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
+                          <div>
+                            <span className="text-xs font-bold text-blue-950 block">Kelas XI (7 Kelas)</span>
+                            <span className="text-[11px] text-slate-500">TKJ, AKL, MP, BR</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="time"
+                              value={bulkTimeXI}
+                              onChange={e => setBulkTimeXI(e.target.value)}
+                              className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-white w-20"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleApplyBulkGrade('XI', bulkTimeXI)}
+                              className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
+                              title={`Terapkan ke kelas XI hari ${DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}`}
+                            >
+                              Setel
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Bulk X */}
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
+                          <div>
+                            <span className="text-xs font-bold text-blue-950 block">Kelas X (7 Kelas)</span>
+                            <span className="text-[11px] text-slate-500">TKJT, AKL, MPLB, PM</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="time"
+                              value={bulkTimeX}
+                              onChange={e => setBulkTimeX(e.target.value)}
+                              className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-white w-20"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleApplyBulkGrade('X', bulkTimeX)}
+                              className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
+                              title={`Terapkan ke kelas X hari ${DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}`}
+                            >
+                              Setel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Filters */}
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-slate-600 mr-1">Tingkat:</span>
+                          {(['ALL', 'XII', 'XI', 'X'] as const).map(tingkat => (
+                            <button
+                              key={tingkat}
+                              type="button"
+                              onClick={() => setFilterTingkat(tingkat)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                filterTingkat === tingkat
+                                  ? 'bg-blue-950 text-amber-300 shadow-2xs'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                              }`}
+                            >
+                              {tingkat === 'ALL' ? 'Semua (21)' : `Kelas ${tingkat} (7)`}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs font-bold text-slate-600">Jurusan:</label>
+                          <select
+                            value={filterJurusan}
+                            onChange={e => setFilterJurusan(e.target.value)}
+                            className="py-1 px-2.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
+                          >
+                            <option value="ALL">Semua Jurusan (4)</option>
+                            {DAFTAR_JURUSAN.map(j => (
+                              <option key={j.key} value={j.nama}>
+                                {j.nama}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Class List Table for Selected Day */}
+                      <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                        <div className="bg-slate-100/90 px-4 py-2.5 border-b border-slate-200 grid grid-cols-12 gap-2 text-xs font-bold text-slate-700">
+                          <span className="col-span-3 sm:col-span-2">Rombel</span>
+                          <span className="col-span-4 sm:col-span-5">Jurusan / Kompetensi</span>
+                          <span className="col-span-5 sm:col-span-5 text-right sm:text-center">
+                            Jam Pulang Hari {DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}
+                          </span>
+                        </div>
+
+                        <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
+                          {displayedClasses.map(item => {
+                            const currentClassDaily = formData.jam_pulang_harian_per_kelas?.[item.kelas] || {};
+                            const timeValue =
+                              currentClassDaily[selectedDayTab] ||
+                              formData.jam_pulang_per_kelas?.[item.kelas] ||
+                              item.defaultJamPulang;
+
+                            // Find badge colors
+                            const jur = DAFTAR_JURUSAN.find(j => j.key === item.jurusanKey);
+                            const badgeBg = jur?.badgeBg || 'bg-slate-100';
+                            const badgeText = jur?.badgeText || 'text-slate-800';
+                            const badgeBorder = jur?.badgeBorder || 'border-slate-200';
+
+                            return (
+                              <div
+                                key={item.kelas}
+                                className="px-4 py-2.5 grid grid-cols-12 gap-2 items-center hover:bg-blue-50/40 transition"
+                              >
+                                {/* Nama Rombel */}
+                                <div className="col-span-3 sm:col-span-2">
+                                  <span className="font-heading font-black text-sm text-blue-950">
+                                    {item.kelas}
+                                  </span>
+                                </div>
+
+                                {/* Jurusan Badge */}
+                                <div className="col-span-4 sm:col-span-5">
+                                  <span
+                                    className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${badgeBg} ${badgeText} ${badgeBorder}`}
+                                  >
+                                    {item.namaJurusan}
+                                  </span>
+                                </div>
+
+                                {/* Jam Pulang Input */}
+                                <div className="col-span-5 sm:col-span-5 flex items-center justify-end sm:justify-center gap-2">
+                                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1">
+                                    <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                    <input
+                                      type="time"
+                                      required
+                                      value={timeValue}
+                                      onChange={e => handleClassTimeChange(item.kelas, e.target.value)}
+                                      className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
+                                    />
+                                    <span className="text-[11px] font-bold text-slate-500">WIB</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Option to sync to students */}
+                  <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-200 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        id="sync-students"
+                        checked={syncToStudents}
+                        onChange={e => setSyncToStudents(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500 w-4.5 h-4.5 cursor-pointer"
+                      />
+                      <label htmlFor="sync-students" className="text-xs sm:text-sm font-bold text-blue-950 cursor-pointer">
+                        Sinkronkan jadwal jam pulang ini ke seluruh data siswa di kelas masing-masing
+                      </label>
+                    </div>
+                    <span className="text-[11px] text-blue-800 font-semibold hidden sm:inline">
+                      Disarankan
+                    </span>
+                  </div>
                 </div>
               </div>
             )}

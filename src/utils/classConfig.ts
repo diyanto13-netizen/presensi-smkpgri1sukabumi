@@ -8,7 +8,7 @@
  * 4. Pemasaran (XII BR 1, XII BR 2, XI BR 1, XI BR 2, X PM 1, X PM 2)
  */
 
-import { HariSekolah, JamPulangHarian, SchoolConfig } from '../types';
+import { HariSekolah, JamPulangHarian, JamMasukHarian, SchoolConfig } from '../types/index.ts';
 
 export interface ClassInfo {
   kelas: string;
@@ -224,14 +224,89 @@ export const MASTER_KELAS_LIST: ClassInfo[] = [
 
 export const ALL_CLASS_NAMES: string[] = MASTER_KELAS_LIST.map(k => k.kelas);
 
-export const DAFTAR_HARI: { key: HariSekolah; label: string; short: string; dayIndex: number }[] = [
-  { key: 'senin', label: 'Senin', short: 'Sen', dayIndex: 1 },
-  { key: 'selasa', label: 'Selasa', short: 'Sel', dayIndex: 2 },
-  { key: 'rabu', label: 'Rabu', short: 'Rab', dayIndex: 3 },
-  { key: 'kamis', label: 'Kamis', short: 'Kam', dayIndex: 4 },
-  { key: 'jumat', label: "Jum'at", short: 'Jum', dayIndex: 5 },
-  { key: 'sabtu', label: 'Sabtu', short: 'Sab', dayIndex: 6 },
+export interface HariSekolahInfo {
+  key: HariSekolah;
+  label: string;
+  short: string;
+  dayIndex: number; // 1=Senin ... 5=Jum'at, 6=Sabtu, 0=Minggu
+  isSchoolDay: boolean; // true = Senin-Jum'at (hari aktif sekolah), false = Sabtu & Minggu (libur)
+  statusLabel: 'AKTIF' | 'LIBUR';
+  catatan: string;
+}
+
+export const DAFTAR_HARI: HariSekolahInfo[] = [
+  {
+    key: 'senin',
+    label: 'Senin',
+    short: 'Sen',
+    dayIndex: 1,
+    isSchoolDay: true,
+    statusLabel: 'AKTIF',
+    catatan: 'Upacara Bendera & KBM Penuh',
+  },
+  {
+    key: 'selasa',
+    label: 'Selasa',
+    short: 'Sel',
+    dayIndex: 2,
+    isSchoolDay: true,
+    statusLabel: 'AKTIF',
+    catatan: 'KBM Normal',
+  },
+  {
+    key: 'rabu',
+    label: 'Rabu',
+    short: 'Rab',
+    dayIndex: 3,
+    isSchoolDay: true,
+    statusLabel: 'AKTIF',
+    catatan: 'KBM Normal',
+  },
+  {
+    key: 'kamis',
+    label: 'Kamis',
+    short: 'Kam',
+    dayIndex: 4,
+    isSchoolDay: true,
+    statusLabel: 'AKTIF',
+    catatan: 'KBM Normal',
+  },
+  {
+    key: 'jumat',
+    label: "Jum'at",
+    short: 'Jum',
+    dayIndex: 5,
+    isSchoolDay: true,
+    statusLabel: 'AKTIF',
+    catatan: "Pembiasaan / Sholat Jum'at (Pulang Awal)",
+  },
+  {
+    key: 'sabtu',
+    label: 'Sabtu',
+    short: 'Sab',
+    dayIndex: 6,
+    isSchoolDay: false,
+    statusLabel: 'LIBUR',
+    catatan: 'Libur Akhir Pekan (5 Hari Sekolah)',
+  },
+  {
+    key: 'minggu',
+    label: 'Minggu',
+    short: 'Min',
+    dayIndex: 0,
+    isSchoolDay: false,
+    statusLabel: 'LIBUR',
+    catatan: 'Libur Akhir Pekan (5 Hari Sekolah)',
+  },
 ];
+
+export const DEFAULT_JAM_MASUK_HARIAN: JamMasukHarian = {
+  senin: '07:00',
+  selasa: '07:00',
+  rabu: '07:00',
+  kamis: '07:00',
+  jumat: '07:00',
+};
 
 export const DEFAULT_JAM_PULANG_PER_KELAS: Record<string, string> = MASTER_KELAS_LIST.reduce(
   (acc, curr) => {
@@ -251,7 +326,8 @@ export const DEFAULT_JAM_PULANG_HARIAN_PER_KELAS: Record<string, JamPulangHarian
       rabu: curr.defaultJamPulang,
       kamis: curr.defaultJamPulang,
       jumat: jumatTime,
-      sabtu: '12:00',
+      sabtu: 'LIBUR',
+      minggu: 'LIBUR',
     };
     return acc;
   },
@@ -259,7 +335,7 @@ export const DEFAULT_JAM_PULANG_HARIAN_PER_KELAS: Record<string, JamPulangHarian
 );
 
 /**
- * Returns the day key (senin, selasa, etc.) from a date or day name
+ * Returns the day key (senin, selasa, ..., sabtu, minggu) from a date, day name, or day index
  */
 export function getHariKey(dateOrDay?: Date | string | number): HariSekolah {
   if (typeof dateOrDay === 'string') {
@@ -270,6 +346,7 @@ export function getHariKey(dateOrDay?: Date | string | number): HariSekolah {
     if (lower.startsWith('kam')) return 'kamis';
     if (lower.startsWith('jum')) return 'jumat';
     if (lower.startsWith('sab')) return 'sabtu';
+    if (lower.startsWith('min') || lower.startsWith('sun')) return 'minggu';
 
     // Check if it's YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateOrDay)) {
@@ -278,7 +355,12 @@ export function getHariKey(dateOrDay?: Date | string | number): HariSekolah {
     }
   }
 
-  const dayNum = dateOrDay instanceof Date ? dateOrDay.getDay() : typeof dateOrDay === 'number' ? dateOrDay : new Date().getDay();
+  const dayNum =
+    dateOrDay instanceof Date
+      ? dateOrDay.getDay()
+      : typeof dateOrDay === 'number'
+      ? dateOrDay
+      : new Date().getDay();
 
   switch (dayNum) {
     case 1:
@@ -293,10 +375,34 @@ export function getHariKey(dateOrDay?: Date | string | number): HariSekolah {
       return 'jumat';
     case 6:
       return 'sabtu';
-    case 0: // Sunday / Minggu -> fallback to Senin
+    case 0:
+      return 'minggu';
     default:
       return 'senin';
   }
+}
+
+/**
+ * Checks whether a given date or day is Saturday or Sunday (Weekend Holiday)
+ */
+export function isWeekendHoliday(
+  dateOrDay?: Date | string | number,
+  config?: SchoolConfig
+): boolean {
+  if (config && config.sabtu_minggu_libur === false) {
+    return false;
+  }
+  const dayKey = getHariKey(dateOrDay);
+  return dayKey === 'sabtu' || dayKey === 'minggu';
+}
+
+/**
+ * Returns user-facing Indonesian display name for a day (e.g. "Senin", "Jum'at", "Sabtu")
+ */
+export function getHariDisplayName(dateOrDay?: Date | string | number): string {
+  const dayKey = getHariKey(dateOrDay);
+  const found = DAFTAR_HARI.find(d => d.key === dayKey);
+  return found ? found.label : 'Senin';
 }
 
 export function getJurusanByClassName(className: string): string {
@@ -327,7 +433,25 @@ export function getDefaultDepartureForClass(className: string, scheduleMap?: Rec
 }
 
 /**
- * Calculates effective dismissal time considering the day of week (Senin-Jum'at/Sabtu)
+ * Calculates effective morning check-in cutoff time for a given day
+ * (e.g. 07:00 for Senin-Jum'at, or "-" for Sabtu/Minggu)
+ */
+export function getEffectiveJamMasuk(
+  dateOrDay?: Date | string | number,
+  config?: SchoolConfig
+): string {
+  if (isWeekendHoliday(dateOrDay, config)) {
+    return '-';
+  }
+  const dayKey = getHariKey(dateOrDay);
+  if (config?.jam_masuk_harian?.[dayKey as keyof JamMasukHarian]) {
+    return config.jam_masuk_harian[dayKey as keyof JamMasukHarian]!;
+  }
+  return config?.jam_masuk_batas || '07:00';
+}
+
+/**
+ * Calculates effective dismissal time considering the day of week (Senin-Jum'at, Sabtu/Minggu Libur)
  * and the specific class schedule.
  */
 export function getEffectiveJamPulang(
@@ -335,16 +459,23 @@ export function getEffectiveJamPulang(
   dateOrDay?: Date | string | number,
   config?: SchoolConfig
 ): string {
+  // If weekend (Sabtu/Minggu) and weekend holiday rule is active
+  if (isWeekendHoliday(dateOrDay, config)) {
+    return 'LIBUR';
+  }
+
   const dayKey = getHariKey(dateOrDay);
 
   // 1. Check daily schedule per class in config (highest priority)
   if (config?.jam_pulang_harian_per_kelas?.[className]?.[dayKey]) {
-    return config.jam_pulang_harian_per_kelas[className][dayKey]!;
+    const val = config.jam_pulang_harian_per_kelas[className][dayKey]!;
+    if (val) return val;
   }
 
   // 2. Check default daily schedule in classConfig
   if (DEFAULT_JAM_PULANG_HARIAN_PER_KELAS[className]?.[dayKey]) {
-    return DEFAULT_JAM_PULANG_HARIAN_PER_KELAS[className][dayKey]!;
+    const val = DEFAULT_JAM_PULANG_HARIAN_PER_KELAS[className][dayKey]!;
+    if (val) return val;
   }
 
   // 3. Check simple per-class schedule map in config
@@ -352,6 +483,6 @@ export function getEffectiveJamPulang(
     return config.jam_pulang_per_kelas[className];
   }
 
-  // 4. Fallback to default
+  // 4. Fallback to default class departure
   return getDefaultDepartureForClass(className);
 }

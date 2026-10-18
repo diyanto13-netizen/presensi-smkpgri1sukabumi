@@ -32,7 +32,12 @@ import { processAttendanceRules, formatWhatsAppMessage } from '../utils/attendan
 import { soundService } from '../utils/audio';
 import { sendWhatsAppNotification } from '../utils/fonnte';
 import { getTodayDateString, formatIndonesianDate } from '../utils/storage';
-import { getEffectiveJamPulang } from '../utils/classConfig';
+import {
+  getEffectiveJamPulang,
+  getEffectiveJamMasuk,
+  isWeekendHoliday,
+  getHariDisplayName,
+} from '../utils/classConfig';
 import { SchoolLogo } from './SchoolLogo';
 
 interface ScannerTerminalProps {
@@ -260,15 +265,20 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
 
       // Determine effective class departure time from daily schedule (Senin - Jum'at) or config
       const effectiveJamPulang = getEffectiveJamPulang(student.kelas, todayDate, config);
+      const effectiveJamMasuk = getEffectiveJamMasuk(todayDate, config);
+      const isWeekend = isWeekendHoliday(todayDate, config);
+      const dayDisplayName = getHariDisplayName(todayDate);
 
       // Run pure business rules
       const ruleResult = processAttendanceRules({
         currentTime: effectiveTime,
         studentJamPulang: effectiveJamPulang,
-        jamMasukBatas: config.jam_masuk_batas,
+        jamMasukBatas: effectiveJamMasuk !== '-' ? effectiveJamMasuk : config.jam_masuk_batas,
         hasCheckedIn,
         hasCheckedOut,
         forcedMode: mode,
+        isWeekendHoliday: isWeekend,
+        dayName: dayDisplayName,
       });
 
       if (!ruleResult.allowed) {
@@ -632,16 +642,36 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-400/25 text-amber-300 border border-amber-400/50">
                 TERMINAL ABSENSI GERBANG
               </span>
-              <span className="inline-flex items-center gap-2 text-xs sm:text-sm text-emerald-400 font-bold bg-emerald-950/70 px-3 py-1 rounded-full border border-emerald-500/40">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                Sistem Siap
-              </span>
+              {isWeekendHoliday(getTodayDateString(), config) ? (
+                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-rose-300 font-bold bg-rose-950/80 px-3 py-1 rounded-full border border-rose-500/50">
+                  <span className="w-2 h-2 rounded-full bg-rose-400" />
+                  Hari {getHariDisplayName(getTodayDateString())}: Libur Akhir Pekan
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2 text-xs sm:text-sm text-emerald-400 font-bold bg-emerald-950/70 px-3 py-1 rounded-full border border-emerald-500/40">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  Hari {getHariDisplayName(getTodayDateString())}: KBM Aktif
+                </span>
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-black tracking-tight text-white mt-1.5">
               Terminal Scanner QR Code
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 mt-1 font-medium">
-              {config.nama_sekolah} • Batas Masuk: <span className="text-amber-400 font-black text-base">{config.jam_masuk_batas} WIB</span>
+            <p className="text-sm sm:text-base text-slate-300 mt-1 font-medium flex items-center gap-2 flex-wrap">
+              <span>{config.nama_sekolah}</span>
+              <span>•</span>
+              <span>
+                Batas Masuk:{' '}
+                <span className="text-amber-400 font-black text-base">
+                  {isWeekendHoliday(getTodayDateString(), config)
+                    ? 'LIBUR AKHIR PEKAN'
+                    : `${getEffectiveJamMasuk(getTodayDateString(), config)} WIB`}
+                </span>
+              </span>
+              <span>•</span>
+              <span className="text-xs bg-blue-900/60 text-blue-200 px-2.5 py-0.5 rounded-md border border-blue-700/50">
+                Jadwal: Senin–Jum'at (Sabtu &amp; Minggu Libur)
+              </span>
             </p>
           </div>
         </div>
