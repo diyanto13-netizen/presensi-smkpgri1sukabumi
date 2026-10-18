@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import confetti from 'canvas-confetti';
 import {
   Camera,
@@ -101,12 +101,27 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const handleAttendanceScan = useCallback(
     async (scannedNis: string) => {
       if (isProcessing) return;
-      const cleanNis = scannedNis.trim();
+      let cleanNis = scannedNis.trim();
       if (!cleanNis) return;
+
+      // Extract NIS if encoded inside JSON or URL
+      if (cleanNis.startsWith('{') && cleanNis.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(cleanNis);
+          if (parsed.nis) cleanNis = String(parsed.nis).trim();
+        } catch {
+          // keep original
+        }
+      } else if (cleanNis.includes('nis=')) {
+        const match = cleanNis.match(/nis=([a-zA-Z0-9_-]+)/i);
+        if (match) cleanNis = match[1].trim();
+      } else if (cleanNis.toLowerCase().startsWith('nis:')) {
+        cleanNis = cleanNis.substring(4).trim();
+      }
 
       setIsProcessing(true);
 
-      // Find student by NIS
+      // Find student by NIS or NISN
       const student = students.find(
         s => s.nis.toLowerCase() === cleanNis.toLowerCase() || s.nisn === cleanNis
       );
@@ -302,20 +317,16 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         }
       }
 
-      const html5QrCode = new Html5Qrcode('qr-reader-container');
+      const html5QrCode = new Html5Qrcode('qr-reader-container', {
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        verbose: false,
+      });
       html5QrCodeRef.current = html5QrCode;
 
       await html5QrCode.start(
         { facingMode: cameraFacing },
         {
           fps: 20,
-          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-            // Viewport is precisely the portrait card, scan full active area
-            return {
-              width: Math.floor(viewfinderWidth * 0.94),
-              height: Math.floor(viewfinderHeight * 0.94),
-            };
-          },
         },
         (decodedText: string) => {
           const now = Date.now();
