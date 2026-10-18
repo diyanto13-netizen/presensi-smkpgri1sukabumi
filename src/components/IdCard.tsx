@@ -19,14 +19,14 @@ export const IdCard: React.FC<IdCardProps> = ({
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   useEffect(() => {
-    // Generate clean high-resolution QR Code from NIS with high contrast and optimal error correction
+    // Generate Ultra-HD resolution QR Code (600x600) with pure pitch black on pure white background
     QRCode.toDataURL(siswa.nis, {
-      margin: 1,
-      width: 320,
+      margin: 1, // optimal quiet zone for maximum module size
+      width: 600, // Ultra-HD 600px resolution for razor-sharp scanning
       errorCorrectionLevel: 'M',
       color: {
-        dark: '#000000',
-        light: '#ffffff',
+        dark: '#000000', // Pure pitch black
+        light: '#ffffff', // Pure clean white
       },
     })
       .then(url => setQrDataUrl(url))
@@ -192,16 +192,21 @@ export const IdCard: React.FC<IdCardProps> = ({
             </div>
           </div>
 
-          {/* QR Code */}
-          <div className="flex flex-col items-center justify-center shrink-0 pl-1 border-l border-slate-200">
-            <div className="p-1 bg-white rounded-lg border border-slate-300 shadow-sm">
+          {/* Ultra-HD QR Code with Pure White Border & Black Modules */}
+          <div className="flex flex-col items-center justify-center shrink-0 pl-1.5 border-l border-slate-200">
+            <div className="p-1.5 bg-white rounded-xl border-2 border-slate-900 shadow-sm flex items-center justify-center">
               {qrDataUrl ? (
-                <img src={qrDataUrl} alt={`QR ${siswa.nis}`} className="w-[60px] h-[60px] object-contain" />
+                <img
+                  src={qrDataUrl}
+                  alt={`QR ${siswa.nis}`}
+                  className="w-[70px] h-[70px] object-contain block"
+                  style={{ imageRendering: 'pixelated' }}
+                />
               ) : (
-                <div className="w-[60px] h-[60px] bg-slate-100 animate-pulse rounded" />
+                <div className="w-[70px] h-[70px] bg-slate-100 animate-pulse rounded" />
               )}
             </div>
-            <span className="text-[6.5px] font-mono font-bold text-slate-600 mt-0.5 tracking-tight">
+            <span className="text-[7px] font-mono font-black text-slate-900 mt-0.5 tracking-wider">
               {siswa.nis}
             </span>
           </div>
@@ -282,11 +287,11 @@ export const IdCard: React.FC<IdCardProps> = ({
         </div>
       </div>
 
-      {/* 2. Middle Body: Photo, Student Info & Class (NO Jam Pulang!) */}
-      <div className="px-2 py-1.5 flex flex-col items-center flex-1 justify-center">
+      {/* 2. Middle Body: Photo, Student Info & Ultra-HD QR Code */}
+      <div className="px-2 py-1 flex flex-col items-center flex-1 justify-center">
         {/* Student Photo with Luxury Double Frame */}
-        <div className="p-0.5 rounded-xl bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-500 shadow-sm mb-1">
-          <div className="w-[54px] h-[66px] rounded-[10px] overflow-hidden bg-slate-200">
+        <div className="p-0.5 rounded-xl bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-500 shadow-xs mb-0.5">
+          <div className="w-[46px] h-[56px] rounded-[8px] overflow-hidden bg-slate-200">
             <img
               src={
                 siswa.foto_url ||
@@ -299,37 +304,40 @@ export const IdCard: React.FC<IdCardProps> = ({
         </div>
 
         {/* Name */}
-        <h3 className="text-[10px] font-heading font-black text-blue-950 text-center leading-tight truncate max-w-[185px]">
+        <h3 className="text-[9.5px] font-heading font-black text-blue-950 text-center leading-tight truncate max-w-[185px]">
           {siswa.nama}
         </h3>
 
-        {/* NIS Badge */}
-        <div className="mt-0.5 flex items-center justify-center gap-1">
-          <span className="font-mono font-bold text-[7.5px] text-blue-950 bg-blue-100/80 px-2 py-0.5 rounded border border-blue-200">
+        {/* Combined NIS & Class Badges */}
+        <div className="mt-0.5 flex items-center justify-center gap-1.5">
+          <span className="font-mono font-bold text-[7px] text-blue-950 bg-blue-100/90 px-1.5 py-0.5 rounded border border-blue-200">
             NIS: {siswa.nis}
           </span>
-        </div>
-
-        {/* Class & Department Badge */}
-        <div className="mt-1 flex flex-col items-center text-center">
-          <span className="px-2 py-0.5 rounded-full bg-slate-950 text-amber-300 text-[7px] font-black uppercase tracking-wide border border-amber-400/50">
+          <span className="px-1.5 py-0.5 rounded-full bg-slate-950 text-amber-300 text-[6.5px] font-black uppercase tracking-wide border border-amber-400/50">
             {siswa.kelas}
           </span>
-          <p className="text-[6.5px] font-bold text-slate-600 truncate max-w-[170px] mt-0.5">
-            {siswa.jurusan}
-          </p>
         </div>
 
-        {/* QR Code Container */}
-        <div className="mt-1.5 p-1 bg-white rounded-lg border border-slate-300 shadow-xs flex flex-col items-center">
+        {/* Department Name */}
+        <p className="text-[5.8px] font-bold text-slate-600 truncate max-w-[170px] mt-0.5 text-center">
+          {siswa.jurusan}
+        </p>
+
+        {/* Ultra-HD QR Code Container - Pure White Quiet Zone, Pure Black Modules */}
+        <div className="mt-1 p-1.5 bg-white rounded-xl border-2 border-slate-900 shadow-sm flex flex-col items-center">
           {qrDataUrl ? (
-            <img src={qrDataUrl} alt={`QR ${siswa.nis}`} className="w-[54px] h-[54px] object-contain" />
+            <img
+              src={qrDataUrl}
+              alt={`QR ${siswa.nis}`}
+              className="w-[72px] h-[72px] object-contain block"
+              style={{ imageRendering: 'pixelated' }}
+            />
           ) : (
-            <div className="w-[54px] h-[54px] bg-slate-100 animate-pulse rounded" />
+            <div className="w-[72px] h-[72px] bg-slate-100 animate-pulse rounded" />
           )}
         </div>
-        <span className="text-[5.5px] font-mono font-bold text-slate-500 mt-0.5 tracking-wider">
-          SCAN QR PRESENSI
+        <span className="text-[5.5px] font-mono font-black text-slate-800 mt-0.5 tracking-wider uppercase">
+          ✦ SCAN QR PRESENSI ✦
         </span>
       </div>
 
