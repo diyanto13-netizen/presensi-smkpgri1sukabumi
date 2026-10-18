@@ -19,12 +19,13 @@ export const IdCard: React.FC<IdCardProps> = ({
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   useEffect(() => {
-    // Generate clean high-resolution QR Code from NIS
+    // Generate clean high-resolution QR Code from NIS with high contrast and optimal error correction
     QRCode.toDataURL(siswa.nis, {
       margin: 1,
-      width: 240,
+      width: 320,
+      errorCorrectionLevel: 'M',
       color: {
-        dark: '#0f172a',
+        dark: '#000000',
         light: '#ffffff',
       },
     })
@@ -195,9 +196,9 @@ export const IdCard: React.FC<IdCardProps> = ({
           <div className="flex flex-col items-center justify-center shrink-0 pl-1 border-l border-slate-200">
             <div className="p-1 bg-white rounded-lg border border-slate-300 shadow-sm">
               {qrDataUrl ? (
-                <img src={qrDataUrl} alt={`QR ${siswa.nis}`} className="w-[54px] h-[54px]" />
+                <img src={qrDataUrl} alt={`QR ${siswa.nis}`} className="w-[60px] h-[60px] object-contain" />
               ) : (
-                <div className="w-[54px] h-[54px] bg-slate-100 animate-pulse rounded" />
+                <div className="w-[60px] h-[60px] bg-slate-100 animate-pulse rounded" />
               )}
             </div>
             <span className="text-[6.5px] font-mono font-bold text-slate-600 mt-0.5 tracking-tight">
@@ -322,9 +323,9 @@ export const IdCard: React.FC<IdCardProps> = ({
         {/* QR Code Container */}
         <div className="mt-1.5 p-1 bg-white rounded-lg border border-slate-300 shadow-xs flex flex-col items-center">
           {qrDataUrl ? (
-            <img src={qrDataUrl} alt={`QR ${siswa.nis}`} className="w-[44px] h-[44px]" />
+            <img src={qrDataUrl} alt={`QR ${siswa.nis}`} className="w-[54px] h-[54px] object-contain" />
           ) : (
-            <div className="w-[44px] h-[44px] bg-slate-100 animate-pulse rounded" />
+            <div className="w-[54px] h-[54px] bg-slate-100 animate-pulse rounded" />
           )}
         </div>
         <span className="text-[5.5px] font-mono font-bold text-slate-500 mt-0.5 tracking-wider">

@@ -99,6 +99,10 @@
   border-radius: 0.85rem !important;
 }
 
+.scanner-view-wide #qr-reader-container video {
+  object-fit: contain !important;
+}
+
 #qr-reader-container__scan_region {
   display: flex !important;
   align-items: center !important;

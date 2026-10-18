@@ -19,6 +19,13 @@ import {
   Sliders,
   ShieldCheck,
   CreditCard,
+  Upload,
+  Maximize2,
+  Minimize2,
+  HelpCircle,
+  FileText,
+  Settings2,
+  Scan,
 } from 'lucide-react';
 import { Siswa, Absensi, ScanResult, SchoolConfig } from '../types';
 import { processAttendanceRules, formatWhatsAppMessage } from '../utils/attendanceRules';
@@ -45,6 +52,12 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const [isScannerRunning, setIsScannerRunning] = useState<boolean>(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
   const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
+  const [availableCameras, setAvailableCameras] = useState<{ id: string; label: string }[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'card' | 'wide'>('card');
+  const [isScanningFile, setIsScanningFile] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [manualNis, setManualNis] = useState<string>('');
   const [mode, setMode] = useState<'AUTO' | 'MASUK' | 'PULANG'>('AUTO');
 
@@ -65,6 +78,32 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const lastScannedCodeRef = useRef<string>('');
   const lastScannedTimeRef = useRef<number>(0);
+
+  // Enumerate cameras on mount
+  useEffect(() => {
+    let isMounted = true;
+    Html5Qrcode.getCameras()
+      .then(devices => {
+        if (isMounted && devices && devices.length > 0) {
+          setAvailableCameras(devices);
+          // Prefer external or environment camera if available
+          const preferred = devices.find(
+            d =>
+              d.label.toLowerCase().includes('back') ||
+              d.label.toLowerCase().includes('belakang') ||
+              d.label.toLowerCase().includes('external') ||
+              d.label.toLowerCase().includes('usb')
+          );
+          setSelectedCameraId(preferred ? preferred.id : devices[0].id);
+        }
+      })
+      .catch(() => {
+        // Permissions not yet requested
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Clock ticker
   useEffect(() => {
@@ -97,34 +136,103 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
     });
   }, [useSimulatedTime, simulatedTime]);
 
-  // Main Attendance Processing Function
+  // Main Attendance Processing Function with deep multi-format extraction
   const handleAttendanceScan = useCallback(
     async (scannedNis: string) => {
       if (isProcessing) return;
-      let cleanNis = scannedNis.trim();
-      if (!cleanNis) return;
+      let rawScanned = scannedNis.trim();
+      if (!rawScanned) return;
 
-      // Extract NIS if encoded inside JSON or URL
-      if (cleanNis.startsWith('{') && cleanNis.endsWith('}')) {
+      // 1. Strip enclosing quotes if any
+      let cleanNis = rawScanned.replace(/^["']+|["']+$/g, '').trim();
+
+      // 2. Extract from JSON format (if QR contains student object or JSON payload)
+      if (
+        (cleanNis.startsWith('{') && cleanNis.endsWith('}')) ||
+        (cleanNis.startsWith('[') && cleanNis.endsWith(']'))
+      ) {
         try {
           const parsed = JSON.parse(cleanNis);
-          if (parsed.nis) cleanNis = String(parsed.nis).trim();
+          const obj = Array.isArray(parsed) ? parsed[0] : parsed;
+          const candidate =
+            obj?.nis ??
+            obj?.NIS ??
+            obj?.nisn ??
+            obj?.NISN ??
+            obj?.id ??
+            obj?.ID ??
+            obj?.kode ??
+            obj?.code ??
+            obj?.nomor_induk;
+          if (candidate) cleanNis = String(candidate).trim();
         } catch {
           // keep original
         }
-      } else if (cleanNis.includes('nis=')) {
-        const match = cleanNis.match(/nis=([a-zA-Z0-9_-]+)/i);
-        if (match) cleanNis = match[1].trim();
-      } else if (cleanNis.toLowerCase().startsWith('nis:')) {
-        cleanNis = cleanNis.substring(4).trim();
       }
+
+      // 3. Extract from URL (e.g. https://domain.sch.id/absen?nis=124015112 or /siswa/124015112)
+      if (cleanNis.includes('nis=')) {
+        const match = cleanNis.match(/nis=([a-zA-Z0-9_\-\.]+)/i);
+        if (match) cleanNis = match[1].trim();
+      } else if (cleanNis.includes('id=')) {
+        const match = cleanNis.match(/id=([a-zA-Z0-9_\-\.]+)/i);
+        if (match) cleanNis = match[1].trim();
+      } else if (cleanNis.includes('nisn=')) {
+        const match = cleanNis.match(/nisn=([a-zA-Z0-9_\-\.]+)/i);
+        if (match) cleanNis = match[1].trim();
+      } else if (/^https?:\/\//i.test(cleanNis)) {
+        try {
+          const url = new URL(cleanNis);
+          const qNis =
+            url.searchParams.get('nis') ||
+            url.searchParams.get('id') ||
+            url.searchParams.get('nisn');
+          if (qNis) {
+            cleanNis = qNis.trim();
+          } else {
+            const parts = url.pathname.split('/').filter(Boolean);
+            if (parts.length > 0) {
+              const last = parts[parts.length - 1];
+              if (last && /^[\w\-]+$/.test(last)) cleanNis = last;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // 4. Strip common prefixes like "NIS:", "NIS :", "NISN:", "ID:"
+      if (/^nis[:\s\-_=]+/i.test(cleanNis)) {
+        cleanNis = cleanNis.replace(/^nis[:\s\-_=]+/i, '').trim();
+      } else if (/^nisn[:\s\-_=]+/i.test(cleanNis)) {
+        cleanNis = cleanNis.replace(/^nisn[:\s\-_=]+/i, '').trim();
+      } else if (/^id[:\s\-_=]+/i.test(cleanNis)) {
+        cleanNis = cleanNis.replace(/^id[:\s\-_=]+/i, '').trim();
+      }
+
+      cleanNis = cleanNis.replace(/^["']+|["']+$/g, '').trim();
 
       setIsProcessing(true);
 
-      // Find student by NIS or NISN
-      const student = students.find(
-        s => s.nis.toLowerCase() === cleanNis.toLowerCase() || s.nisn === cleanNis
-      );
+      // 5. Flexible matching against student records:
+      // Exact NIS, NISN, ID, or numeric match ignoring leading zeroes
+      const student = students.find(s => {
+        const sNis = (s.nis || '').trim().toLowerCase();
+        const sNisn = (s.nisn || '').trim().toLowerCase();
+        const sId = (s.id || '').trim().toLowerCase();
+        const target = cleanNis.toLowerCase();
+
+        if (sNis === target || sNisn === target || sId === target) return true;
+
+        // Numeric match
+        if (/^\d+$/.test(target) && /^\d+$/.test(sNis)) {
+          if (parseInt(target, 10) === parseInt(sNis, 10)) return true;
+        }
+        if (sNisn && /^\d+$/.test(target) && /^\d+$/.test(sNisn)) {
+          if (parseInt(target, 10) === parseInt(sNisn, 10)) return true;
+        }
+        return false;
+      });
 
       const effectiveTime = getEffectiveTime();
       const todayDate = getTodayDateString();
@@ -135,7 +243,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         setLastScanResult({
           success: false,
           type: 'REJECTED',
-          message: `NIS ${cleanNis} tidak ditemukan dalam database siswa!`,
+          message: `Kode QR "${cleanNis}" tidak ditemukan dalam data siswa SMKS PGRI 1! Periksa apakah NIS sudah terdaftar di menu Siswa.`,
           timestamp: effectiveTime,
         });
         setIsProcessing(false);
@@ -302,7 +410,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
     ]
   );
 
-  // Initialize and Mount HTML5 QR Code Scanner
+  // Initialize and Mount HTML5 QR Code Scanner with Native Hardware Acceleration & HD Resolution
   const startCameraScanner = useCallback(async () => {
     try {
       setScannerError(null);
@@ -317,41 +425,92 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         }
       }
 
+      // 1. Enable Hardware-Accelerated BarcodeDetector (Chrome/Edge C++ Native Engine)
       const html5QrCode = new Html5Qrcode('qr-reader-container', {
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.UPC_A,
+        ],
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
         verbose: false,
       });
       html5QrCodeRef.current = html5QrCode;
 
-      await html5QrCode.start(
-        { facingMode: cameraFacing },
-        {
-          fps: 20,
-        },
-        (decodedText: string) => {
-          const now = Date.now();
-          if (
-            decodedText === lastScannedCodeRef.current &&
-            now - lastScannedTimeRef.current < 2500
-          ) {
-            return;
-          }
-          lastScannedCodeRef.current = decodedText;
-          lastScannedTimeRef.current = now;
-          handleAttendanceScan(decodedText);
-        },
-        () => {}
-      );
+      // 2. Determine camera device or facing mode
+      const cameraSource = selectedCameraId
+        ? { deviceId: { exact: selectedCameraId } }
+        : { facingMode: cameraFacing };
+
+      // 3. Scan callback
+      const onScanSuccess = (decodedText: string) => {
+        const now = Date.now();
+        if (
+          decodedText === lastScannedCodeRef.current &&
+          now - lastScannedTimeRef.current < 2500
+        ) {
+          return;
+        }
+        lastScannedCodeRef.current = decodedText;
+        lastScannedTimeRef.current = now;
+        handleAttendanceScan(decodedText);
+      };
+
+      // 4. Try starting with High Definition constraints (720p/1080p) for crystal-clear QR detection
+      try {
+        await html5QrCode.start(
+          cameraSource,
+          {
+            fps: 25,
+            qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+              const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+              const edge = Math.max(220, Math.floor(minEdge * 0.9));
+              return { width: edge, height: edge };
+            },
+            videoConstraints: {
+              ...cameraSource,
+              width: { min: 640, ideal: 1280, max: 1920 },
+              height: { min: 480, ideal: 720, max: 1080 },
+            },
+          },
+          onScanSuccess,
+          () => {}
+        );
+      } catch (hdErr) {
+        console.warn('HD camera constraints rejected, falling back to standard resolution:', hdErr);
+        // Fallback for basic webcams
+        await html5QrCode.start(
+          cameraSource,
+          {
+            fps: 20,
+          },
+          onScanSuccess,
+          () => {}
+        );
+      }
 
       setIsScannerRunning(true);
-    } catch (err) {
+
+      // Re-populate camera list once permission is granted
+      Html5Qrcode.getCameras()
+        .then(devices => {
+          if (devices && devices.length > 0) {
+            setAvailableCameras(devices);
+          }
+        })
+        .catch(() => {});
+    } catch (err: any) {
       console.warn('Camera initialization warning:', err);
       setIsScannerRunning(false);
       setScannerError(
-        'Kamera fisik tidak dapat diakses atau sedang digunakan aplikasi lain. Anda tetap dapat menggunakan input NIS manual atau tombol simulasi cepat di bawah.'
+        'Kamera fisik tidak dapat diakses atau diblokir izinnya oleh browser. Pastikan izin kamera aktif (Allow), atau gunakan tombol "Pindai File Gambar" / input NIS manual di bawah.'
       );
     }
-  }, [cameraFacing, handleAttendanceScan]);
+  }, [cameraFacing, selectedCameraId, handleAttendanceScan]);
 
   const stopCameraScanner = useCallback(async () => {
     if (html5QrCodeRef.current && isScannerRunning) {
@@ -363,6 +522,71 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
       }
     }
   }, [isScannerRunning]);
+
+  // Handle switching camera device
+  const handleCameraChange = async (cameraId: string) => {
+    setSelectedCameraId(cameraId);
+    if (isScannerRunning && html5QrCodeRef.current) {
+      try {
+        await html5QrCodeRef.current.stop();
+        setIsScannerRunning(false);
+        setTimeout(() => {
+          startCameraScanner();
+        }, 300);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  // Scan directly from Image/Photo File (Upload fallback for cards)
+  const handleScanFromFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanningFile(true);
+    setScannerError(null);
+
+    try {
+      if (html5QrCodeRef.current && isScannerRunning) {
+        try {
+          await html5QrCodeRef.current.stop();
+          setIsScannerRunning(false);
+        } catch {
+          // ignore
+        }
+      }
+
+      let scanner = html5QrCodeRef.current;
+      if (!scanner) {
+        scanner = new Html5Qrcode('qr-reader-container', {
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.EAN_13,
+          ],
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+          verbose: false,
+        });
+        html5QrCodeRef.current = scanner;
+      }
+
+      const decodedText = await scanner.scanFile(file, true);
+      if (decodedText) {
+        handleAttendanceScan(decodedText);
+      }
+    } catch (err: any) {
+      console.error('File scan error:', err);
+      if (soundActive) soundService.playError();
+      setScannerError(
+        'Kode QR tidak terdeteksi pada file/foto yang dipilih. Pastikan foto kartu tampak tegak, terang, fokus, dan tidak terpotong.'
+      );
+    } finally {
+      setIsScanningFile(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   // Cleanup on unmount
   useEffect(() => {
@@ -473,6 +697,15 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         <div className="lg:col-span-7 space-y-6">
           {/* Main Scanner Box */}
           <div className="premium-card overflow-hidden">
+            {/* Hidden File Input for Scan from Image/Photo */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleScanFromFile}
+              className="hidden"
+            />
+
             <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-white">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-amber-100/80 text-amber-900 rounded-xl border border-amber-300/60">
@@ -484,32 +717,66 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                       Pemindai Kamera QR Code
                     </h3>
                     <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
-                      Format Portrait Kartu
+                      {viewMode === 'card' ? 'Format Portrait Kartu' : 'Mode Layar Lebar'}
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 font-medium">
-                    Orientasi tegak (portrait) presisi sesuai ukuran kartu pelajar siswa SMKS PGRI 1
+                    Akselerasi deteksi hardware aktif • Presisi kartu siswa SMKS PGRI 1
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {isScannerRunning ? (
-                  <button
-                    onClick={stopCameraScanner}
-                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-300 transition cursor-pointer"
-                  >
-                    Hentikan Kamera
-                  </button>
-                ) : (
-                  <button
-                    onClick={startCameraScanner}
-                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-black text-amber-300 transition flex items-center gap-2 shadow-sm cursor-pointer border border-slate-800"
-                  >
-                    <Camera className="w-4 h-4 text-amber-400" />
-                    <span>Nyalakan Kamera</span>
-                  </button>
-                )}
+
+              {/* Controls: Start/Stop, Switch Camera, File Upload Fallback, Wide/Card View */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Upload Image Fallback */}
                 <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isScanningFile}
+                  className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-300 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-xs"
+                  title="Pindai langsung dari file foto/gambar kartu"
+                >
+                  <Upload className="w-4 h-4 text-blue-700" />
+                  <span>{isScanningFile ? 'Memindai...' : 'Pindai Foto'}</span>
+                </button>
+
+                {/* Camera device selector if multiple exist */}
+                {availableCameras.length > 1 && (
+                  <select
+                    value={selectedCameraId}
+                    onChange={e => handleCameraChange(e.target.value)}
+                    className="text-xs bg-slate-100 border border-slate-300 rounded-xl px-2.5 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 max-w-[130px] truncate"
+                    title="Pilih perangkat kamera"
+                  >
+                    {availableCameras.map((cam, idx) => (
+                      <option key={cam.id} value={cam.id}>
+                        {cam.label || `Kamera ${idx + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {/* View Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setViewMode(prev => (prev === 'card' ? 'wide' : 'card'))}
+                  className="p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition border border-slate-300 cursor-pointer"
+                  title={
+                    viewMode === 'card'
+                      ? 'Ganti ke Mode Layar Lebar (Wide View)'
+                      : 'Ganti ke Mode Presisi Kartu Portrait'
+                  }
+                >
+                  {viewMode === 'card' ? (
+                    <Maximize2 className="w-4 h-4" />
+                  ) : (
+                    <Minimize2 className="w-4 h-4" />
+                  )}
+                </button>
+
+                {/* Switch Front/Back */}
+                <button
+                  type="button"
                   onClick={() =>
                     setCameraFacing(prev => (prev === 'user' ? 'environment' : 'user'))
                   }
@@ -518,27 +785,51 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
+
+                {/* Start / Stop Toggle */}
+                {isScannerRunning ? (
+                  <button
+                    type="button"
+                    onClick={stopCameraScanner}
+                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-300 transition cursor-pointer"
+                  >
+                    Hentikan Kamera
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={startCameraScanner}
+                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-black text-amber-300 transition flex items-center gap-2 shadow-sm cursor-pointer border border-slate-800"
+                  >
+                    <Camera className="w-4 h-4 text-amber-400" />
+                    <span>Nyalakan Kamera</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Precision Portrait Card Camera Viewport (Clean, light expansive background without blue bleed) */}
+            {/* Precision Camera Viewport */}
             <div className="relative bg-gradient-to-b from-slate-50 via-slate-50/80 to-white min-h-[460px] sm:min-h-[490px] md:min-h-[520px] w-full flex flex-col items-center justify-center p-5 sm:p-7 overflow-hidden border-b border-slate-200">
-              
-              {/* Card Container Box - Camera is strictly confined inside this yellow box with zero shadow/bleed outside */}
-              <div className="relative w-[260px] sm:w-[280px] md:w-[300px] h-[412px] sm:h-[444px] md:h-[475px] rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_12px_36px_rgba(245,158,11,0.25),0_4px_16px_rgba(15,23,42,0.12)] bg-black flex items-center justify-center shrink-0 ring-4 ring-amber-400/20">
-                
-                {/* Live Camera Viewport - Perfectly fitted inside the portrait card */}
+              {/* Card Container Box */}
+              <div
+                className={`relative rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_12px_36px_rgba(245,158,11,0.25),0_4px_16px_rgba(15,23,42,0.12)] bg-black flex items-center justify-center shrink-0 ring-4 ring-amber-400/20 transition-all duration-300 ${
+                  viewMode === 'card'
+                    ? 'w-[260px] sm:w-[280px] md:w-[300px] h-[412px] sm:h-[444px] md:h-[475px]'
+                    : 'w-full max-w-[460px] h-[345px] scanner-view-wide'
+                }`}
+              >
+                {/* Live Camera Viewport */}
                 <div
                   id="qr-reader-container"
                   className="w-full h-full scanner-camera-view flex items-center justify-center"
                 />
 
-                {/* Inactive State (Displayed inside the Card Box) */}
+                {/* Inactive State */}
                 {!isScannerRunning && (
                   <div className="absolute inset-0 flex flex-col items-center justify-between p-4 text-center bg-slate-950 text-slate-200 z-10">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-300 uppercase tracking-wider bg-black/80 px-2.5 py-1 rounded-md border border-amber-400/40 mt-1">
                       <CreditCard className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Standar Portrait 54×85.6mm</span>
+                      <span>{viewMode === 'card' ? 'Standar Portrait 54×85.6mm' : 'Mode Kamera Lebar HD'}</span>
                     </div>
 
                     <div className="flex flex-col items-center gap-2">
@@ -549,17 +840,25 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                         Kamera Siap Memindai
                       </h4>
                       <p className="text-[11px] text-slate-300 max-w-[210px] leading-snug">
-                        Kotak presisi ukuran kartu absensi siswa SMKS PGRI 1.
+                        Arahkan Kode QR kartu absensi siswa SMKS PGRI 1 ke area pemindai.
                       </p>
                     </div>
 
-                    <div className="w-full pb-1">
+                    <div className="w-full pb-1 flex flex-col gap-2">
                       <button
                         onClick={startCameraScanner}
                         className="w-full py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 hover:from-amber-300 hover:to-yellow-400 shadow-lg flex items-center justify-center gap-2 transition cursor-pointer font-heading"
                       >
                         <Camera className="w-3.5 h-3.5 text-slate-950" />
-                        <span>Aktifkan Pemindai</span>
+                        <span>Aktifkan Kamera Live</span>
+                      </button>
+
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full py-2 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center gap-2 transition cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Pindai dari Foto / Gambar Kartu</span>
                       </button>
                     </div>
                   </div>
@@ -578,7 +877,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     <div className="flex items-center justify-between text-[10px] font-bold text-amber-300 bg-black/80 px-2.5 py-1 rounded-md backdrop-blur-xs border border-amber-400/40">
                       <span className="flex items-center gap-1.5 truncate">
                         <CreditCard className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        KARTU PORTRAIT
+                        {viewMode === 'card' ? 'BINGKAI KARTU' : 'LAYAR LEBAR HD'}
                       </span>
                       <span className="text-[9px] text-emerald-400 font-mono flex items-center gap-1 shrink-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -586,29 +885,42 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                       </span>
                     </div>
 
-                    {/* Center QR Target Guide Box */}
-                    <div className="w-32 h-32 border border-dashed border-amber-400/70 rounded-xl mx-auto flex items-center justify-center bg-black/25">
+                    {/* QR Target Guide Box */}
+                    <div className="w-36 h-36 border-2 border-dashed border-amber-400/80 rounded-2xl mx-auto flex items-center justify-center bg-black/20 my-auto">
                       <span className="text-[9px] font-mono text-amber-200/95 bg-black/80 px-2 py-0.5 rounded border border-amber-400/30">
                         FOKUS KODE QR
                       </span>
                     </div>
 
-                    {/* Sweeping Laser Line for Portrait View */}
+                    {/* Sweeping Laser Line for Scan View */}
                     <div className="absolute left-2.5 right-2.5 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_rgba(251,191,36,1)] animate-laser-sweep pointer-events-none" />
 
                     {/* Bottom Card Guide Footer */}
                     <div className="text-center text-[10px] font-semibold text-slate-100 bg-black/80 px-2 py-1 rounded-md backdrop-blur-xs border border-slate-700">
-                      Posisikan kartu pas di dalam bingkai ini
+                      Arahkan kode QR ke dalam area kotak pemindai
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Informative Sub-Caption outside the yellow card box */}
-              <p className="text-[11px] sm:text-xs text-slate-600 font-semibold text-center mt-3.5 flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-pulse" />
-                Presisi Format Kartu Pelajar Portrait (54 × 85.6 mm) • Area pemindaian terfokus
-              </p>
+              {/* Practical Guidance Bar */}
+              <div className="mt-4 max-w-lg w-full bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 text-xs text-slate-800 space-y-1">
+                <p className="font-bold text-amber-950 flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-700" />
+                  Tips Agar Kode QR Terbaca Cepat &amp; Presisi:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px] text-slate-700">
+                  <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/50">
+                    <span className="font-bold text-slate-900">📏 Jarak 15–20 cm:</span> Jangan terlalu dekat agar lensa kamera tidak buram.
+                  </div>
+                  <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/50">
+                    <span className="font-bold text-slate-900">💡 Bebas Silau:</span> Miringkan kartu sedikit jika ada pantulan lampu/glare.
+                  </div>
+                  <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/50">
+                    <span className="font-bold text-slate-900">⏱️ Tahan 1 Detik:</span> Pegang kartu stabil agar sensor fokus otomatis.
+                  </div>
+                </div>
+              </div>
             </div>
 
             {scannerError && (
