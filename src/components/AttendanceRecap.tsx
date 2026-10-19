@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Siswa, Absensi, StatusAbsensi, SchoolConfig } from '../types';
 import { getTodayDateString, formatIndonesianDate } from '../utils/storage';
-import { exportAttendanceToExcel } from '../utils/excelExport';
+import { exportAttendanceToExcel, exportSholatAttendanceToExcel } from '../utils/excelExport';
 import {
   MASTER_KELAS_LIST,
   isWeekendHoliday,
@@ -43,6 +43,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
   const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
+  const [isExportingSholatExcel, setIsExportingSholatExcel] = useState<boolean>(false);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
   // Unique classes list
@@ -175,6 +176,29 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
     }
   };
 
+  // 1b. Export Native Excel Khusus Rekap Sholat Dzuhur & Ashar (.xlsx) Siap Cetak
+  const handleExportSholatExcel = async () => {
+    setIsExportingSholatExcel(true);
+    setExportNotice('Menyiapkan file Excel Rekap Sholat Berjamaah (Dzuhur & Ashar) siap cetak dengan Kop PGRI...');
+    try {
+      await exportSholatAttendanceToExcel({
+        students,
+        attendanceRecords,
+        date: selectedDate,
+        selectedClass,
+        config,
+      });
+      setExportNotice('Berhasil! File Excel Rekap Sholat Berjamaah (.xlsx) telah diunduh.');
+      setTimeout(() => setExportNotice(null), 5000);
+    } catch (error) {
+      console.error('Failed to export Sholat Excel:', error);
+      alert('Gagal mengekspor file Excel Sholat: ' + (error as Error).message);
+      setExportNotice(null);
+    } finally {
+      setIsExportingSholatExcel(false);
+    }
+  };
+
   // 2. Direct Print / PDF Print
   const handlePrintReport = () => {
     window.print();
@@ -301,12 +325,25 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
           <button
             onClick={handleExportExcel}
             disabled={isExportingExcel || consolidatedList.length === 0}
-            className="px-5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 hover:from-emerald-700 hover:to-teal-900 text-white shadow-md flex items-center gap-2.5 transition disabled:opacity-50 cursor-pointer"
-            title="Download file Excel (.xlsx) dengan Kop Surat, layout A4 Landscape, garis pembatas, dan lembar tanda tangan siap cetak"
+            className="px-4.5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 hover:from-blue-950 hover:to-slate-900 text-white shadow-md flex items-center gap-2.5 transition disabled:opacity-50 cursor-pointer"
+            title="Download file Excel (.xlsx) presensi harian dengan Kop Surat, layout A4 Landscape, garis pembatas, dan lembar tanda tangan siap cetak"
           >
-            <FileSpreadsheet className="w-5 h-5 text-emerald-200" />
+            <FileSpreadsheet className="w-5 h-5 text-blue-200" />
             <span>
-              {isExportingExcel ? 'Menyiapkan Excel...' : 'Ekspor Excel Siap Cetak (.xlsx)'}
+              {isExportingExcel ? 'Menyiapkan Excel...' : 'Ekspor Excel Harian (.xlsx)'}
+            </span>
+          </button>
+
+          {/* Sholat Excel Export Button */}
+          <button
+            onClick={handleExportSholatExcel}
+            disabled={isExportingSholatExcel || consolidatedList.length === 0}
+            className="px-4.5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 hover:from-emerald-700 hover:to-teal-900 text-amber-200 shadow-md flex items-center gap-2.5 transition disabled:opacity-50 cursor-pointer border border-emerald-500/50"
+            title="Download file Excel (.xlsx) KHUSUS rekapitulasi sholat Dzuhur & Ashar dengan evaluasi Rohis, layout A4 Landscape siap cetak"
+          >
+            <span className="text-base">🕌</span>
+            <span>
+              {isExportingSholatExcel ? 'Menyiapkan Rekap Shalat...' : 'Ekspor Excel Shalat (.xlsx)'}
             </span>
           </button>
 
