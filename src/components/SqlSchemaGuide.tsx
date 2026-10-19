@@ -174,18 +174,19 @@ export async function POST(request: Request) {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
-            DOKUMENTASI TEKNIS &amp; SETUP
-          </span>
-          <span className="text-xs sm:text-sm text-slate-600 font-semibold">PostgreSQL / Supabase &amp; Fonnte API</span>
+      <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-2xs border border-slate-200/90">
+        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+          <span className="font-semibold text-slate-700">Dokumentasi Pengembang</span>
+          <span aria-hidden="true" className="text-slate-300">·</span>
+          <span>PostgreSQL &amp; Supabase</span>
+          <span aria-hidden="true" className="text-slate-300">·</span>
+          <span>Fonnte WhatsApp API</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-heading font-black text-blue-950 mt-1.5">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">
           Panduan Skema Database &amp; API Routes
         </h1>
-        <p className="text-sm sm:text-base text-slate-600 mt-1 leading-relaxed font-medium">
-          Berikut adalah skema tabel database (SQL), konfigurasi file <code>.env</code>, dan struktur backend route lengkap untuk integrasi ke Supabase dan Fonnte WhatsApp.
+        <p className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed">
+          Struktur skema tabel SQL relasional, konfigurasi environment variables, dan panduan integrasi backend handler.
         </p>
       </div>
 

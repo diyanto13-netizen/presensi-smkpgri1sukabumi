@@ -425,51 +425,52 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+      <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-2xs border border-slate-200/90 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
-              DATA MASTER SISWA
-            </span>
-            <span className="text-xs sm:text-sm text-slate-600 font-semibold">{config.nama_sekolah}</span>
+          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <span className="font-semibold text-slate-700">Master Data Siswa</span>
+            <span aria-hidden="true" className="text-slate-300">·</span>
+            <span>{students.length} Siswa Terdaftar</span>
+            <span aria-hidden="true" className="text-slate-300 hidden sm:inline">·</span>
+            <span className="hidden sm:inline">21 Rombel Resmi</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-black text-blue-950 mt-1.5">
-            Manajemen &amp; Import Siswa
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">
+            Manajemen Siswa &amp; Import Rombel
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 mt-1 leading-relaxed font-medium">
-            Kelola data siswa, jadwal pulang khusus, nomor WhatsApp wali murid, serta import massal data rombel langsung dari file Excel.
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed">
+            Kelola database siswa, jadwal kepulangan khusus, nomor WhatsApp wali murid, dan impor massal dari Excel.
           </p>
         </div>
 
         {/* Action Toolbar */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Download Template Excel */}
           <button
             onClick={handleDownloadTemplate}
-            className="px-4 py-3 text-sm font-bold text-slate-800 hover:text-blue-950 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition flex items-center gap-2 shadow-xs cursor-pointer"
+            className="px-3.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             title="Download Template Format Excel (.xlsx) untuk pengisian data siswa"
           >
-            <Download className="w-4 h-4 text-blue-700" />
-            <span>Download Template Excel</span>
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Unduh Template</span>
           </button>
 
           {/* Import Excel Massal */}
           <button
             onClick={handleOpenImportModal}
-            className="px-5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-md flex items-center gap-2 transition cursor-pointer"
+            className="px-4 py-2 rounded-xl font-semibold text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs flex items-center gap-1.5 transition cursor-pointer"
             title="Import banyak data siswa sekaligus dari file Excel (.xlsx / .csv)"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
-            <span>Import Siswa Massal (Excel)</span>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Import Excel</span>
           </button>
 
           {/* Add Single Student */}
           <button
             onClick={handleOpenAddModal}
-            className="px-5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-700 to-blue-950 text-amber-300 hover:from-blue-800 hover:to-black shadow-md flex items-center gap-2 transition cursor-pointer"
+            className="px-4 py-2 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-black text-white shadow-xs flex items-center gap-1.5 transition cursor-pointer"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>Tambah Siswa Manual</span>
+            <UserPlus className="w-3.5 h-3.5 text-slate-300" />
+            <span>+ Tambah Siswa</span>
           </button>
 
           {/* Sync to Cloud Button */}
@@ -477,21 +478,21 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
             <button
               onClick={onSyncCloud}
               disabled={isSyncing}
-              className="px-4 py-3 rounded-xl font-bold text-sm bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100 transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
-              title="Kirim dan sinkronkan data siswa tabel saat ini ke Database Cloud PostgreSQL"
+              className="px-3.5 py-2 rounded-xl font-medium text-xs bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+              title="Kirim dan sinkronkan data siswa tabel saat ini ke Database Cloud"
             >
-              <RefreshCw className={`w-4 h-4 text-blue-700 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud'}</span>
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isSyncing ? 'animate-spin text-blue-600' : ''}`} />
+              <span>{isSyncing ? 'Sinkron...' : 'Sinkron Cloud'}</span>
             </button>
           )}
 
           {/* Reset Demo Data */}
           <button
             onClick={handleResetDemoData}
-            className="px-3.5 py-3 text-xs font-semibold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition cursor-pointer"
+            className="px-2.5 py-2 text-xs font-medium text-slate-500 hover:text-rose-700 transition cursor-pointer"
             title="Reset ke siswa demo PGRI 1"
           >
-            Reset Demo
+            Reset
           </button>
         </div>
       </div>

@@ -259,138 +259,127 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-900 flex flex-col font-sans selection:bg-amber-400 selection:text-blue-950">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
       {/* Global Navigation Header (Hidden on print) */}
-      <header className="no-print sticky top-0 z-40 glass-nav shadow-xs">
+      <header className="no-print sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20 gap-4">
+          <div className="flex items-center justify-between h-16 gap-4">
             {/* School Branding with Official Insignia */}
-            <div className="flex items-center gap-3.5">
-              <div className="relative group shrink-0">
-                <div className="w-13 h-14 p-0.5 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-500 shadow-md flex items-center justify-center border border-amber-300">
-                  <div className="w-full h-full rounded-xl bg-white/95 flex items-center justify-center p-1 overflow-hidden">
-                    <SchoolLogo
-                      src={schoolConfig.logo_url}
-                      className="w-full h-full object-contain drop-shadow-xs"
-                      alt={schoolConfig.nama_sekolah}
-                    />
-                  </div>
-                </div>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-2xs p-1 flex items-center justify-center shrink-0">
+                <SchoolLogo
+                  src={schoolConfig.logo_url}
+                  className="w-full h-full object-contain"
+                  alt={schoolConfig.nama_sekolah}
+                />
               </div>
-              <div className="leading-tight">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300">
-                    PRESENSI QR RESMI
-                  </span>
-                  <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                    NPSN: <strong className="text-slate-900">{schoolConfig.npsn}</strong>
-                  </span>
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300 hidden md:inline">
-                    {schoolConfig.akreditasi}
-                  </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+                  <span className="font-semibold text-slate-700 tracking-tight">Presensi QR</span>
+                  <span aria-hidden="true" className="text-slate-300">·</span>
+                  <span>NPSN {schoolConfig.npsn}</span>
+                  <span aria-hidden="true" className="text-slate-300 hidden sm:inline">·</span>
+                  <span className="hidden sm:inline text-emerald-700 font-semibold">{schoolConfig.akreditasi}</span>
                 </div>
-                <h1 className="text-xs sm:text-sm font-heading font-bold tracking-tight text-slate-900 mt-0.5">
+                <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate">
                   {schoolConfig.nama_sekolah}
                 </h1>
               </div>
             </div>
 
-            {/* Navigation Tabs (Spacious, Modern & High Legibility) */}
-            <nav className="hidden lg:flex items-center gap-1.5 p-1.5 bg-slate-200/60 rounded-2xl border border-slate-300/80 shadow-inner">
+            {/* Navigation Tabs (Refined Segmented Controls) */}
+            <nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
               <button
                 onClick={() => setActiveTab('scanner')}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'scanner'
-                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <Camera className="w-4 h-4 text-amber-400" />
+                <Camera className={`w-3.5 h-3.5 ${activeTab === 'scanner' ? 'text-blue-600' : 'text-slate-500'}`} />
                 <span>Terminal Scanner</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('generator')}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'generator'
-                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <CreditCard className="w-4 h-4 text-amber-400" />
+                <CreditCard className={`w-3.5 h-3.5 ${activeTab === 'generator' ? 'text-blue-600' : 'text-slate-500'}`} />
                 <span>Cetak Kartu QR</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('students')}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'students'
-                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <Users className="w-4 h-4 text-amber-400" />
+                <Users className={`w-3.5 h-3.5 ${activeTab === 'students' ? 'text-blue-600' : 'text-slate-500'}`} />
                 <span>Data Siswa</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('recap')}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'recap'
-                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <BarChart3 className="w-4 h-4 text-amber-400" />
+                <BarChart3 className={`w-3.5 h-3.5 ${activeTab === 'recap' ? 'text-blue-600' : 'text-slate-500'}`} />
                 <span>Rekap Absensi</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('docs')}
-                className={`px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'docs'
-                    ? 'bg-slate-950 text-amber-300 shadow-md ring-1 ring-amber-400/40'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-white/80'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
                 title="Panduan Skema Database SQL & API"
               >
-                <BookOpen className="w-4 h-4 text-amber-400" />
+                <BookOpen className={`w-3.5 h-3.5 ${activeTab === 'docs' ? 'text-blue-600' : 'text-slate-500'}`} />
                 <span>SQL &amp; Docs</span>
               </button>
             </nav>
 
             {/* Header Right Actions & Live Clock */}
-            <div className="flex items-center gap-2 sm:gap-2.5">
-
-              {/* Cloud Database Sync Status Badge */}
+            <div className="flex items-center gap-2">
+              {/* Cloud Database Sync Status */}
               <button
                 type="button"
                 onClick={handleManualSync}
                 disabled={isSyncing}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100 transition shadow-xs cursor-pointer disabled:opacity-60"
-                title="Klik untuk menyinkronkan data terbaru dari Cloud SQL PostgreSQL"
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition shadow-2xs cursor-pointer disabled:opacity-60"
+                title="Sinkronisasi Cloud Database (PostgreSQL & Firestore)"
               >
-                <Database className="w-3.5 h-3.5 text-emerald-700" />
-                <span>
-                  {isSyncing ? 'Sinkronisasi...' : `Cloud SQL`}
-                </span>
-                <RotateCw className={`w-3.5 h-3.5 text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
+                <Database className="w-3.5 h-3.5 text-slate-500" />
+                <span>{isSyncing ? 'Sinkron...' : 'Cloud Sync'}</span>
+                <RotateCw className={`w-3 h-3 text-slate-400 ${isSyncing ? 'animate-spin text-blue-600' : ''}`} />
               </button>
 
               {/* Live WIB Clock badge */}
-              <div className="hidden sm:flex items-center gap-2 bg-slate-950 text-amber-300 px-3.5 py-2 rounded-xl border border-amber-400/30 shadow-xs">
-                <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
-                <span className="font-mono text-sm font-bold tracking-wider">
-                  {headerTime || '07:00:00'} <span className="text-xs text-amber-400/80">WIB</span>
-                </span>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/90 border border-slate-200/80 text-xs font-mono font-medium text-slate-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{headerTime || '07:00:00'}</span>
+                <span className="text-[10px] text-slate-600 font-sans font-semibold">WIB</span>
               </div>
 
+              {/* Settings button */}
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="px-3 py-2 sm:px-3.5 sm:py-2.5 text-slate-800 hover:text-slate-950 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition flex items-center gap-2 text-sm font-bold shadow-xs cursor-pointer"
-                title="Pengaturan Jam Masuk & Konfigurasi Fonnte"
+                className="px-3 py-1.5 text-slate-700 hover:text-slate-950 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition flex items-center gap-1.5 text-xs font-medium shadow-2xs cursor-pointer"
+                title="Pengaturan Sekolah & Fonnte"
               >
-                <Settings className="w-4 h-4 text-slate-600" />
+                <Settings className="w-3.5 h-3.5 text-slate-500" />
                 <span className="hidden md:inline">Pengaturan</span>
               </button>
             </div>
@@ -398,51 +387,51 @@ export default function App() {
         </div>
 
         {/* Mobile Navigation Bar */}
-        <div className="lg:hidden border-t border-slate-200 px-3 py-2.5 flex items-center justify-around bg-white/95 text-xs font-bold">
+        <div className="lg:hidden border-t border-slate-200/80 px-2 py-1.5 grid grid-cols-5 gap-1 bg-white/95 text-[11px] font-semibold text-center">
           <button
             onClick={() => setActiveTab('scanner')}
-            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
-              activeTab === 'scanner' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
+              activeTab === 'scanner' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Camera className="w-4 h-4" />
-            <span>Scanner</span>
+            <span className="truncate w-full">Scanner</span>
           </button>
           <button
             onClick={() => setActiveTab('generator')}
-            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
-              activeTab === 'generator' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
+              activeTab === 'generator' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <CreditCard className="w-4 h-4" />
-            <span>Kartu QR</span>
+            <span className="truncate w-full">Kartu</span>
           </button>
           <button
             onClick={() => setActiveTab('students')}
-            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
-              activeTab === 'students' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
+              activeTab === 'students' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Data Siswa</span>
+            <span className="truncate w-full">Siswa</span>
           </button>
           <button
             onClick={() => setActiveTab('recap')}
-            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
-              activeTab === 'recap' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
+              activeTab === 'recap' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            <span>Rekap</span>
+            <span className="truncate w-full">Rekap</span>
           </button>
           <button
             onClick={() => setActiveTab('docs')}
-            className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
-              activeTab === 'docs' ? 'text-blue-950 font-black bg-blue-100/70' : 'text-slate-600'
+            className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
+              activeTab === 'docs' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>SQL Docs</span>
+            <span className="truncate w-full">Docs</span>
           </button>
         </div>
       </header>

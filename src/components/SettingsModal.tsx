@@ -309,69 +309,69 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Tab Buttons */}
-        <div className="flex items-center gap-2 pt-4 pb-2 border-b border-slate-100 shrink-0 overflow-x-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/60 my-3 shrink-0 overflow-x-auto text-xs font-semibold">
           <button
             type="button"
             onClick={() => setActiveTab('jadwal_pulang')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'jadwal_pulang'
-                ? 'bg-blue-950 text-amber-300 shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Clock className="w-4 h-4 text-amber-400" />
-            <span>Jadwal Jam Masuk &amp; Pulang (Senin–Jum'at)</span>
+            <Clock className={`w-3.5 h-3.5 ${activeTab === 'jadwal_pulang' ? 'text-blue-600' : 'text-slate-500'}`} />
+            <span>Jadwal Jam Masuk &amp; Pulang</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('sholat')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'sholat'
-                ? 'bg-blue-950 text-amber-300 shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <span>🕌</span>
-            <span>Sholat Berjamaah (Dzuhur &amp; Ashar)</span>
+            <span>Sholat Berjamaah</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('umum')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'umum'
-                ? 'bg-blue-950 text-amber-300 shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <School className="w-4 h-4 text-amber-400" />
-            <span>Identitas &amp; Logo Sekolah</span>
+            <School className={`w-3.5 h-3.5 ${activeTab === 'umum' ? 'text-blue-600' : 'text-slate-500'}`} />
+            <span>Identitas Sekolah</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('fonnte')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'fonnte'
-                ? 'bg-blue-950 text-amber-300 shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Key className="w-4 h-4 text-amber-400" />
-            <span>WhatsApp Gateway (Fonnte)</span>
+            <Key className={`w-3.5 h-3.5 ${activeTab === 'fonnte' ? 'text-blue-600' : 'text-slate-500'}`} />
+            <span>WhatsApp (Fonnte)</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('database')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'database'
-                ? 'bg-blue-950 text-amber-300 shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Database className="w-4 h-4 text-amber-400" />
+            <Database className={`w-3.5 h-3.5 ${activeTab === 'database' ? 'text-blue-600' : 'text-slate-500'}`} />
             <span>Database Cloud</span>
           </button>
         </div>

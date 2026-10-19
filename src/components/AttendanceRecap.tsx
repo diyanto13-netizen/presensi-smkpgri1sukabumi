@@ -301,36 +301,35 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner (Hidden when printing) */}
-      <div className="no-print bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="no-print bg-white rounded-2xl p-6 sm:p-7 shadow-2xs border border-slate-200/90 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
-              REKAPITULASI PRESENSI HARIAN
-            </span>
-            <span className="text-xs sm:text-sm text-slate-500 font-semibold">
-              {formatIndonesianDate(selectedDate)}
-            </span>
+          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <span className="font-semibold text-slate-700">Rekapitulasi Presensi</span>
+            <span aria-hidden="true" className="text-slate-300">·</span>
+            <span>{formatIndonesianDate(selectedDate)}</span>
+            <span aria-hidden="true" className="text-slate-300 hidden sm:inline">·</span>
+            <span className="hidden sm:inline">{selectedClass === 'ALL' ? 'Semua Kelas' : `Kelas ${selectedClass}`}</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-black text-blue-950 mt-1.5">
-            Rekap Kehadiran Harian Siswa
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">
+            Rekap Kehadiran &amp; Ibadah Siswa
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 mt-1 leading-relaxed font-medium">
-            Laporan lengkap presensi jam masuk, keterlambatan, jam pulang, dan status notifikasi WhatsApp orang tua siswa SMKS PGRI 1 Sukabumi.
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed">
+            Laporan lengkap presensi kedatangan, keterlambatan, shalat berjamaah, kepulangan, dan notifikasi WhatsApp.
           </p>
         </div>
 
         {/* Export & Print Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Main Excel Export Button */}
           <button
             onClick={handleExportExcel}
             disabled={isExportingExcel || consolidatedList.length === 0}
-            className="px-4.5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 hover:from-blue-950 hover:to-slate-900 text-white shadow-md flex items-center gap-2.5 transition disabled:opacity-50 cursor-pointer"
-            title="Download file Excel (.xlsx) presensi harian dengan Kop Surat, layout A4 Landscape, garis pembatas, dan lembar tanda tangan siap cetak"
+            className="px-4 py-2 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-black text-white shadow-xs flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
+            title="Download file Excel (.xlsx) presensi harian siap cetak"
           >
-            <FileSpreadsheet className="w-5 h-5 text-blue-200" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-300" />
             <span>
-              {isExportingExcel ? 'Menyiapkan Excel...' : 'Ekspor Excel Harian (.xlsx)'}
+              {isExportingExcel ? 'Menyiapkan...' : 'Ekspor Excel Harian (.xlsx)'}
             </span>
           </button>
 
@@ -338,33 +337,32 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
           <button
             onClick={handleExportSholatExcel}
             disabled={isExportingSholatExcel || consolidatedList.length === 0}
-            className="px-4.5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 hover:from-emerald-700 hover:to-teal-900 text-amber-200 shadow-md flex items-center gap-2.5 transition disabled:opacity-50 cursor-pointer border border-emerald-500/50"
-            title="Download file Excel (.xlsx) KHUSUS rekapitulasi sholat Dzuhur & Ashar dengan evaluasi Rohis, layout A4 Landscape siap cetak"
+            className="px-4 py-2 rounded-xl font-semibold text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
+            title="Download file Excel (.xlsx) khusus rekapitulasi sholat Dzuhur & Ashar siap cetak"
           >
-            <span className="text-base">🕌</span>
+            <span>🕌</span>
             <span>
-              {isExportingSholatExcel ? 'Menyiapkan Rekap Shalat...' : 'Ekspor Excel Shalat (.xlsx)'}
+              {isExportingSholatExcel ? 'Menyiapkan...' : 'Ekspor Rekap Shalat (.xlsx)'}
             </span>
           </button>
 
           {/* Direct Print to PDF */}
           <button
             onClick={handlePrintReport}
-            className="px-4.5 py-3 rounded-xl font-bold text-sm bg-blue-950 hover:bg-black text-amber-300 shadow-md flex items-center gap-2 transition print-include cursor-pointer"
+            className="px-3.5 py-2 rounded-xl font-medium text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition flex items-center gap-1.5 shadow-2xs print-include cursor-pointer"
             title="Cetak langsung lembar laporan presensi hari ini"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
             <span>Cetak / PDF</span>
           </button>
 
           {/* Raw CSV Fallback */}
           <button
             onClick={handleExportCSV}
-            className="px-4 py-3 rounded-xl font-bold text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-2 transition cursor-pointer"
+            className="px-2.5 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 transition cursor-pointer"
             title="Download format raw CSV sederhana"
           >
-            <Download className="w-4 h-4 text-slate-500" />
-            <span>CSV</span>
+            CSV
           </button>
         </div>
       </div>
@@ -404,88 +402,91 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
 
       {/* Metric Cards Summary */}
       <div className="no-print grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Siswa</span>
-          <div className="text-2xl sm:text-3xl font-heading font-black text-blue-950 mt-1">{stats.total}</div>
-          <span className="text-[11px] text-slate-500 font-medium">Dalam rombel</span>
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Siswa</span>
+          <div className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{stats.total}</div>
+          <span className="text-[11px] text-slate-400">Dalam rombel</span>
         </div>
 
-        <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider flex items-center justify-between">
+            <span>Tepat Waktu</span>
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            Tepat Waktu
           </span>
-          <div className="text-2xl sm:text-3xl font-heading font-black text-emerald-800 mt-1">
+          <div className="text-2xl font-bold text-emerald-800 tracking-tight mt-1">
             {stats.tepatWaktu}
           </div>
-          <span className="text-[11px] text-emerald-700 font-bold">
+          <span className="text-[11px] text-emerald-600 font-medium">
             {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `≤ ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur'}
           </span>
         </div>
 
-        <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider flex items-center justify-between">
+            <span>Terlambat</span>
             <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-            Terlambat
           </span>
-          <div className="text-2xl sm:text-3xl font-heading font-black text-amber-900 mt-1">
+          <div className="text-2xl font-bold text-amber-800 tracking-tight mt-1">
             {stats.terlambat}
           </div>
-          <span className="text-[11px] text-amber-800 font-bold">
+          <span className="text-[11px] text-amber-600 font-medium">
             {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `> ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur'}
           </span>
         </div>
 
-        <div className="bg-teal-50/80 p-4 rounded-2xl border border-teal-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-teal-900 flex items-center gap-1">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-teal-700 uppercase tracking-wider flex items-center justify-between">
+            <span>Sholat Dzuhur</span>
             <span>🕌</span>
-            Dzuhur
           </span>
-          <div className="text-2xl sm:text-3xl font-heading font-black text-teal-900 mt-1">
+          <div className="text-2xl font-bold text-teal-800 tracking-tight mt-1">
             {stats.sholatDzuhur}
           </div>
-          <span className="text-[11px] text-teal-700 font-medium">Sholat berjamaah</span>
+          <span className="text-[11px] text-teal-600 font-medium">Berjamaah</span>
         </div>
 
-        <div className="bg-cyan-50/80 p-4 rounded-2xl border border-cyan-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-cyan-900 flex items-center gap-1">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-sky-700 uppercase tracking-wider flex items-center justify-between">
+            <span>Sholat Ashar</span>
             <span>🕌</span>
-            Ashar
           </span>
-          <div className="text-2xl sm:text-3xl font-heading font-black text-cyan-900 mt-1">
+          <div className="text-2xl font-bold text-sky-800 tracking-tight mt-1">
             {stats.sholatAshar}
           </div>
-          <span className="text-[11px] text-cyan-700 font-medium">Sholat berjamaah</span>
+          <span className="text-[11px] text-sky-600 font-medium">Berjamaah</span>
         </div>
 
-        <div className="bg-blue-50/80 p-4 rounded-2xl border border-blue-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-blue-600" />
-            Pulang
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-indigo-700 uppercase tracking-wider flex items-center justify-between">
+            <span>Sudah Pulang</span>
+            <Clock className="w-3.5 h-3.5 text-indigo-600" />
           </span>
-          <div className="text-2xl sm:text-3xl font-heading font-black text-blue-900 mt-1">
+          <div className="text-2xl font-bold text-indigo-800 tracking-tight mt-1">
             {stats.sudahPulang}
           </div>
-          <span className="text-[11px] text-blue-700 font-medium">Scan pulang</span>
+          <span className="text-[11px] text-indigo-600 font-medium">Scan pulang</span>
         </div>
 
-        <div className="bg-rose-50/80 p-4 rounded-2xl border border-rose-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-rose-900 flex items-center gap-1">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-rose-700 uppercase tracking-wider flex items-center justify-between">
+            <span>Belum Hadir</span>
             <UserX className="w-3.5 h-3.5 text-rose-600" />
-            Belum Hadir
           </span>
-          <div className="text-2xl sm:text-3xl font-heading font-black text-rose-900 mt-1">
+          <div className="text-2xl font-bold text-rose-800 tracking-tight mt-1">
             {stats.belumAbsen}
           </div>
-          <span className="text-[11px] text-rose-700 font-medium">Nihil presensi</span>
+          <span className="text-[11px] text-rose-600 font-medium">Nihil presensi</span>
         </div>
 
-        <div className="bg-slate-100 p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Kehadiran</span>
-          <div className="text-2xl sm:text-3xl font-heading font-black text-blue-950 mt-1">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider flex items-center justify-between">
+            <span>Kehadiran</span>
+            <span className="text-[10px] font-mono text-blue-600">%</span>
+          </span>
+          <div className="text-2xl font-bold text-blue-900 tracking-tight mt-1">
             {stats.persentase}%
           </div>
-          <span className="text-[11px] text-slate-600 font-medium">Rasio kehadiran</span>
+          <span className="text-[11px] text-blue-600 font-medium">Rasio hadir</span>
         </div>
       </div>
 
