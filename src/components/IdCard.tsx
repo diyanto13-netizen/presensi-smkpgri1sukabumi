@@ -19,9 +19,10 @@ export const IdCard: React.FC<IdCardProps> = ({
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   useEffect(() => {
-    // Generate Ultra-HD resolution QR Code (600x600) with pure pitch black on pure white background
+    // Generate Ultra-HD resolution QR Code (600x600) with standard ISO quiet zone (margin: 2)
+    // Pure pitch black on pure white background for maximum contrast on 720p webcams
     QRCode.toDataURL(siswa.nis, {
-      margin: 1, // optimal quiet zone for maximum module size
+      margin: 2, // Standard quiet zone to prevent bleeding with borders on 720p fixed-focus webcams
       width: 600, // Ultra-HD 600px resolution for razor-sharp scanning
       errorCorrectionLevel: 'M',
       color: {
@@ -194,16 +195,16 @@ export const IdCard: React.FC<IdCardProps> = ({
 
           {/* Ultra-HD QR Code with Pure White Border & Black Modules */}
           <div className="flex flex-col items-center justify-center shrink-0 pl-1.5 border-l border-slate-200">
-            <div className="p-1.5 bg-white rounded-xl border-2 border-slate-900 shadow-sm flex items-center justify-center">
+            <div className="p-1.5 bg-white rounded-xl border border-slate-200 shadow-xs flex items-center justify-center">
               {qrDataUrl ? (
                 <img
                   src={qrDataUrl}
                   alt={`QR ${siswa.nis}`}
-                  className="w-[70px] h-[70px] object-contain block"
+                  className="w-[72px] h-[72px] object-contain block bg-white"
                   style={{ imageRendering: 'pixelated' }}
                 />
               ) : (
-                <div className="w-[70px] h-[70px] bg-slate-100 animate-pulse rounded" />
+                <div className="w-[72px] h-[72px] bg-slate-100 animate-pulse rounded" />
               )}
             </div>
             <span className="text-[7px] font-mono font-black text-slate-900 mt-0.5 tracking-wider">
@@ -324,16 +325,16 @@ export const IdCard: React.FC<IdCardProps> = ({
         </p>
 
         {/* Ultra-HD QR Code Container - Pure White Quiet Zone, Pure Black Modules */}
-        <div className="mt-1 p-1.5 bg-white rounded-xl border-2 border-slate-900 shadow-sm flex flex-col items-center">
+        <div className="mt-1 p-1.5 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col items-center">
           {qrDataUrl ? (
             <img
               src={qrDataUrl}
               alt={`QR ${siswa.nis}`}
-              className="w-[72px] h-[72px] object-contain block"
+              className="w-[74px] h-[74px] object-contain block bg-white"
               style={{ imageRendering: 'pixelated' }}
             />
           ) : (
-            <div className="w-[72px] h-[72px] bg-slate-100 animate-pulse rounded" />
+            <div className="w-[74px] h-[74px] bg-slate-100 animate-pulse rounded" />
           )}
         </div>
         <span className="text-[5.5px] font-mono font-black text-slate-800 mt-0.5 tracking-wider uppercase">

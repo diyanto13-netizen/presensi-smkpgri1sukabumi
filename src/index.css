@@ -97,10 +97,15 @@
   height: 100% !important;
   object-fit: cover !important;
   border-radius: 0.85rem !important;
+  transition: transform 0.25s ease-out, filter 0.25s ease-out;
 }
 
 .scanner-view-wide #qr-reader-container video {
-  object-fit: contain !important;
+  object-fit: cover !important;
+}
+
+.scanner-high-contrast #qr-reader-container video {
+  filter: contrast(140%) brightness(110%) saturate(0.2) !important;
 }
 
 #qr-reader-container__scan_region {

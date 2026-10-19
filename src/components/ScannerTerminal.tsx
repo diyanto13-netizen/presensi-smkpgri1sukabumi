@@ -26,6 +26,11 @@ import {
   FileText,
   Settings2,
   Scan,
+  ZoomIn,
+  ZoomOut,
+  Contrast,
+  Lightbulb,
+  Check,
 } from 'lucide-react';
 import { Siswa, Absensi, ScanResult, SchoolConfig } from '../types';
 import { processAttendanceRules, formatWhatsAppMessage } from '../utils/attendanceRules';
@@ -59,7 +64,11 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
   const [availableCameras, setAvailableCameras] = useState<{ id: string; label: string }[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'card' | 'wide'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'wide'>('wide'); // Default wide (16:9) matching PC 720p webcams
+  const [zoomLevel, setZoomLevel] = useState<number>(1.4); // Default 1.4x digital zoom for PC 720p webcams
+  const [highContrast, setHighContrast] = useState<boolean>(false); // High contrast black/white booster
+  const [scanFullFrame, setScanFullFrame] = useState<boolean>(true); // Scan entire frame without cropping box
+  const [showWebcamGuide, setShowWebcamGuide] = useState<boolean>(false);
   const [isScanningFile, setIsScanningFile] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -420,6 +429,31 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
     ]
   );
 
+  // Apply digital zoom to video stream (or hardware zoom if supported)
+  const applyZoom = useCallback((zoom: number) => {
+    setZoomLevel(zoom);
+    try {
+      const videoEl = document.querySelector('#qr-reader-container video') as HTMLVideoElement;
+      if (videoEl) {
+        videoEl.style.transform = `scale(${zoom})`;
+        videoEl.style.transformOrigin = 'center center';
+
+        // Check if camera supports native hardware optical/digital zoom
+        const stream = videoEl.srcObject as MediaStream;
+        const track = stream?.getVideoTracks?.()[0];
+        const caps = track?.getCapabilities?.() as any;
+        if (caps && 'zoom' in caps) {
+          const min = caps.zoom.min || 1;
+          const max = caps.zoom.max || 3;
+          const target = Math.min(max, Math.max(min, zoom));
+          track.applyConstraints({ advanced: [{ zoom: target }] } as any).catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.warn('Could not apply camera zoom:', e);
+    }
+  }, []);
+
   // Initialize and Mount HTML5 QR Code Scanner with Native Hardware Acceleration & HD Resolution
   const startCameraScanner = useCallback(async () => {
     try {
@@ -470,40 +504,57 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         handleAttendanceScan(decodedText);
       };
 
-      // 4. Try starting with High Definition constraints (720p/1080p) for crystal-clear QR detection
+      // 4. Configuration optimized for PC 720p webcams & mobile cameras:
+      // - fps: 15 (allows 2x longer exposure per frame, prevents motion blur on 720p webcams)
+      // - qrbox: if scanFullFrame is true, scan entire viewfinder!
+      // - videoConstraints: 1280x720 ideal 16:9 with fallback
+      const scanConfig: any = {
+        fps: 15,
+        videoConstraints: {
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 },
+          aspectRatio: { ideal: 1.7777777778 },
+        },
+      };
+
+      if (!scanFullFrame) {
+        scanConfig.qrbox = (viewfinderWidth: number, viewfinderHeight: number) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const edge = Math.max(220, Math.floor(minEdge * 0.85));
+          return { width: edge, height: edge };
+        };
+      }
+
       try {
         await html5QrCode.start(
           cameraSource,
-          {
-            fps: 25,
-            qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-              const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-              const edge = Math.max(220, Math.floor(minEdge * 0.9));
-              return { width: edge, height: edge };
-            },
-            videoConstraints: {
-              ...cameraSource,
-              width: { min: 640, ideal: 1280, max: 1920 },
-              height: { min: 480, ideal: 720, max: 1080 },
-            },
-          },
+          scanConfig,
           onScanSuccess,
           () => {}
         );
       } catch (hdErr) {
-        console.warn('HD camera constraints rejected, falling back to standard resolution:', hdErr);
+        console.warn('HD camera constraints rejected, falling back to basic camera config:', hdErr);
         // Fallback for basic webcams
+        const fallbackConfig: any = {
+          fps: 15,
+        };
+        if (!scanFullFrame) {
+          fallbackConfig.qrbox = { width: 250, height: 250 };
+        }
         await html5QrCode.start(
           cameraSource,
-          {
-            fps: 20,
-          },
+          fallbackConfig,
           onScanSuccess,
           () => {}
         );
       }
 
       setIsScannerRunning(true);
+
+      // Re-apply zoom level once stream is playing
+      setTimeout(() => {
+        applyZoom(zoomLevel);
+      }, 350);
 
       // Re-populate camera list once permission is granted
       Html5Qrcode.getCameras()
@@ -520,7 +571,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         'Kamera fisik tidak dapat diakses atau diblokir izinnya oleh browser. Pastikan izin kamera aktif (Allow), atau gunakan tombol "Pindai File Gambar" / input NIS manual di bawah.'
       );
     }
-  }, [cameraFacing, selectedCameraId, handleAttendanceScan]);
+  }, [cameraFacing, selectedCameraId, scanFullFrame, zoomLevel, handleAttendanceScan, applyZoom]);
 
   const stopCameraScanner = useCallback(async () => {
     if (html5QrCodeRef.current && isScannerRunning) {
@@ -747,11 +798,11 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                       Pemindai Kamera QR Code
                     </h3>
                     <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
-                      {viewMode === 'card' ? 'Format Portrait Kartu' : 'Mode Layar Lebar'}
+                      {viewMode === 'card' ? 'Format Portrait Kartu' : 'Mode Layar Lebar (16:9 PC)'}
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 font-medium">
-                    Akselerasi deteksi hardware aktif • Presisi kartu siswa SMKS PGRI 1
+                    Akselerasi hardware • Dioptimalkan untuk Webcam PC 720p &amp; Kamera HP
                   </p>
                 </div>
               </div>
@@ -763,7 +814,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isScanningFile}
-                  className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-300 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-xs"
+                  className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-300 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-xs"
                   title="Pindai langsung dari file foto/gambar kartu"
                 >
                   <Upload className="w-4 h-4 text-blue-700" />
@@ -775,7 +826,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   <select
                     value={selectedCameraId}
                     onChange={e => handleCameraChange(e.target.value)}
-                    className="text-xs bg-slate-100 border border-slate-300 rounded-xl px-2.5 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 max-w-[130px] truncate"
+                    className="text-xs bg-slate-100 border border-slate-300 rounded-xl px-2.5 py-1.5 sm:py-2 font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 max-w-[130px] truncate"
                     title="Pilih perangkat kamera"
                   >
                     {availableCameras.map((cam, idx) => (
@@ -790,10 +841,10 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode(prev => (prev === 'card' ? 'wide' : 'card'))}
-                  className="p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition border border-slate-300 cursor-pointer"
+                  className="p-1.5 sm:p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition border border-slate-300 cursor-pointer"
                   title={
                     viewMode === 'card'
-                      ? 'Ganti ke Mode Layar Lebar (Wide View)'
+                      ? 'Ganti ke Mode Layar Lebar 16:9 (Rekomendasi Webcam PC 720p)'
                       : 'Ganti ke Mode Presisi Kartu Portrait'
                   }
                 >
@@ -810,7 +861,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   onClick={() =>
                     setCameraFacing(prev => (prev === 'user' ? 'environment' : 'user'))
                   }
-                  className="p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition border border-slate-300 cursor-pointer"
+                  className="p-1.5 sm:p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition border border-slate-300 cursor-pointer"
                   title="Ganti Kamera Depan/Belakang"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -821,7 +872,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   <button
                     type="button"
                     onClick={stopCameraScanner}
-                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-300 transition cursor-pointer"
+                    className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-300 transition cursor-pointer"
                   >
                     Hentikan Kamera
                   </button>
@@ -829,7 +880,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   <button
                     type="button"
                     onClick={startCameraScanner}
-                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-black text-amber-300 transition flex items-center gap-2 shadow-sm cursor-pointer border border-slate-800"
+                    className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-black text-amber-300 transition flex items-center gap-2 shadow-sm cursor-pointer border border-slate-800"
                   >
                     <Camera className="w-4 h-4 text-amber-400" />
                     <span>Nyalakan Kamera</span>
@@ -838,14 +889,99 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               </div>
             </div>
 
+            {/* Sub-Toolbar: Optimasi Khusus Webcam PC 720p (Digital Zoom & Filter) */}
+            <div className="px-4 py-2 bg-slate-100/95 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+              {/* Digital Zoom Group */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-slate-700 flex items-center gap-1">
+                  <ZoomIn className="w-3.5 h-3.5 text-blue-700" />
+                  <span>Zoom PC:</span>
+                </span>
+                {[
+                  { label: '1.0x', val: 1.0 },
+                  { label: '1.4x (Fokus PC)', val: 1.4 },
+                  { label: '1.8x', val: 1.8 },
+                  { label: '2.2x', val: 2.2 },
+                ].map(z => (
+                  <button
+                    key={z.val}
+                    type="button"
+                    onClick={() => applyZoom(z.val)}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer text-[11px] ${
+                      zoomLevel === z.val
+                        ? 'bg-blue-950 text-amber-300 shadow-2xs border border-blue-900'
+                        : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+                    }`}
+                  >
+                    {z.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Toggles: Kontras & Full Frame Scan */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* High Contrast Filter */}
+                <button
+                  type="button"
+                  onClick={() => setHighContrast(!highContrast)}
+                  className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer text-[11px] border ${
+                    highContrast
+                      ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-2xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-200 border-slate-300'
+                  }`}
+                  title="Tingkatkan kontras hitam-putih untuk ruangan berpenerangan redup"
+                >
+                  <Contrast className="w-3.5 h-3.5" />
+                  <span>Kontras: {highContrast ? 'Tinggi' : 'Normal'}</span>
+                </button>
+
+                {/* Scan Full Frame Toggle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !scanFullFrame;
+                    setScanFullFrame(next);
+                    if (isScannerRunning && html5QrCodeRef.current) {
+                      stopCameraScanner().then(() => {
+                        setTimeout(startCameraScanner, 250);
+                      });
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer text-[11px] border ${
+                    scanFullFrame
+                      ? 'bg-emerald-700 text-white border-emerald-800 shadow-2xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-200 border-slate-300'
+                  }`}
+                  title="Pindai seluruh layar kamera (disarankan untuk webcam PC)"
+                >
+                  <Scan className="w-3.5 h-3.5" />
+                  <span>{scanFullFrame ? 'Area: Seluruh Layar' : 'Area: Kotak Fokus'}</span>
+                </button>
+
+                {/* Panduan & Solusi Modal/Expand Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowWebcamGuide(!showWebcamGuide)}
+                  className="px-2.5 py-1 rounded-lg font-bold bg-amber-100 text-amber-950 border border-amber-300 hover:bg-amber-200 flex items-center gap-1 transition cursor-pointer text-[11px]"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Solusi 720p</span>
+                </button>
+              </div>
+            </div>
+
             {/* Precision Camera Viewport */}
-            <div className="relative bg-gradient-to-b from-slate-50 via-slate-50/80 to-white min-h-[460px] sm:min-h-[490px] md:min-h-[520px] w-full flex flex-col items-center justify-center p-5 sm:p-7 overflow-hidden border-b border-slate-200">
+            <div
+              className={`relative bg-gradient-to-b from-slate-50 via-slate-50/80 to-white min-h-[460px] sm:min-h-[490px] md:min-h-[520px] w-full flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden border-b border-slate-200 ${
+                highContrast ? 'scanner-high-contrast' : ''
+              }`}
+            >
               {/* Card Container Box */}
               <div
                 className={`relative rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_12px_36px_rgba(245,158,11,0.25),0_4px_16px_rgba(15,23,42,0.12)] bg-black flex items-center justify-center shrink-0 ring-4 ring-amber-400/20 transition-all duration-300 ${
                   viewMode === 'card'
                     ? 'w-[260px] sm:w-[280px] md:w-[300px] h-[412px] sm:h-[444px] md:h-[475px]'
-                    : 'w-full max-w-[460px] h-[345px] scanner-view-wide'
+                    : 'w-full max-w-[560px] aspect-video scanner-view-wide'
                 }`}
               >
                 {/* Live Camera Viewport */}
@@ -859,7 +995,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   <div className="absolute inset-0 flex flex-col items-center justify-between p-4 text-center bg-slate-950 text-slate-200 z-10">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-300 uppercase tracking-wider bg-black/80 px-2.5 py-1 rounded-md border border-amber-400/40 mt-1">
                       <CreditCard className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{viewMode === 'card' ? 'Standar Portrait 54×85.6mm' : 'Mode Kamera Lebar HD'}</span>
+                      <span>{viewMode === 'card' ? 'Standar Portrait 54×85.6mm' : 'Mode Layar Lebar HD (16:9 PC)'}</span>
                     </div>
 
                     <div className="flex flex-col items-center gap-2">
@@ -869,8 +1005,8 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                       <h4 className="text-white font-heading font-black text-sm sm:text-base leading-tight mt-1">
                         Kamera Siap Memindai
                       </h4>
-                      <p className="text-[11px] text-slate-300 max-w-[210px] leading-snug">
-                        Arahkan Kode QR kartu absensi siswa SMKS PGRI 1 ke area pemindai.
+                      <p className="text-[11px] text-slate-300 max-w-[240px] leading-snug">
+                        Arahkan Kode QR kartu absensi siswa SMKS PGRI 1. Pada webcam PC 720p, jaga jarak kartu 35–45 cm.
                       </p>
                     </div>
 
@@ -907,7 +1043,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     <div className="flex items-center justify-between text-[10px] font-bold text-amber-300 bg-black/80 px-2.5 py-1 rounded-md backdrop-blur-xs border border-amber-400/40">
                       <span className="flex items-center gap-1.5 truncate">
                         <CreditCard className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        {viewMode === 'card' ? 'BINGKAI KARTU' : 'LAYAR LEBAR HD'}
+                        {viewMode === 'card' ? 'BINGKAI KARTU' : 'LAYAR LEBAR HD (16:9)'}
                       </span>
                       <span className="text-[9px] text-emerald-400 font-mono flex items-center gap-1 shrink-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -916,40 +1052,95 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     </div>
 
                     {/* QR Target Guide Box */}
-                    <div className="w-36 h-36 border-2 border-dashed border-amber-400/80 rounded-2xl mx-auto flex items-center justify-center bg-black/20 my-auto">
-                      <span className="text-[9px] font-mono text-amber-200/95 bg-black/80 px-2 py-0.5 rounded border border-amber-400/30">
-                        FOKUS KODE QR
-                      </span>
-                    </div>
+                    {!scanFullFrame ? (
+                      <div className="w-36 h-36 border-2 border-dashed border-amber-400/80 rounded-2xl mx-auto flex items-center justify-center bg-black/20 my-auto">
+                        <span className="text-[9px] font-mono text-amber-200/95 bg-black/80 px-2 py-0.5 rounded border border-amber-400/30">
+                          FOKUS KODE QR
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="w-11/12 h-5/6 border border-dashed border-amber-400/50 rounded-2xl mx-auto flex flex-col items-center justify-between p-2 pointer-events-none my-auto">
+                        <div className="flex items-center gap-1.5 text-[8.5px] font-mono text-amber-300/90 bg-black/70 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                          <span>⚡ SCAN SELURUH LAYAR AKTIF</span>
+                          <span className="text-slate-400">•</span>
+                          <span>ZOOM {zoomLevel.toFixed(1)}x</span>
+                        </div>
+                        <div className="text-[8px] text-amber-200/80 bg-black/60 px-2 py-0.5 rounded">
+                          Jaga kartu di jarak 35–45 cm (bebas posisi)
+                        </div>
+                      </div>
+                    )}
 
                     {/* Sweeping Laser Line for Scan View */}
                     <div className="absolute left-2.5 right-2.5 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_rgba(251,191,36,1)] animate-laser-sweep pointer-events-none" />
 
                     {/* Bottom Card Guide Footer */}
                     <div className="text-center text-[10px] font-semibold text-slate-100 bg-black/80 px-2 py-1 rounded-md backdrop-blur-xs border border-slate-700">
-                      Arahkan kode QR ke dalam area kotak pemindai
+                      Pegang kartu stabil di jarak 35–45 cm dari kamera PC
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Practical Guidance Bar */}
-              <div className="mt-4 max-w-lg w-full bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 text-xs text-slate-800 space-y-1">
-                <p className="font-bold text-amber-950 flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5 text-amber-700" />
-                  Tips Agar Kode QR Terbaca Cepat &amp; Presisi:
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px] text-slate-700">
-                  <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/50">
-                    <span className="font-bold text-slate-900">📏 Jarak 15–20 cm:</span> Jangan terlalu dekat agar lensa kamera tidak buram.
+              <div className="mt-4 max-w-lg w-full bg-amber-50/90 border border-amber-200 rounded-xl p-3 text-xs text-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-amber-950 flex items-center gap-1.5 text-xs sm:text-sm">
+                    <HelpCircle className="w-4 h-4 text-amber-700" />
+                    <span>Panduan Khusus Webcam PC 720p:</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowWebcamGuide(!showWebcamGuide)}
+                    className="text-[11px] font-bold text-blue-900 underline hover:text-blue-950 cursor-pointer"
+                  >
+                    {showWebcamGuide ? 'Tutup Penjelasan' : 'Lihat Penyebab & Solusi'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-700">
+                  <div className="bg-white p-2 rounded-lg border border-amber-200/60 shadow-2xs">
+                    <span className="font-bold text-slate-900 block">📏 Jarak 30–45 cm</span>
+                    Jangan terlalu dekat! Webcam PC 720p fokusnya tetap dan akan buram jika kartu berjarak &lt; 20 cm.
                   </div>
-                  <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/50">
-                    <span className="font-bold text-slate-900">💡 Bebas Silau:</span> Miringkan kartu sedikit jika ada pantulan lampu/glare.
+                  <div className="bg-white p-2 rounded-lg border border-amber-200/60 shadow-2xs">
+                    <span className="font-bold text-slate-900 block">🔍 Zoom Digital 1.4x</span>
+                    Aktifkan Zoom 1.4x/1.8x di atas agar QR membesar tanpa harus menempelkan kartu.
                   </div>
-                  <div className="bg-white/80 p-1.5 rounded-lg border border-amber-200/50">
-                    <span className="font-bold text-slate-900">⏱️ Tahan 1 Detik:</span> Pegang kartu stabil agar sensor fokus otomatis.
+                  <div className="bg-white p-2 rounded-lg border border-amber-200/60 shadow-2xs">
+                    <span className="font-bold text-slate-900 block">💡 Miringkan 10°</span>
+                    Miringkan kartu sedikit jika ada pantulan cahaya lampu neon yang menutupi pola hitam-putih.
                   </div>
                 </div>
+
+                {/* Expandable Deep Analysis Card */}
+                {showWebcamGuide && (
+                  <div className="mt-2.5 pt-2.5 border-t border-amber-200/80 text-[11px] text-slate-700 space-y-2">
+                    <div className="p-2.5 bg-amber-100/60 rounded-lg space-y-1">
+                      <p className="font-bold text-amber-950">🔍 Mengapa Webcam PC 720p Sempat Gagal Memindai?</p>
+                      <p>
+                        1. <strong>Lensa Fixed Focus (Fokus Tetap)</strong>: Berbeda dengan kamera ponsel yang memiliki autofokus dinamis, webcam PC/laptop 720p dirancang untuk wajah berjarak 40–60 cm. Saat kartu didekatkan ke kamera agar pas di kotak, lensa menjadi <em>out-of-focus</em> (buram total).
+                      </p>
+                      <p>
+                        2. <strong>Crop Rasio Sempit</strong>: Webcam 720p menghasilkan rasio 16:9. Pemotongan kotak sempit membuang banyak detail modul QR saat kartu berada di jarak fokus tajam.
+                      </p>
+                      <p>
+                        3. <strong>Pencahayaan Indoor</strong>: Shutter kamera 720p membutuhkan eksposur cahaya yang cukup agar modul hitam-putih kontras dan tidak blur saat kartu digerakkan.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-emerald-50 rounded-lg space-y-1 border border-emerald-200/60">
+                      <p className="font-bold text-emerald-950">✅ Solusi yang Diterapkan di Sistem Ini:</p>
+                      <ul className="list-disc pl-4 space-y-0.5 text-emerald-900">
+                        <li><strong>Digital Zoom 1.4x / 1.8x</strong>: Memperbesar QR di tengah layar secara digital sehingga kartu tetap tajam di titik fokus aslinya.</li>
+                        <li><strong>Scan Seluruh Layar (Full Frame)</strong>: Seluruh bidang kamera 720p dipindai langsung tanpa terpotong kotak kecil.</li>
+                        <li><strong>Mode Layar Lebar 16:9</strong>: Rasio kamera asli 1280x720 tanpa pemotongan video palsu (zero crop).</li>
+                        <li><strong>Optimal 15 FPS</strong>: Memberikan waktu eksposur sensor 2x lebih lama sehingga gambar terang dan bebas motion blur.</li>
+                        <li><strong>Quiet Zone Standar ISO (margin: 2)</strong>: QR pada kartu absensi kini memiliki margin putih bersih sehingga modul tidak terdistorsi.</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
