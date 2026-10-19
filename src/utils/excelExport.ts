@@ -31,6 +31,16 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
 
     const jamMasuk = record?.jam_masuk || '-';
     const statusMasuk = record?.status_masuk || (record?.jam_masuk ? 'TEPAT_WAKTU' : 'BELUM HADIR');
+    const jamDzuhur = record?.status_dzuhur === 'TERLAKSANA' 
+      ? (record?.jam_dzuhur ? `Hadir (${record.jam_dzuhur})` : 'Terlaksana')
+      : record?.status_dzuhur === 'BERHALANGAN'
+      ? 'Berhalangan'
+      : '-';
+    const jamAshar = record?.status_ashar === 'TERLAKSANA'
+      ? (record?.jam_ashar ? `Hadir (${record.jam_ashar})` : 'Terlaksana')
+      : record?.status_ashar === 'BERHALANGAN'
+      ? 'Berhalangan'
+      : '-';
     const jamPulang = record?.jam_pulang || '-';
     const statusAkhir = record?.status_akhir || 'BELUM_ABSEN';
     const notifWa = record?.notifikasi_wa_terkirim ? 'Terkirim (WA)' : '-';
@@ -54,6 +64,8 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
       jurusan: student.jurusan,
       jamMasuk,
       statusMasuk,
+      jamDzuhur,
+      jamAshar,
       jamPulang,
       statusAkhir,
       notifWa,
@@ -92,7 +104,7 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
     views: [{ showGridLines: true }],
   });
 
-  // Define Column Widths
+  // Define Column Widths (15 Columns)
   worksheet.columns = [
     { key: 'colA', width: 6 },  // NO
     { key: 'colB', width: 13 }, // NIS
@@ -103,26 +115,28 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
     { key: 'colG', width: 26 }, // JURUSAN
     { key: 'colH', width: 13 }, // JAM MASUK
     { key: 'colI', width: 16 }, // STATUS MASUK
-    { key: 'colJ', width: 13 }, // JAM PULANG
-    { key: 'colK', width: 16 }, // STATUS AKHIR
-    { key: 'colL', width: 15 }, // NOTIF WA
-    { key: 'colM', width: 20 }, // KETERANGAN
+    { key: 'colJ', width: 15 }, // SHOLAT DZUHUR
+    { key: 'colK', width: 15 }, // SHOLAT ASHAR
+    { key: 'colL', width: 13 }, // JAM PULANG
+    { key: 'colM', width: 16 }, // STATUS AKHIR
+    { key: 'colN', width: 15 }, // NOTIF WA
+    { key: 'colO', width: 22 }, // KETERANGAN
   ];
 
   // 1. KOP YAYASAN & SEKOLAH
-  worksheet.mergeCells('A1:M1');
+  worksheet.mergeCells('A1:O1');
   const r1 = worksheet.getCell('A1');
   r1.value = 'YAYASAN PEMBINA LEMBAGA PENDIDIKAN DASAR DAN MENENGAH PGRI (YPLP DIKDASMEN PGRI)';
   r1.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF1E293B' } };
   r1.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  worksheet.mergeCells('A2:M2');
+  worksheet.mergeCells('A2:O2');
   const r2 = worksheet.getCell('A2');
   r2.value = config.nama_sekolah || 'SMKS PGRI 1 KOTA SUKABUMI';
   r2.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FF0B2545' } };
   r2.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  worksheet.mergeCells('A3:M3');
+  worksheet.mergeCells('A3:O3');
   const r3 = worksheet.getCell('A3');
   r3.value = `NPSN: ${config.npsn} • ${config.akreditasi} • ${config.alamat} • Telp: ${config.telepon}`;
   r3.font = { name: 'Arial', size: 8.5, italic: true, color: { argb: 'FF64748B' } };
@@ -130,7 +144,7 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
 
   // Decorative border line under Kop
   worksheet.getRow(4).height = 4;
-  for (let c = 1; c <= 13; c++) {
+  for (let c = 1; c <= 15; c++) {
     const cell = worksheet.getRow(4).getCell(c);
     cell.border = {
       bottom: { style: 'medium', color: { argb: 'FFD97706' } }, // Amber gold border
@@ -140,13 +154,13 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
   // 2. JUDUL LAPORAN & METADATA
   worksheet.getRow(5).height = 8; // spacer
 
-  worksheet.mergeCells('A6:M6');
+  worksheet.mergeCells('A6:O6');
   const r6 = worksheet.getCell('A6');
   r6.value = 'LAPORAN REKAPITULASI PRESENSI HARIAN SISWA';
   r6.font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FF0F172A' } };
   r6.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  worksheet.mergeCells('A7:M7');
+  worksheet.mergeCells('A7:O7');
   const r7 = worksheet.getCell('A7');
   const classText = selectedClass === 'ALL' ? 'Semua Kelas' : `Kelas ${selectedClass}`;
   r7.value = `Hari / Tanggal: ${formatIndonesianDate(date)}    |    Rombel: ${classText}    |    Batas Jam Masuk: ${config.jam_masuk_batas} WIB`;
@@ -163,9 +177,9 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
     { col: 'B', title: 'Total Siswa', val: totalSiswa, fill: 'FFE2E8F0' },
     { col: 'D', title: 'Hadir Tepat Waktu', val: tepatWaktu, fill: 'FFDCFCE7' },
     { col: 'G', title: 'Terlambat', val: terlambat, fill: 'FFFEF3C7' },
-    { col: 'I', title: 'Sudah Pulang', val: sudahPulang, fill: 'FFDBEAFE' },
-    { col: 'K', title: 'Belum Hadir / Nihil', val: belumAbsen, fill: 'FFFEE2E2' },
-    { col: 'M', title: '% Kehadiran', val: `${persentaseHadir}%`, fill: 'FFF1F5F9' },
+    { col: 'J', title: 'Sudah Pulang', val: sudahPulang, fill: 'FFDBEAFE' },
+    { col: 'L', title: 'Belum Hadir / Nihil', val: belumAbsen, fill: 'FFFEE2E2' },
+    { col: 'N', title: '% Kehadiran', val: `${persentaseHadir}%`, fill: 'FFF1F5F9' },
   ];
 
   summaryHeaders.forEach(item => {
@@ -199,6 +213,8 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
     'JURUSAN',
     'JAM MASUK',
     'STATUS MASUK',
+    'SHOLAT DZUHUR',
+    'SHOLAT ASHAR',
     'JAM PULANG',
     'STATUS AKHIR',
     'NOTIFIKASI WA',
@@ -233,7 +249,7 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
     const isZebra = i % 2 === 1;
     const bgZebra = isZebra ? 'FFF8FAFC' : 'FFFFFFFF';
 
-    // Cell values
+    // Cell values (15 Columns)
     dataRow.getCell(1).value = row.no;
     dataRow.getCell(2).value = row.nis;
     dataRow.getCell(3).value = row.nisn;
@@ -243,10 +259,12 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
     dataRow.getCell(7).value = row.jurusan;
     dataRow.getCell(8).value = row.jamMasuk;
     dataRow.getCell(9).value = row.statusMasuk;
-    dataRow.getCell(10).value = row.jamPulang;
-    dataRow.getCell(11).value = row.statusAkhir;
-    dataRow.getCell(12).value = row.notifWa;
-    dataRow.getCell(13).value = row.keterangan;
+    dataRow.getCell(10).value = row.jamDzuhur;
+    dataRow.getCell(11).value = row.jamAshar;
+    dataRow.getCell(12).value = row.jamPulang;
+    dataRow.getCell(13).value = row.statusAkhir;
+    dataRow.getCell(14).value = row.notifWa;
+    dataRow.getCell(15).value = row.keterangan;
 
     // Alignments
     dataRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -261,10 +279,12 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
     dataRow.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' };
     dataRow.getCell(11).alignment = { horizontal: 'center', vertical: 'middle' };
     dataRow.getCell(12).alignment = { horizontal: 'center', vertical: 'middle' };
-    dataRow.getCell(13).alignment = { horizontal: 'left', vertical: 'middle' };
+    dataRow.getCell(13).alignment = { horizontal: 'center', vertical: 'middle' };
+    dataRow.getCell(14).alignment = { horizontal: 'center', vertical: 'middle' };
+    dataRow.getCell(15).alignment = { horizontal: 'left', vertical: 'middle' };
 
     // Set font & basic borders
-    for (let c = 1; c <= 13; c++) {
+    for (let c = 1; c <= 15; c++) {
       const cell = dataRow.getCell(c);
       cell.font = { name: 'Arial', size: 9, color: { argb: 'FF0F172A' } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgZebra } };
@@ -293,7 +313,26 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
       statusMasukCell.font = { name: 'Arial', size: 8.5, italic: true, color: { argb: 'FF991B1B' } };
     }
 
-    const statusAkhirCell = dataRow.getCell(11);
+    // Styling Sholat Dzuhur & Ashar cells
+    const dzuhurCell = dataRow.getCell(10);
+    if (String(row.jamDzuhur).startsWith('Hadir') || row.jamDzuhur === 'Terlaksana') {
+      dzuhurCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCCFBF1' } };
+      dzuhurCell.font = { name: 'Arial', size: 8.5, bold: true, color: { argb: 'FF0F766E' } };
+    } else if (row.jamDzuhur === 'Berhalangan') {
+      dzuhurCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+      dzuhurCell.font = { name: 'Arial', size: 8.5, color: { argb: 'FF6B21A8' } };
+    }
+
+    const asharCell = dataRow.getCell(11);
+    if (String(row.jamAshar).startsWith('Hadir') || row.jamAshar === 'Terlaksana') {
+      asharCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0F2FE' } };
+      asharCell.font = { name: 'Arial', size: 8.5, bold: true, color: { argb: 'FF0369A1' } };
+    } else if (row.jamAshar === 'Berhalangan') {
+      asharCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+      asharCell.font = { name: 'Arial', size: 8.5, color: { argb: 'FF6B21A8' } };
+    }
+
+    const statusAkhirCell = dataRow.getCell(13);
     if (row.statusAkhir === 'TEPAT_WAKTU') {
       statusAkhirCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCFCE7' } };
       statusAkhirCell.font = { name: 'Arial', size: 8.5, bold: true, color: { argb: 'FF166534' } };
@@ -311,8 +350,8 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
     currentRowIndex++;
   });
 
-  // Table bottom border
-  for (let c = 1; c <= 13; c++) {
+  // Table bottom border (15 Columns)
+  for (let c = 1; c <= 15; c++) {
     const cell = worksheet.getRow(currentRowIndex - 1).getCell(c);
     cell.border = {
       ...cell.border,
@@ -324,9 +363,9 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
   currentRowIndex += 2; // spacer
 
   const signDateRow = worksheet.getRow(currentRowIndex);
-  signDateRow.getCell(10).value = `Sukabumi, ${formatIndonesianDate(date)}`;
-  signDateRow.getCell(10).font = { name: 'Arial', size: 9.5, italic: true };
-  signDateRow.getCell(10).alignment = { horizontal: 'center' };
+  signDateRow.getCell(12).value = `Sukabumi, ${formatIndonesianDate(date)}`;
+  signDateRow.getCell(12).font = { name: 'Arial', size: 9.5, italic: true };
+  signDateRow.getCell(12).alignment = { horizontal: 'center' };
 
   currentRowIndex++;
   const signRoleRow = worksheet.getRow(currentRowIndex);
@@ -334,9 +373,9 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
   signRoleRow.getCell(2).font = { name: 'Arial', size: 9.5, bold: true };
   signRoleRow.getCell(2).alignment = { horizontal: 'center' };
 
-  signRoleRow.getCell(10).value = 'Petugas Piket / Kesiswaan,';
-  signRoleRow.getCell(10).font = { name: 'Arial', size: 9.5, bold: true };
-  signRoleRow.getCell(10).alignment = { horizontal: 'center' };
+  signRoleRow.getCell(12).value = 'Petugas Piket / Kesiswaan,';
+  signRoleRow.getCell(12).font = { name: 'Arial', size: 9.5, bold: true };
+  signRoleRow.getCell(12).alignment = { horizontal: 'center' };
 
   currentRowIndex++;
   const signOfficeRow = worksheet.getRow(currentRowIndex);
@@ -344,9 +383,9 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
   signOfficeRow.getCell(2).font = { name: 'Arial', size: 9.5, bold: true };
   signOfficeRow.getCell(2).alignment = { horizontal: 'center' };
 
-  signOfficeRow.getCell(10).value = 'SMKS PGRI 1 Kota Sukabumi';
-  signOfficeRow.getCell(10).font = { name: 'Arial', size: 9.5, bold: true };
-  signOfficeRow.getCell(10).alignment = { horizontal: 'center' };
+  signOfficeRow.getCell(12).value = 'SMKS PGRI 1 Kota Sukabumi';
+  signOfficeRow.getCell(12).font = { name: 'Arial', size: 9.5, bold: true };
+  signOfficeRow.getCell(12).alignment = { horizontal: 'center' };
 
   // Space for physical signature / stempel
   currentRowIndex += 4;
@@ -356,9 +395,9 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
   signNameRow.getCell(2).font = { name: 'Arial', size: 10, bold: true, underline: true };
   signNameRow.getCell(2).alignment = { horizontal: 'center' };
 
-  signNameRow.getCell(10).value = '( .................................................... )';
-  signNameRow.getCell(10).font = { name: 'Arial', size: 10, bold: true };
-  signNameRow.getCell(10).alignment = { horizontal: 'center' };
+  signNameRow.getCell(12).value = '( .................................................... )';
+  signNameRow.getCell(12).font = { name: 'Arial', size: 10, bold: true };
+  signNameRow.getCell(12).alignment = { horizontal: 'center' };
 
   currentRowIndex++;
   const signNipRow = worksheet.getRow(currentRowIndex);
@@ -366,9 +405,9 @@ export async function exportAttendanceToExcel(params: ExportParams): Promise<voi
   signNipRow.getCell(2).font = { name: 'Arial', size: 8.5 };
   signNipRow.getCell(2).alignment = { horizontal: 'center' };
 
-  signNipRow.getCell(10).value = 'NIP / NUPTK. -';
-  signNipRow.getCell(10).font = { name: 'Arial', size: 8.5 };
-  signNipRow.getCell(10).alignment = { horizontal: 'center' };
+  signNipRow.getCell(12).value = 'NIP / NUPTK. -';
+  signNipRow.getCell(12).font = { name: 'Arial', size: 8.5 };
+  signNipRow.getCell(12).alignment = { horizontal: 'center' };
 
   // Generate buffer and trigger browser download
   const buffer = await workbook.xlsx.writeBuffer();

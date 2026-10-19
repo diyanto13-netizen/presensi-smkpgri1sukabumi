@@ -75,6 +75,8 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
     let terlambat = 0;
     let sudahPulang = 0;
     let belumAbsen = 0;
+    let sholatDzuhur = 0;
+    let sholatAshar = 0;
 
     consolidatedList.forEach(item => {
       if (!item.record || !item.record.jam_masuk) {
@@ -84,6 +86,8 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
         if (item.record.status_masuk === 'TERLAMBAT') terlambat++;
         if (item.record.status_pulang === 'PULANG') sudahPulang++;
       }
+      if (item.record?.status_dzuhur === 'TERLAKSANA') sholatDzuhur++;
+      if (item.record?.status_ashar === 'TERLAKSANA') sholatAshar++;
     });
 
     const total = consolidatedList.length;
@@ -95,9 +99,58 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
       terlambat,
       sudahPulang,
       belumAbsen,
+      sholatDzuhur,
+      sholatAshar,
       persentase,
     };
   }, [consolidatedList]);
+
+  // Handler to toggle prayer status (Dzuhur / Ashar)
+  const handleToggleSholat = (
+    student: Siswa,
+    sholatType: 'DZUHUR' | 'ASHAR',
+    status: 'TERLAKSANA' | 'BERHALANGAN'
+  ) => {
+    const existingIndex = attendanceRecords.findIndex(
+      r => r.nis === student.nis && r.tanggal === selectedDate
+    );
+    const nowTime = new Date().toLocaleTimeString('id-ID', { hour12: false });
+
+    if (existingIndex >= 0) {
+      const updated = [...attendanceRecords];
+      const rec = { ...updated[existingIndex] };
+      if (sholatType === 'DZUHUR') {
+        rec.jam_dzuhur = status === 'TERLAKSANA' ? (rec.jam_dzuhur || nowTime) : null;
+        rec.status_dzuhur = status;
+      } else {
+        rec.jam_ashar = status === 'TERLAKSANA' ? (rec.jam_ashar || nowTime) : null;
+        rec.status_ashar = status;
+      }
+      updated[existingIndex] = rec;
+      onUpdateAttendance(updated);
+    } else {
+      const newRec: Absensi = {
+        id: 'att-' + Date.now(),
+        siswa_id: student.id,
+        nis: student.nis,
+        nama: student.nama,
+        kelas: student.kelas,
+        tanggal: selectedDate,
+        jam_masuk: nowTime,
+        status_masuk: 'TEPAT_WAKTU',
+        jam_pulang: null,
+        status_pulang: null,
+        jam_dzuhur: sholatType === 'DZUHUR' && status === 'TERLAKSANA' ? nowTime : null,
+        status_dzuhur: sholatType === 'DZUHUR' ? status : null,
+        jam_ashar: sholatType === 'ASHAR' && status === 'TERLAKSANA' ? nowTime : null,
+        status_ashar: sholatType === 'ASHAR' ? status : null,
+        status_akhir: 'TEPAT_WAKTU',
+        notifikasi_wa_terkirim: false,
+        created_at: new Date().toISOString(),
+      };
+      onUpdateAttendance([...attendanceRecords, newRec]);
+    }
+  };
 
   // 1. Export Native Excel (.xlsx) Siap Cetak
   const handleExportExcel = async () => {
@@ -140,6 +193,8 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
       'Jurusan',
       'Jam Masuk',
       'Status Masuk',
+      'Sholat Dzuhur',
+      'Sholat Ashar',
       'Jam Pulang',
       'Status Akhir',
       'Notifikasi WA',
@@ -159,6 +214,8 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
         `"${item.student.jurusan}"`,
         r?.jam_masuk || '-',
         r?.status_masuk || 'BELUM HADIR',
+        r?.status_dzuhur === 'TERLAKSANA' ? `Terlaksana (${r?.jam_dzuhur || '-'})` : r?.status_dzuhur || '-',
+        r?.status_ashar === 'TERLAKSANA' ? `Terlaksana (${r?.jam_ashar || '-'})` : r?.status_ashar || '-',
         r?.jam_pulang || '-',
         r?.status_akhir || 'BELUM_ABSEN',
         r?.notifikasi_wa_terkirim ? 'Terkirim' : 'Belum/Gagal',
@@ -309,67 +366,89 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
       )}
 
       {/* Metric Cards Summary */}
-      <div className="no-print grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      <div className="no-print grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Siswa</span>
-          <div className="text-3xl sm:text-4xl font-heading font-black text-blue-950 mt-1.5">{stats.total}</div>
-          <span className="text-xs text-slate-500 font-medium mt-1">Dalam filter rombel</span>
+          <div className="text-2xl sm:text-3xl font-heading font-black text-blue-950 mt-1">{stats.total}</div>
+          <span className="text-[11px] text-slate-500 font-medium">Dalam rombel</span>
         </div>
 
-        <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+        <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             Tepat Waktu
           </span>
-          <div className="text-3xl sm:text-4xl font-heading font-black text-emerald-800 mt-1.5">
+          <div className="text-2xl sm:text-3xl font-heading font-black text-emerald-800 mt-1">
             {stats.tepatWaktu}
           </div>
-          <span className="text-xs text-emerald-700 font-bold mt-1">
-            {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `≤ ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur Akhir Pekan'}
+          <span className="text-[11px] text-emerald-700 font-bold">
+            {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `≤ ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur'}
           </span>
         </div>
 
-        <div className="bg-amber-50/80 p-5 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
+        <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
             Terlambat
           </span>
-          <div className="text-3xl sm:text-4xl font-heading font-black text-amber-900 mt-1.5">
+          <div className="text-2xl sm:text-3xl font-heading font-black text-amber-900 mt-1">
             {stats.terlambat}
           </div>
-          <span className="text-xs text-amber-800 font-bold mt-1">
-            {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `> ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur Akhir Pekan'}
+          <span className="text-[11px] text-amber-800 font-bold">
+            {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `> ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur'}
           </span>
         </div>
 
-        <div className="bg-blue-50/80 p-5 rounded-2xl border border-blue-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-blue-600" />
-            Sudah Pulang
+        <div className="bg-teal-50/80 p-4 rounded-2xl border border-teal-200 shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-teal-900 flex items-center gap-1">
+            <span>🕌</span>
+            Dzuhur
           </span>
-          <div className="text-3xl sm:text-4xl font-heading font-black text-blue-900 mt-1.5">
+          <div className="text-2xl sm:text-3xl font-heading font-black text-teal-900 mt-1">
+            {stats.sholatDzuhur}
+          </div>
+          <span className="text-[11px] text-teal-700 font-medium">Sholat berjamaah</span>
+        </div>
+
+        <div className="bg-cyan-50/80 p-4 rounded-2xl border border-cyan-200 shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-cyan-900 flex items-center gap-1">
+            <span>🕌</span>
+            Ashar
+          </span>
+          <div className="text-2xl sm:text-3xl font-heading font-black text-cyan-900 mt-1">
+            {stats.sholatAshar}
+          </div>
+          <span className="text-[11px] text-cyan-700 font-medium">Sholat berjamaah</span>
+        </div>
+
+        <div className="bg-blue-50/80 p-4 rounded-2xl border border-blue-200 shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-blue-600" />
+            Pulang
+          </span>
+          <div className="text-2xl sm:text-3xl font-heading font-black text-blue-900 mt-1">
             {stats.sudahPulang}
           </div>
-          <span className="text-xs text-blue-700 font-medium mt-1">Scan pulang tercatat</span>
+          <span className="text-[11px] text-blue-700 font-medium">Scan pulang</span>
         </div>
 
-        <div className="bg-rose-50/80 p-5 rounded-2xl border border-rose-200 shadow-sm flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-rose-900 flex items-center gap-1.5">
-            <UserX className="w-4 h-4 text-rose-600" />
+        <div className="bg-rose-50/80 p-4 rounded-2xl border border-rose-200 shadow-sm flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-rose-900 flex items-center gap-1">
+            <UserX className="w-3.5 h-3.5 text-rose-600" />
             Belum Hadir
           </span>
-          <div className="text-3xl sm:text-4xl font-heading font-black text-rose-900 mt-1.5">
+          <div className="text-2xl sm:text-3xl font-heading font-black text-rose-900 mt-1">
             {stats.belumAbsen}
           </div>
-          <span className="text-xs text-rose-700 font-medium mt-1">Belum ada scan</span>
+          <span className="text-[11px] text-rose-700 font-medium">Nihil presensi</span>
         </div>
 
-        <div className="bg-slate-100 p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-slate-100 p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Kehadiran</span>
-          <div className="text-3xl sm:text-4xl font-heading font-black text-blue-950 mt-1.5">
+          <div className="text-2xl sm:text-3xl font-heading font-black text-blue-950 mt-1">
             {stats.persentase}%
           </div>
-          <span className="text-xs text-slate-600 font-medium mt-1">Rasio siswa hadir</span>
+          <span className="text-[11px] text-slate-600 font-medium">Rasio kehadiran</span>
         </div>
       </div>
 
@@ -485,6 +564,8 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                 <th className="py-3 px-3.5">Jurusan</th>
                 <th className="py-3 px-3 text-center">Jam Masuk</th>
                 <th className="py-3 px-3.5 text-center">Status Masuk</th>
+                <th className="py-3 px-3 text-center">Dzuhur 🕌</th>
+                <th className="py-3 px-3 text-center">Ashar 🕌</th>
                 <th className="py-3 px-3 text-center">Jam Pulang</th>
                 <th className="py-3 px-3.5 text-center">Status Akhir</th>
                 <th className="py-3 px-3.5 text-center no-print">Notif WA</th>
@@ -494,7 +575,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
             <tbody className="divide-y divide-slate-200 border border-slate-200">
               {consolidatedList.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-10 text-center text-slate-400 text-base">
+                  <td colSpan={14} className="py-10 text-center text-slate-400 text-base">
                     Tidak ada siswa ditemukan pada filter ini.
                   </td>
                 </tr>
@@ -558,6 +639,38 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                         )}
                       </td>
 
+                      {/* Sholat Dzuhur Cell */}
+                      <td className="py-3 px-3 text-center border-r border-slate-200">
+                        {record?.status_dzuhur === 'TERLAKSANA' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 text-teal-900 border border-teal-300 inline-flex items-center gap-1">
+                            <span>🕌</span>
+                            <span>{record.jam_dzuhur || 'Terlaksana'}</span>
+                          </span>
+                        ) : record?.status_dzuhur === 'BERHALANGAN' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                            Berhalangan
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">-</span>
+                        )}
+                      </td>
+
+                      {/* Sholat Ashar Cell */}
+                      <td className="py-3 px-3 text-center border-r border-slate-200">
+                        {record?.status_ashar === 'TERLAKSANA' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyan-100 text-cyan-900 border border-cyan-300 inline-flex items-center gap-1">
+                            <span>🕌</span>
+                            <span>{record.jam_ashar || 'Terlaksana'}</span>
+                          </span>
+                        ) : record?.status_ashar === 'BERHALANGAN' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                            Berhalangan
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">-</span>
+                        )}
+                      </td>
+
                       <td className="py-3 px-3 text-center font-mono border-r border-slate-200">
                         {record?.jam_pulang ? (
                           <span className="font-bold text-slate-900">{record.jam_pulang}</span>
@@ -612,7 +725,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                       </td>
 
                       <td className="py-3 px-3.5 text-center no-print">
-                        <div className="inline-flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1.5 flex-wrap">
                           <button
                             type="button"
                             onClick={() => handleManualStatusChange(student, 'TEPAT_WAKTU')}
@@ -628,6 +741,42 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                             title="Set Terlambat"
                           >
                             Telat
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleSholat(
+                                student,
+                                'DZUHUR',
+                                record?.status_dzuhur === 'TERLAKSANA' ? 'BERHALANGAN' : 'TERLAKSANA'
+                              )
+                            }
+                            className={`px-2 py-1 rounded-lg text-xs font-bold cursor-pointer transition ${
+                              record?.status_dzuhur === 'TERLAKSANA'
+                                ? 'bg-teal-700 text-white hover:bg-teal-800'
+                                : 'bg-teal-50 text-teal-900 hover:bg-teal-100'
+                            }`}
+                            title="Tandai Sholat Dzuhur Terlaksana"
+                          >
+                            🕌 Dzuhur
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleSholat(
+                                student,
+                                'ASHAR',
+                                record?.status_ashar === 'TERLAKSANA' ? 'BERHALANGAN' : 'TERLAKSANA'
+                              )
+                            }
+                            className={`px-2 py-1 rounded-lg text-xs font-bold cursor-pointer transition ${
+                              record?.status_ashar === 'TERLAKSANA'
+                                ? 'bg-cyan-700 text-white hover:bg-cyan-800'
+                                : 'bg-cyan-50 text-cyan-900 hover:bg-cyan-100'
+                            }`}
+                            title="Tandai Sholat Ashar Terlaksana"
+                          >
+                            🕌 Ashar
                           </button>
                           <button
                             type="button"

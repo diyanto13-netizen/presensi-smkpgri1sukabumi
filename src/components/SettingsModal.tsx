@@ -57,7 +57,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   attendanceCount = 0,
   isSyncing = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'umum' | 'fonnte' | 'database'>('jadwal_pulang');
+  const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'sholat' | 'umum' | 'fonnte' | 'database'>('jadwal_pulang');
   const [selectedDayTab, setSelectedDayTab] = useState<HariSekolah>('senin');
   
   // Ensure jam_pulang_per_kelas, jam_masuk_harian, and jam_pulang_harian_per_kelas exist
@@ -321,6 +321,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <Clock className="w-4 h-4 text-amber-400" />
             <span>Jadwal Jam Masuk &amp; Pulang (Senin–Jum'at)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('sholat')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+              activeTab === 'sholat'
+                ? 'bg-blue-950 text-amber-300 shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <span>🕌</span>
+            <span>Sholat Berjamaah (Dzuhur &amp; Ashar)</span>
           </button>
 
           <button
@@ -838,6 +851,141 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <span className="text-[11px] text-blue-800 font-semibold hidden sm:inline">
                       Disarankan
                     </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB: SHOLAT BERJAMAAH (DZUHUR & ASHAR) ================= */}
+            {activeTab === 'sholat' && (
+              <div className="space-y-4">
+                {/* Master Toggle */}
+                <div className="p-4 sm:p-5 bg-gradient-to-r from-teal-50/80 via-emerald-50/50 to-blue-50/60 rounded-2xl border border-teal-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-teal-100 text-teal-900 rounded-xl border border-teal-300">
+                        <span className="text-xl">🕌</span>
+                      </div>
+                      <div>
+                        <h4 className="font-heading font-black text-sm sm:text-base text-teal-950">
+                          Presensi Sholat Berjamaah di Masjid Sekolah
+                        </h4>
+                        <p className="text-xs text-teal-800 font-medium mt-0.5">
+                          Mencatat kedisiplinan ibadah Sholat Dzuhur dan Sholat Ashar berjamaah siswa SMKS PGRI 1 Sukabumi
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.sholat_absen_enabled !== false}
+                        onChange={e =>
+                          setFormData({ ...formData, sholat_absen_enabled: e.target.checked })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Sholat Dzuhur Settings */}
+                <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-2xs">
+                  <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                    <span className="text-lg">☀️</span>
+                    <div>
+                      <h4 className="font-heading font-black text-sm text-slate-900">
+                        Jadwal Rentang Waktu Sholat Dzuhur Berjamaah
+                      </h4>
+                      <p className="text-xs text-slate-500 font-medium">
+                        Siswa yang scan pada rentang jam ini otomatis tercatat melaksanakan Sholat Dzuhur
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                      <label className="text-xs sm:text-sm font-bold text-slate-700">Jam Mulai Dzuhur:</label>
+                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
+                        <input
+                          type="time"
+                          value={formData.sholat_dzuhur_mulai || '11:45'}
+                          onChange={e => setFormData({ ...formData, sholat_dzuhur_mulai: e.target.value })}
+                          className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
+                        />
+                        <span className="text-xs font-bold text-slate-500">WIB</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                      <label className="text-xs sm:text-sm font-bold text-slate-700">Jam Selesai Dzuhur:</label>
+                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
+                        <input
+                          type="time"
+                          value={formData.sholat_dzuhur_selesai || '13:00'}
+                          onChange={e => setFormData({ ...formData, sholat_dzuhur_selesai: e.target.value })}
+                          className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
+                        />
+                        <span className="text-xs font-bold text-slate-500">WIB</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sholat Ashar Settings */}
+                <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-2xs">
+                  <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                    <span className="text-lg">🌤️</span>
+                    <div>
+                      <h4 className="font-heading font-black text-sm text-slate-900">
+                        Jadwal Rentang Waktu Sholat Ashar Berjamaah
+                      </h4>
+                      <p className="text-xs text-slate-500 font-medium">
+                        Siswa yang scan pada rentang jam ini otomatis tercatat melaksanakan Sholat Ashar sebelum kepulangan
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                      <label className="text-xs sm:text-sm font-bold text-slate-700">Jam Mulai Ashar:</label>
+                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
+                        <input
+                          type="time"
+                          value={formData.sholat_ashar_mulai || '15:15'}
+                          onChange={e => setFormData({ ...formData, sholat_ashar_mulai: e.target.value })}
+                          className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
+                        />
+                        <span className="text-xs font-bold text-slate-500">WIB</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                      <label className="text-xs sm:text-sm font-bold text-slate-700">Jam Selesai Ashar:</label>
+                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
+                        <input
+                          type="time"
+                          value={formData.sholat_ashar_selesai || '16:15'}
+                          onChange={e => setFormData({ ...formData, sholat_ashar_selesai: e.target.value })}
+                          className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
+                        />
+                        <span className="text-xs font-bold text-slate-500">WIB</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cloud Storage & Stability Assurance Notice */}
+                <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-3">
+                  <span className="text-2xl shrink-0 mt-0.5">💾</span>
+                  <div className="text-xs sm:text-sm text-emerald-950 space-y-1">
+                    <p className="font-bold">
+                      Efisiensi Penyimpanan Cloud (Firestore &amp; Cloud SQL PostgreSQL):
+                    </p>
+                    <p className="text-emerald-900 leading-relaxed font-medium">
+                      Penambahan absensi Sholat Dzuhur dan Ashar <strong>TIDAK membebani kapasitas cloud</strong> karena tersimpan dalam satu rekaman harian yang sama (hanya bertambah ~50 bytes per siswa/hari). Sistem tetap berjalan sangat stabil, cepat, dan hemat kuota.
+                    </p>
                   </div>
                 </div>
               </div>

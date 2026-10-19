@@ -252,6 +252,10 @@ export async function getAttendanceFromFirestore(): Promise<Absensi[]> {
         status_masuk: data.status_masuk || null,
         jam_pulang: data.jam_pulang || null,
         status_pulang: data.status_pulang || null,
+        jam_dzuhur: data.jam_dzuhur || null,
+        status_dzuhur: data.status_dzuhur || null,
+        jam_ashar: data.jam_ashar || null,
+        status_ashar: data.status_ashar || null,
         status_akhir: data.status_akhir || 'Hadir',
         keterangan: data.keterangan || '',
         notifikasi_wa_terkirim: !!data.notifikasi_wa_terkirim,
@@ -287,6 +291,10 @@ export async function saveAttendanceToFirestore(record: Absensi): Promise<boolea
     if (record.status_masuk) payload.status_masuk = record.status_masuk;
     if (record.jam_pulang) payload.jam_pulang = record.jam_pulang;
     if (record.status_pulang) payload.status_pulang = record.status_pulang;
+    if (record.jam_dzuhur) payload.jam_dzuhur = record.jam_dzuhur;
+    if (record.status_dzuhur) payload.status_dzuhur = record.status_dzuhur;
+    if (record.jam_ashar) payload.jam_ashar = record.jam_ashar;
+    if (record.status_ashar) payload.status_ashar = record.status_ashar;
     if (record.keterangan) payload.keterangan = record.keterangan;
     if (typeof record.notifikasi_wa_terkirim === 'boolean') {
       payload.notifikasi_wa_terkirim = record.notifikasi_wa_terkirim;
@@ -330,6 +338,10 @@ export async function bulkSaveAttendanceToFirestore(records: Absensi[]): Promise
         if (record.status_masuk) payload.status_masuk = record.status_masuk;
         if (record.jam_pulang) payload.jam_pulang = record.jam_pulang;
         if (record.status_pulang) payload.status_pulang = record.status_pulang;
+        if (record.jam_dzuhur) payload.jam_dzuhur = record.jam_dzuhur;
+        if (record.status_dzuhur) payload.status_dzuhur = record.status_dzuhur;
+        if (record.jam_ashar) payload.jam_ashar = record.jam_ashar;
+        if (record.status_ashar) payload.status_ashar = record.status_ashar;
         if (record.keterangan) payload.keterangan = record.keterangan;
         if (typeof record.notifikasi_wa_terkirim === 'boolean') {
           payload.notifikasi_wa_terkirim = record.notifikasi_wa_terkirim;
@@ -391,6 +403,11 @@ export async function saveSchoolConfigToFirestore(cfg: SchoolConfig): Promise<bo
     if (typeof cfg.fonnte_test_mode === 'boolean') payload.fonnte_test_mode = cfg.fonnte_test_mode;
     if (typeof cfg.sound_enabled === 'boolean') payload.sound_enabled = cfg.sound_enabled;
     if (typeof cfg.voice_announcement_enabled === 'boolean') payload.voice_announcement_enabled = cfg.voice_announcement_enabled;
+    if (typeof cfg.sholat_absen_enabled === 'boolean') payload.sholat_absen_enabled = cfg.sholat_absen_enabled;
+    if (cfg.sholat_dzuhur_mulai) payload.sholat_dzuhur_mulai = cfg.sholat_dzuhur_mulai;
+    if (cfg.sholat_dzuhur_selesai) payload.sholat_dzuhur_selesai = cfg.sholat_dzuhur_selesai;
+    if (cfg.sholat_ashar_mulai) payload.sholat_ashar_mulai = cfg.sholat_ashar_mulai;
+    if (cfg.sholat_ashar_selesai) payload.sholat_ashar_selesai = cfg.sholat_ashar_selesai;
 
     await setDoc(docRef, payload, { merge: true });
     return true;

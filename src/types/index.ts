@@ -28,6 +28,8 @@ export interface Siswa {
 
 export type StatusAbsensi = 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'IZIN' | 'SAKIT' | 'ALPA';
 
+export type StatusSholat = 'TERLAKSANA' | 'TIDAK_TERLAKSANA' | 'BERHALANGAN';
+
 export interface Absensi {
   id: string;
   siswa_id: string;
@@ -39,6 +41,11 @@ export interface Absensi {
   status_masuk: 'TEPAT_WAKTU' | 'TERLAMBAT' | null;
   jam_pulang: string | null; // HH:mm:ss
   status_pulang: 'PULANG' | null;
+  // Absensi Sholat Berjamaah
+  jam_dzuhur?: string | null; // HH:mm:ss
+  status_dzuhur?: StatusSholat | null;
+  jam_ashar?: string | null; // HH:mm:ss
+  status_ashar?: StatusSholat | null;
   status_akhir: StatusAbsensi;
   keterangan?: string;
   notifikasi_wa_terkirim: boolean;
@@ -48,12 +55,12 @@ export interface Absensi {
 
 export interface ScanResult {
   success: boolean;
-  type: 'MASUK' | 'PULANG' | 'REJECTED' | 'ALREADY_COMPLETED';
+  type: 'MASUK' | 'PULANG' | 'DZUHUR' | 'ASHAR' | 'REJECTED' | 'ALREADY_COMPLETED';
   siswa?: Siswa;
   absensi?: Absensi;
   message: string;
   timestamp: string;
-  statusDetail?: 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG';
+  statusDetail?: 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'DZUHUR' | 'ASHAR';
   waNotificationStatus?: 'SENT' | 'FAILED' | 'SIMULATED';
 }
 
@@ -97,5 +104,11 @@ export interface SchoolConfig {
   fonnte_test_mode: boolean;
   sound_enabled: boolean;
   voice_announcement_enabled: boolean;
+  // Sholat Berjamaah Config
+  sholat_absen_enabled?: boolean;
+  sholat_dzuhur_mulai?: string; // default "11:45"
+  sholat_dzuhur_selesai?: string; // default "13:00"
+  sholat_ashar_mulai?: string; // default "15:15"
+  sholat_ashar_selesai?: string; // default "16:15"
 }
 

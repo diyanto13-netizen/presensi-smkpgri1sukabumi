@@ -56,6 +56,10 @@ export const attendance = pgTable(
     statusMasuk: text('status_masuk'), // 'TEPAT_WAKTU' | 'TERLAMBAT'
     jamPulang: text('jam_pulang'), // HH:mm:ss
     statusPulang: text('status_pulang'), // 'PULANG'
+    jamDzuhur: text('jam_dzuhur'), // HH:mm:ss
+    statusDzuhur: text('status_dzuhur'), // 'TERLAKSANA' | 'TIDAK_TERLAKSANA' | 'BERHALANGAN'
+    jamAshar: text('jam_ashar'), // HH:mm:ss
+    statusAshar: text('status_ashar'), // 'TERLAKSANA' | 'TIDAK_TERLAKSANA' | 'BERHALANGAN'
     statusAkhir: text('status_akhir').notNull(), // 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'IZIN' | 'SAKIT' | 'ALPA'
     keterangan: text('keterangan'),
     notifikasiWaTerkirim: boolean('notifikasi_wa_terkirim').default(false),
@@ -82,6 +86,11 @@ export const schoolConfigTable = pgTable('school_config', {
   logoUrl: text('logo_url'),
   jamMasukBatas: text('jam_masuk_batas').notNull().default('07:00'),
   jamPulangPerKelas: text('jam_pulang_per_kelas'), // JSON Record<string, string>
+  sholatAbsenEnabled: boolean('sholat_absen_enabled').default(true),
+  sholatDzuhurMulai: text('sholat_dzuhur_mulai').default('11:45'),
+  sholatDzuhurSelesai: text('sholat_dzuhur_selesai').default('13:00'),
+  sholatAsharMulai: text('sholat_ashar_mulai').default('15:15'),
+  sholatAsharSelesai: text('sholat_ashar_selesai').default('16:15'),
   fonnteToken: text('fonnte_token'),
   fonnteTestMode: boolean('fonnte_test_mode').default(true),
   soundEnabled: boolean('sound_enabled').default(true),

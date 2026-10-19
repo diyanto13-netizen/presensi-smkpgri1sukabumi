@@ -73,7 +73,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [manualNis, setManualNis] = useState<string>('');
-  const [mode, setMode] = useState<'AUTO' | 'MASUK' | 'PULANG'>('AUTO');
+  const [mode, setMode] = useState<'AUTO' | 'MASUK' | 'DZUHUR' | 'ASHAR' | 'PULANG'>('AUTO');
 
   // Simulated Time Controls for testing/demo
   const [useSimulatedTime, setUseSimulatedTime] = useState<boolean>(false);
@@ -271,6 +271,8 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
 
       const hasCheckedIn = Boolean(existingRecord?.jam_masuk);
       const hasCheckedOut = Boolean(existingRecord?.jam_pulang);
+      const hasCheckedDzuhur = Boolean(existingRecord?.jam_dzuhur);
+      const hasCheckedAshar = Boolean(existingRecord?.jam_ashar);
 
       // Determine effective class departure time from daily schedule (Senin - Jum'at) or config
       const effectiveJamPulang = getEffectiveJamPulang(student.kelas, todayDate, config);
@@ -285,9 +287,16 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         jamMasukBatas: effectiveJamMasuk !== '-' ? effectiveJamMasuk : config.jam_masuk_batas,
         hasCheckedIn,
         hasCheckedOut,
+        hasCheckedDzuhur,
+        hasCheckedAshar,
         forcedMode: mode,
         isWeekendHoliday: isWeekend,
         dayName: dayDisplayName,
+        sholatAbsenEnabled: config.sholat_absen_enabled !== false,
+        sholatDzuhurMulai: config.sholat_dzuhur_mulai || '11:45',
+        sholatDzuhurSelesai: config.sholat_dzuhur_selesai || '13:00',
+        sholatAsharMulai: config.sholat_ashar_mulai || '15:15',
+        sholatAsharSelesai: config.sholat_ashar_selesai || '16:15',
       });
 
       if (!ruleResult.allowed) {
@@ -320,11 +329,55 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
           tanggal: todayDate,
           jam_masuk: effectiveTime,
           status_masuk: ruleResult.status as 'TEPAT_WAKTU' | 'TERLAMBAT',
-          jam_pulang: null,
-          status_pulang: null,
+          jam_pulang: existingRecord?.jam_pulang || null,
+          status_pulang: existingRecord?.status_pulang || null,
+          jam_dzuhur: existingRecord?.jam_dzuhur || null,
+          status_dzuhur: existingRecord?.status_dzuhur || null,
+          jam_ashar: existingRecord?.jam_ashar || null,
+          status_ashar: existingRecord?.status_ashar || null,
           status_akhir: ruleResult.status as 'TEPAT_WAKTU' | 'TERLAMBAT',
           notifikasi_wa_terkirim: false,
-          created_at: new Date().toISOString(),
+          created_at: existingRecord?.created_at || new Date().toISOString(),
+        };
+      } else if (ruleResult.type === 'DZUHUR') {
+        updatedRecord = {
+          id: existingRecord?.id || 'att-' + Date.now(),
+          siswa_id: student.id,
+          nis: student.nis,
+          nama: student.nama,
+          kelas: student.kelas,
+          tanggal: todayDate,
+          jam_masuk: existingRecord?.jam_masuk || effectiveTime,
+          status_masuk: existingRecord?.status_masuk || 'TEPAT_WAKTU',
+          jam_pulang: existingRecord?.jam_pulang || null,
+          status_pulang: existingRecord?.status_pulang || null,
+          jam_dzuhur: effectiveTime,
+          status_dzuhur: 'TERLAKSANA',
+          jam_ashar: existingRecord?.jam_ashar || null,
+          status_ashar: existingRecord?.status_ashar || null,
+          status_akhir: existingRecord?.status_akhir || 'TEPAT_WAKTU',
+          notifikasi_wa_terkirim: false,
+          created_at: existingRecord?.created_at || new Date().toISOString(),
+        };
+      } else if (ruleResult.type === 'ASHAR') {
+        updatedRecord = {
+          id: existingRecord?.id || 'att-' + Date.now(),
+          siswa_id: student.id,
+          nis: student.nis,
+          nama: student.nama,
+          kelas: student.kelas,
+          tanggal: todayDate,
+          jam_masuk: existingRecord?.jam_masuk || '07:00:00',
+          status_masuk: existingRecord?.status_masuk || 'TEPAT_WAKTU',
+          jam_pulang: existingRecord?.jam_pulang || null,
+          status_pulang: existingRecord?.status_pulang || null,
+          jam_dzuhur: existingRecord?.jam_dzuhur || null,
+          status_dzuhur: existingRecord?.status_dzuhur || null,
+          jam_ashar: effectiveTime,
+          status_ashar: 'TERLAKSANA',
+          status_akhir: existingRecord?.status_akhir || 'TEPAT_WAKTU',
+          notifikasi_wa_terkirim: false,
+          created_at: existingRecord?.created_at || new Date().toISOString(),
         };
       } else {
         // PULANG
@@ -339,6 +392,10 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
           status_masuk: existingRecord?.status_masuk || 'TEPAT_WAKTU',
           jam_pulang: effectiveTime,
           status_pulang: 'PULANG',
+          jam_dzuhur: existingRecord?.jam_dzuhur || null,
+          status_dzuhur: existingRecord?.status_dzuhur || null,
+          jam_ashar: existingRecord?.jam_ashar || null,
+          status_ashar: existingRecord?.status_ashar || null,
           status_akhir: 'PULANG',
           notifikasi_wa_terkirim: false,
           created_at: existingRecord?.created_at || new Date().toISOString(),
@@ -347,7 +404,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
 
       // Audio & Voice Feedback
       if (soundActive) {
-        if (ruleResult.status === 'TEPAT_WAKTU') {
+        if (ruleResult.status === 'TEPAT_WAKTU' || ruleResult.type === 'DZUHUR' || ruleResult.type === 'ASHAR') {
           soundService.playSuccess();
           confetti({
             particleCount: 50,
@@ -362,12 +419,18 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
       }
 
       if (voiceActive) {
-        const greeting =
-          ruleResult.type === 'MASUK'
-            ? `Selamat datang ${student.nama}. Presensi masuk ${
-                ruleResult.status === 'TEPAT_WAKTU' ? 'tepat waktu' : 'terlambat'
-              }.`
-            : `Selamat sore ${student.nama}. Presensi pulang berhasil. Hati-hati di jalan.`;
+        let greeting = '';
+        if (ruleResult.type === 'MASUK') {
+          greeting = `Selamat datang ${student.nama}. Presensi masuk ${
+            ruleResult.status === 'TEPAT_WAKTU' ? 'tepat waktu' : 'terlambat'
+          }.`;
+        } else if (ruleResult.type === 'DZUHUR') {
+          greeting = `Selamat siang ${student.nama}. Presensi sholat dzuhur berjamaah berhasil. Selamat beribadah.`;
+        } else if (ruleResult.type === 'ASHAR') {
+          greeting = `Selamat sore ${student.nama}. Presensi sholat ashar berjamaah berhasil. Selamat beribadah.`;
+        } else {
+          greeting = `Selamat sore ${student.nama}. Presensi pulang berhasil. Hati-hati di jalan.`;
+        }
         soundService.speak(greeting);
       }
 
@@ -376,13 +439,17 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         namaSiswa: student.nama,
         nis: student.nis,
         kelas: student.kelas,
-        jenisAbsen: ruleResult.type as 'MASUK' | 'PULANG',
-        status: ruleResult.status as 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG',
+        jenisAbsen: ruleResult.type as any,
+        status: ruleResult.status as any,
         waktu: `${effectiveTime} WIB`,
         tanggal: formatIndonesianDate(todayDate),
         keterangan:
           ruleResult.status === 'TERLAMBAT'
             ? `Terlambat ${ruleResult.minutesLate} menit`
+            : ruleResult.type === 'DZUHUR'
+            ? 'Sholat Dzuhur Berjamaah di Masjid Sekolah'
+            : ruleResult.type === 'ASHAR'
+            ? 'Sholat Ashar Berjamaah di Masjid Sekolah'
             : undefined,
         namaSekolah: config.nama_sekolah,
       });
@@ -410,7 +477,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         absensi: updatedRecord,
         message: ruleResult.message,
         timestamp: effectiveTime,
-        statusDetail: ruleResult.status as 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG',
+        statusDetail: ruleResult.status as any,
         waNotificationStatus: waResponse.isSimulated ? 'SIMULATED' : 'SENT',
       });
 
@@ -1216,11 +1283,23 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                           {config.jam_pulang_per_kelas?.[s.kelas] || s.jam_pulang}
                         </span>
                       </div>
-                      {todayRecord?.status_masuk && (
-                        <span className="inline-block mt-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-300">
-                          {todayRecord.status_pulang ? '✓ Sudah Pulang' : '✓ Sudah Masuk'}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {todayRecord?.status_masuk && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-300">
+                            {todayRecord.status_pulang ? '✓ Pulang' : '✓ Masuk'}
+                          </span>
+                        )}
+                        {todayRecord?.jam_dzuhur && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 border border-teal-300">
+                            🕌 Dzuhur
+                          </span>
+                        )}
+                        {todayRecord?.jam_ashar && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-900 border border-cyan-300">
+                            🕌 Ashar
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 );
@@ -1248,46 +1327,74 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               <label className="text-xs sm:text-sm font-bold text-slate-800 mb-2.5 block uppercase tracking-wider">
                 Mode Penilaian Kehadiran:
               </label>
-              <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-2xl">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-1.5 bg-slate-100 rounded-2xl">
                 <button
                   type="button"
                   onClick={() => setMode('AUTO')}
-                  className={`py-2.5 text-sm font-bold rounded-xl transition cursor-pointer ${
+                  className={`py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer col-span-2 sm:col-span-1 ${
                     mode === 'AUTO'
                       ? 'bg-slate-950 text-amber-300 shadow-sm'
                       : 'text-slate-700 hover:text-slate-950'
                   }`}
                 >
-                  Otomatis
+                  ⚡ Otomatis
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('MASUK')}
-                  className={`py-2.5 text-sm font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer ${
                     mode === 'MASUK'
                       ? 'bg-emerald-700 text-white shadow-sm'
                       : 'text-slate-700 hover:text-slate-950'
                   }`}
                 >
-                  <UserCheck className="w-4 h-4" />
+                  <UserCheck className="w-3.5 h-3.5" />
                   <span>Masuk</span>
                 </button>
                 <button
                   type="button"
+                  onClick={() => setMode('DZUHUR')}
+                  className={`py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer ${
+                    mode === 'DZUHUR'
+                      ? 'bg-teal-700 text-white shadow-sm'
+                      : 'text-slate-700 hover:text-slate-950'
+                  }`}
+                  title="Presensi Sholat Dzuhur Berjamaah"
+                >
+                  <span>🕌</span>
+                  <span>Dzuhur</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('ASHAR')}
+                  className={`py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer ${
+                    mode === 'ASHAR'
+                      ? 'bg-cyan-700 text-white shadow-sm'
+                      : 'text-slate-700 hover:text-slate-950'
+                  }`}
+                  title="Presensi Sholat Ashar Berjamaah"
+                >
+                  <span>🕌</span>
+                  <span>Ashar</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setMode('PULANG')}
-                  className={`py-2.5 text-sm font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer ${
                     mode === 'PULANG'
                       ? 'bg-indigo-700 text-white shadow-sm'
                       : 'text-slate-700 hover:text-slate-950'
                   }`}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                   <span>Pulang</span>
                 </button>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 mt-2.5 leading-relaxed font-medium">
-                {mode === 'AUTO' && '• Otomatis: Scan ke-1 = Masuk pagi, Scan ke-2 = Pulang (jika mencapai batas jam pulang siswa).'}
-                {mode === 'MASUK' && '• Paksa Masuk: Setiap scan dinilai sebagai absensi kedatangan pagi.'}
+                {mode === 'AUTO' && '• Otomatis: Mendeteksi Masuk (pagi), Sholat Dzuhur (11:45–13:00), Sholat Ashar (15:15–16:15), dan Pulang sesuai jam kepulangan siswa.'}
+                {mode === 'MASUK' && '• Paksa Masuk: Setiap scan dinilai sebagai absensi kedatangan pagi (Tepat Waktu / Terlambat).'}
+                {mode === 'DZUHUR' && '• Sholat Dzuhur: Setiap scan dinilai sebagai kehadiran Sholat Dzuhur Berjamaah.'}
+                {mode === 'ASHAR' && '• Sholat Ashar: Setiap scan dinilai sebagai kehadiran Sholat Ashar Berjamaah.'}
                 {mode === 'PULANG' && '• Paksa Pulang: Setiap scan dinilai untuk kepulangan siswa.'}
               </p>
             </div>
@@ -1339,6 +1446,13 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     </button>
                     <button
                       type="button"
+                      onClick={() => setSimulatedTime('12:15')}
+                      className="text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl bg-white text-teal-950 border border-teal-300 hover:bg-teal-50 cursor-pointer"
+                    >
+                      🕌 12:15 (Dzuhur)
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setSimulatedTime('14:00')}
                       className="text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl bg-white text-rose-900 border border-rose-300 hover:bg-rose-50 cursor-pointer"
                     >
@@ -1350,6 +1464,13 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                       className="text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl bg-white text-blue-900 border border-blue-300 hover:bg-blue-50 cursor-pointer"
                     >
                       15:05 (Pulang Reguler)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSimulatedTime('15:20')}
+                      className="text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl bg-white text-cyan-950 border border-cyan-300 hover:bg-cyan-50 cursor-pointer"
+                    >
+                      🕌 15:20 (Ashar)
                     </button>
                     <button
                       type="button"
@@ -1394,7 +1515,9 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   <div
                     className={`p-5 rounded-2xl flex items-start gap-4 ${
                       lastScanResult.success
-                        ? lastScanResult.statusDetail === 'TEPAT_WAKTU'
+                        ? lastScanResult.type === 'DZUHUR' || lastScanResult.type === 'ASHAR'
+                          ? 'bg-teal-50 border-2 border-teal-400 text-teal-950'
+                          : lastScanResult.statusDetail === 'TEPAT_WAKTU'
                           ? 'bg-emerald-50 border-2 border-emerald-400 text-emerald-950'
                           : lastScanResult.statusDetail === 'TERLAMBAT'
                           ? 'bg-amber-50 border-2 border-amber-400 text-amber-950'
@@ -1403,7 +1526,11 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     }`}
                   >
                     {lastScanResult.success ? (
-                      lastScanResult.statusDetail === 'TEPAT_WAKTU' ? (
+                      lastScanResult.type === 'DZUHUR' || lastScanResult.type === 'ASHAR' ? (
+                        <div className="w-9 h-9 rounded-xl bg-teal-100 border border-teal-300 flex items-center justify-center text-xl shrink-0">
+                          🕌
+                        </div>
+                      ) : lastScanResult.statusDetail === 'TEPAT_WAKTU' ? (
                         <CheckCircle2 className="w-8 h-8 text-emerald-600 shrink-0 mt-0.5" />
                       ) : lastScanResult.statusDetail === 'TERLAMBAT' ? (
                         <AlertTriangle className="w-8 h-8 text-amber-600 shrink-0 mt-0.5" />
@@ -1418,7 +1545,11 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-base sm:text-lg font-heading font-black uppercase tracking-wider">
                           {lastScanResult.success
-                            ? lastScanResult.statusDetail === 'TEPAT_WAKTU'
+                            ? lastScanResult.type === 'DZUHUR'
+                              ? 'SHOLAT DZUHUR TERLAKSANA'
+                              : lastScanResult.type === 'ASHAR'
+                              ? 'SHOLAT ASHAR TERLAKSANA'
+                              : lastScanResult.statusDetail === 'TEPAT_WAKTU'
                               ? 'HADIR TEPAT WAKTU'
                               : lastScanResult.statusDetail === 'TERLAMBAT'
                               ? 'HADIR TERLAMBAT'

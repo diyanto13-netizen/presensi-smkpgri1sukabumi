@@ -19,6 +19,11 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
     let jamPulangHarianMap: Record<string, JamPulangHarian> = { ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS };
     let jamMasukHarian: any = undefined;
     let sabtuMingguLibur = true;
+    let sholatAbsenEnabled = true;
+    let sholatDzuhurMulai = '11:45';
+    let sholatDzuhurSelesai = '13:00';
+    let sholatAsharMulai = '15:15';
+    let sholatAsharSelesai = '16:15';
 
     if (r.jamPulangPerKelas) {
       try {
@@ -28,6 +33,11 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
           jamPulangHarianMap = parsed.daily || jamPulangHarianMap;
           if (parsed.jamMasukHarian) jamMasukHarian = parsed.jamMasukHarian;
           if (parsed.sabtuMingguLibur !== undefined) sabtuMingguLibur = parsed.sabtuMingguLibur;
+          if (parsed.sholatAbsenEnabled !== undefined) sholatAbsenEnabled = parsed.sholatAbsenEnabled;
+          if (parsed.sholatDzuhurMulai) sholatDzuhurMulai = parsed.sholatDzuhurMulai;
+          if (parsed.sholatDzuhurSelesai) sholatDzuhurSelesai = parsed.sholatDzuhurSelesai;
+          if (parsed.sholatAsharMulai) sholatAsharMulai = parsed.sholatAsharMulai;
+          if (parsed.sholatAsharSelesai) sholatAsharSelesai = parsed.sholatAsharSelesai;
         } else {
           jamPulangMap = parsed;
         }
@@ -35,6 +45,14 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
         // fallback
       }
     }
+
+    if (r.sholatAbsenEnabled !== undefined && r.sholatAbsenEnabled !== null) {
+      sholatAbsenEnabled = r.sholatAbsenEnabled;
+    }
+    if (r.sholatDzuhurMulai) sholatDzuhurMulai = r.sholatDzuhurMulai;
+    if (r.sholatDzuhurSelesai) sholatDzuhurSelesai = r.sholatDzuhurSelesai;
+    if (r.sholatAsharMulai) sholatAsharMulai = r.sholatAsharMulai;
+    if (r.sholatAsharSelesai) sholatAsharSelesai = r.sholatAsharSelesai;
 
     return {
       nama_sekolah: r.namaSekolah,
@@ -52,6 +70,11 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
       sabtu_minggu_libur: sabtuMingguLibur,
       jam_pulang_per_kelas: jamPulangMap,
       jam_pulang_harian_per_kelas: jamPulangHarianMap,
+      sholat_absen_enabled: sholatAbsenEnabled,
+      sholat_dzuhur_mulai: sholatDzuhurMulai,
+      sholat_dzuhur_selesai: sholatDzuhurSelesai,
+      sholat_ashar_mulai: sholatAsharMulai,
+      sholat_ashar_selesai: sholatAsharSelesai,
       fonnte_token: r.fonnteToken || '',
       fonnte_test_mode: r.fonnteTestMode ?? true,
       sound_enabled: r.soundEnabled ?? true,
@@ -70,6 +93,11 @@ export async function saveDbSchoolConfig(cfg: SchoolConfig): Promise<SchoolConfi
       daily: cfg.jam_pulang_harian_per_kelas || DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
       jamMasukHarian: cfg.jam_masuk_harian,
       sabtuMingguLibur: cfg.sabtu_minggu_libur !== false,
+      sholatAbsenEnabled: cfg.sholat_absen_enabled !== false,
+      sholatDzuhurMulai: cfg.sholat_dzuhur_mulai || '11:45',
+      sholatDzuhurSelesai: cfg.sholat_dzuhur_selesai || '13:00',
+      sholatAsharMulai: cfg.sholat_ashar_mulai || '15:15',
+      sholatAsharSelesai: cfg.sholat_ashar_selesai || '16:15',
     });
     
     // Check if row exists
@@ -94,6 +122,11 @@ export async function saveDbSchoolConfig(cfg: SchoolConfig): Promise<SchoolConfi
           logoUrl: cfg.logo_url || null,
           jamMasukBatas: cfg.jam_masuk_batas,
           jamPulangPerKelas: jamPulangJson,
+          sholatAbsenEnabled: cfg.sholat_absen_enabled !== false,
+          sholatDzuhurMulai: cfg.sholat_dzuhur_mulai || '11:45',
+          sholatDzuhurSelesai: cfg.sholat_dzuhur_selesai || '13:00',
+          sholatAsharMulai: cfg.sholat_ashar_mulai || '15:15',
+          sholatAsharSelesai: cfg.sholat_ashar_selesai || '16:15',
           fonnteToken: cfg.fonnte_token || null,
           fonnteTestMode: cfg.fonnte_test_mode,
           soundEnabled: cfg.sound_enabled,
@@ -115,6 +148,11 @@ export async function saveDbSchoolConfig(cfg: SchoolConfig): Promise<SchoolConfi
         logoUrl: cfg.logo_url || null,
         jamMasukBatas: cfg.jam_masuk_batas,
         jamPulangPerKelas: jamPulangJson,
+        sholatAbsenEnabled: cfg.sholat_absen_enabled !== false,
+        sholatDzuhurMulai: cfg.sholat_dzuhur_mulai || '11:45',
+        sholatDzuhurSelesai: cfg.sholat_dzuhur_selesai || '13:00',
+        sholatAsharMulai: cfg.sholat_ashar_mulai || '15:15',
+        sholatAsharSelesai: cfg.sholat_ashar_selesai || '16:15',
         fonnteToken: cfg.fonnte_token || null,
         fonnteTestMode: cfg.fonnte_test_mode,
         soundEnabled: cfg.sound_enabled,
