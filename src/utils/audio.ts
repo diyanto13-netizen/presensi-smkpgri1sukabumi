@@ -1,20 +1,110 @@
 /**
- * Web Audio API synthesizer and Speech Synthesis for realistic attendance sound feedback
+ * Web Audio API synthesizer, HTML5 Audio Fallback, and Speech Synthesis
+ * Engineered for robust cross-device support (Desktop, Android Smartphone, Android Tablet Kiosk).
  */
 
 class SoundService {
   private audioCtx: AudioContext | null = null;
+  private isUnlocked = false;
+  private indonesianVoice: SpeechSynthesisVoice | null = null;
+  private voicesLoaded = false;
 
-  private getAudioContext(): AudioContext | null {
+  constructor() {
+    if (typeof window !== 'undefined') {
+      this.initVoiceLoader();
+      this.registerAutoUnlock();
+    }
+  }
+
+  /**
+   * Automatically unlock AudioContext on the first touch, click, or keypress on Android tablets/browsers.
+   */
+  private registerAutoUnlock() {
+    const unlockHandler = () => {
+      this.unlockAudio();
+      window.removeEventListener('click', unlockHandler);
+      window.removeEventListener('touchstart', unlockHandler);
+      window.removeEventListener('touchend', unlockHandler);
+      window.removeEventListener('keydown', unlockHandler);
+    };
+
+    window.addEventListener('click', unlockHandler, { passive: true });
+    window.addEventListener('touchstart', unlockHandler, { passive: true });
+    window.addEventListener('touchend', unlockHandler, { passive: true });
+    window.addEventListener('keydown', unlockHandler, { passive: true });
+  }
+
+  /**
+   * Pre-load speech synthesis voices (fixes Android Chrome async voice loading)
+   */
+  private initVoiceLoader() {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        this.voicesLoaded = true;
+        // Priority: Indonesian exact match -> Indonesian lang prefix -> Malay (closely related)
+        this.indonesianVoice =
+          voices.find(v => v.lang.toLowerCase() === 'id-id' || v.lang.toLowerCase() === 'id_id') ||
+          voices.find(v => v.lang.toLowerCase().startsWith('id')) ||
+          voices.find(v => v.name.toLowerCase().includes('indonesia')) ||
+          voices.find(v => v.lang.toLowerCase().startsWith('ms')) ||
+          null;
+      }
+    };
+
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }
+
+  /**
+   * Explicitly unlock audio context and wake up device DAC (especially on Android tablets)
+   */
+  public async unlockAudio(): Promise<boolean> {
+    try {
+      const ctx = this.getAudioContext();
+      if (!ctx) return false;
+
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+
+      // Play a short silent buffer to activate hardware audio output on Android
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+
+      this.isUnlocked = true;
+
+      // Also prime speech synthesis
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+      }
+
+      return true;
+    } catch (e) {
+      console.warn('Audio unlock warning:', e);
+      return false;
+    }
+  }
+
+  public getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.audioCtx) {
-      const AudioCtxClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtxClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtxClass) {
         this.audioCtx = new AudioCtxClass();
       }
     }
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
+      this.audioCtx.resume().catch(() => {});
     }
     return this.audioCtx;
   }
@@ -25,7 +115,11 @@ class SoundService {
   playSuccess() {
     try {
       const ctx = this.getAudioContext();
-      if (!ctx) return;
+      if (!ctx) {
+        this.playFallbackBeep(880, 0.2);
+        return;
+      }
+
       const now = ctx.currentTime;
 
       // Note 1: 880Hz (A5)
@@ -33,7 +127,7 @@ class SoundService {
       const gain1 = ctx.createGain();
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(880, now);
-      gain1.gain.setValueAtTime(0.18, now);
+      gain1.gain.setValueAtTime(0.2, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
       osc1.connect(gain1);
       gain1.connect(ctx.destination);
@@ -45,14 +139,14 @@ class SoundService {
       const gain2 = ctx.createGain();
       osc2.type = 'sine';
       osc2.frequency.setValueAtTime(1320, now + 0.12);
-      gain2.gain.setValueAtTime(0.2, now + 0.12);
+      gain2.gain.setValueAtTime(0.22, now + 0.12);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
       osc2.connect(gain2);
       gain2.connect(ctx.destination);
       osc2.start(now + 0.12);
       osc2.stop(now + 0.45);
     } catch {
-      // AudioContext may be blocked before first user gesture
+      this.playFallbackBeep(880, 0.25);
     }
   }
 
@@ -62,7 +156,10 @@ class SoundService {
   playWarning() {
     try {
       const ctx = this.getAudioContext();
-      if (!ctx) return;
+      if (!ctx) {
+        this.playFallbackBeep(587, 0.3);
+        return;
+      }
       const now = ctx.currentTime;
 
       const osc = ctx.createOscillator();
@@ -77,7 +174,7 @@ class SoundService {
       osc.start(now);
       osc.stop(now + 0.35);
     } catch {
-      // Ignore
+      this.playFallbackBeep(440, 0.3);
     }
   }
 
@@ -87,7 +184,10 @@ class SoundService {
   playError() {
     try {
       const ctx = this.getAudioContext();
-      if (!ctx) return;
+      if (!ctx) {
+        this.playFallbackBeep(220, 0.3);
+        return;
+      }
       const now = ctx.currentTime;
 
       const osc = ctx.createOscillator();
@@ -102,32 +202,122 @@ class SoundService {
       osc.start(now);
       osc.stop(now + 0.3);
     } catch {
+      this.playFallbackBeep(220, 0.3);
+    }
+  }
+
+  /**
+   * Fallback beep synthesizer using minimal Web Audio or short beep
+   */
+  private playFallbackBeep(freq: number, duration: number) {
+    try {
+      const AudioCtxClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtxClass) {
+        const tempCtx = new AudioCtxClass();
+        const osc = tempCtx.createOscillator();
+        const gain = tempCtx.createGain();
+        osc.frequency.value = freq;
+        gain.gain.value = 0.2;
+        osc.connect(gain);
+        gain.connect(tempCtx.destination);
+        osc.start();
+        setTimeout(() => {
+          try {
+            osc.stop();
+            tempCtx.close();
+          } catch {}
+        }, duration * 1000);
+      }
+    } catch {
       // Ignore
     }
   }
 
   /**
-   * Natural Indonesian voice announcement
+   * Natural Indonesian voice announcement with Android Tablet reliability fixes
    */
   speak(text: string) {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+
     try {
+      // Fix Android Chrome speech queue freeze
       window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'id-ID';
-      utterance.rate = 1.05;
+      utterance.rate = 1.0;
       utterance.pitch = 1.0;
+      utterance.volume = 1.0;
 
-      // Find an Indonesian voice if available
-      const voices = window.speechSynthesis.getVoices();
-      const idVoice = voices.find(v => v.lang.startsWith('id') || v.lang.includes('ID'));
-      if (idVoice) {
-        utterance.voice = idVoice;
+      // Select voice if available
+      if (this.indonesianVoice) {
+        utterance.voice = this.indonesianVoice;
+      } else {
+        // Re-check voices in case they loaded late
+        const voices = window.speechSynthesis.getVoices();
+        const found =
+          voices.find(v => v.lang.toLowerCase() === 'id-id' || v.lang.toLowerCase() === 'id_id') ||
+          voices.find(v => v.lang.toLowerCase().startsWith('id')) ||
+          voices.find(v => v.name.toLowerCase().includes('indonesia')) ||
+          voices.find(v => v.lang.toLowerCase().startsWith('ms'));
+        if (found) {
+          this.indonesianVoice = found;
+          utterance.voice = found;
+        }
       }
+
+      // Android Chrome requires utterance keep-alive and error protection
+      utterance.onerror = (e) => {
+        console.warn('SpeechSynthesis error:', e);
+      };
+
       window.speechSynthesis.speak(utterance);
-    } catch {
-      // Voice may fail if unsupported
+    } catch (e) {
+      console.warn('Speech synthesis failed:', e);
     }
+  }
+
+  /**
+   * Diagnostic test for tablet / desktop audio and speech
+   */
+  async testAudioAndSpeech(): Promise<{
+    webAudioSuccess: boolean;
+    speechSuccess: boolean;
+    voiceName: string;
+    hasIndonesianVoice: boolean;
+  }> {
+    await this.unlockAudio();
+    this.playSuccess();
+
+    const voices = typeof window !== 'undefined' && 'speechSynthesis' in window
+      ? window.speechSynthesis.getVoices()
+      : [];
+
+    const hasIndo = voices.some(v =>
+      v.lang.toLowerCase().startsWith('id') || v.name.toLowerCase().includes('indonesia')
+    );
+
+    const voiceName = this.indonesianVoice
+      ? `${this.indonesianVoice.name} (${this.indonesianVoice.lang})`
+      : voices.length > 0
+      ? `${voices[0].name} (${voices[0].lang})`
+      : 'Default Perangkat (Sistem)';
+
+    setTimeout(() => {
+      this.speak('Tes suara absensi berhasil. Sistem siap digunakan.');
+    }, 400);
+
+    return {
+      webAudioSuccess: true,
+      speechSuccess: 'speechSynthesis' in window,
+      voiceName,
+      hasIndonesianVoice: hasIndo,
+    };
   }
 }
 

@@ -80,9 +80,15 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const [simulatedTime, setSimulatedTime] = useState<string>('06:45');
   const [currentTimeDisplay, setCurrentTimeDisplay] = useState<string>('');
 
-  // Audio & Voice toggles
+  // Audio & Voice toggles & Diagnostic for Android Tablet
   const [soundActive, setSoundActive] = useState<boolean>(config.sound_enabled);
   const [voiceActive, setVoiceActive] = useState<boolean>(config.voice_announcement_enabled);
+  const [isTestingAudio, setIsTestingAudio] = useState<boolean>(false);
+  const [audioDiagnosticMessage, setAudioDiagnosticMessage] = useState<string | null>(null);
+  const [showAudioGuide, setShowAudioGuide] = useState<boolean>(false);
+
+  // Camera switching loading state
+  const [cameraSwitching, setCameraSwitching] = useState<boolean>(false);
 
   // Result state
   const [lastScanResult, setLastScanResult] = useState<ScanResult | null>(null);
@@ -105,10 +111,21 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
             d =>
               d.label.toLowerCase().includes('back') ||
               d.label.toLowerCase().includes('belakang') ||
+              d.label.toLowerCase().includes('rear') ||
               d.label.toLowerCase().includes('external') ||
               d.label.toLowerCase().includes('usb')
           );
-          setSelectedCameraId(preferred ? preferred.id : devices[0].id);
+          if (preferred) {
+            setSelectedCameraId(preferred.id);
+            setCameraFacing('environment');
+          } else {
+            setSelectedCameraId(devices[0].id);
+            const isBack =
+              devices[0].label.toLowerCase().includes('back') ||
+              devices[0].label.toLowerCase().includes('belakang') ||
+              devices[0].label.toLowerCase().includes('rear');
+            setCameraFacing(isBack ? 'environment' : 'user');
+          }
         }
       })
       .catch(() => {
@@ -522,123 +539,131 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   }, []);
 
   // Initialize and Mount HTML5 QR Code Scanner with Native Hardware Acceleration & HD Resolution
-  const startCameraScanner = useCallback(async () => {
-    try {
-      setScannerError(null);
-      const element = document.getElementById('qr-reader-container');
-      if (!element) return;
-
-      if (html5QrCodeRef.current) {
-        try {
-          await html5QrCodeRef.current.stop();
-        } catch {
-          // ignore
-        }
-      }
-
-      // 1. Enable Hardware-Accelerated BarcodeDetector (Chrome/Edge C++ Native Engine)
-      const html5QrCode = new Html5Qrcode('qr-reader-container', {
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.UPC_A,
-        ],
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
-        },
-        verbose: false,
-      });
-      html5QrCodeRef.current = html5QrCode;
-
-      // 2. Determine camera device or facing mode
-      const cameraSource = selectedCameraId
-        ? { deviceId: { exact: selectedCameraId } }
-        : { facingMode: cameraFacing };
-
-      // 3. Scan callback
-      const onScanSuccess = (decodedText: string) => {
-        const now = Date.now();
-        if (
-          decodedText === lastScannedCodeRef.current &&
-          now - lastScannedTimeRef.current < 2500
-        ) {
-          return;
-        }
-        lastScannedCodeRef.current = decodedText;
-        lastScannedTimeRef.current = now;
-        handleAttendanceScan(decodedText);
-      };
-
-      // 4. Configuration optimized for PC 720p webcams & mobile cameras:
-      // - fps: 15 (allows 2x longer exposure per frame, prevents motion blur on 720p webcams)
-      // - qrbox: if scanFullFrame is true, scan entire viewfinder!
-      // - videoConstraints: 1280x720 ideal 16:9 with fallback
-      const scanConfig: any = {
-        fps: 15,
-        videoConstraints: {
-          width: { min: 640, ideal: 1280, max: 1920 },
-          height: { min: 480, ideal: 720, max: 1080 },
-          aspectRatio: { ideal: 1.7777777778 },
-        },
-      };
-
-      if (!scanFullFrame) {
-        scanConfig.qrbox = (viewfinderWidth: number, viewfinderHeight: number) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const edge = Math.max(220, Math.floor(minEdge * 0.85));
-          return { width: edge, height: edge };
-        };
-      }
-
+  const startCameraScanner = useCallback(
+    async (overrideFacing?: 'user' | 'environment', overrideDeviceId?: string) => {
       try {
-        await html5QrCode.start(
-          cameraSource,
-          scanConfig,
-          onScanSuccess,
-          () => {}
-        );
-      } catch (hdErr) {
-        console.warn('HD camera constraints rejected, falling back to basic camera config:', hdErr);
-        // Fallback for basic webcams
-        const fallbackConfig: any = {
-          fps: 15,
-        };
-        if (!scanFullFrame) {
-          fallbackConfig.qrbox = { width: 250, height: 250 };
+        setScannerError(null);
+        const element = document.getElementById('qr-reader-container');
+        if (!element) return;
+
+        if (html5QrCodeRef.current) {
+          try {
+            await html5QrCodeRef.current.stop();
+          } catch {
+            // ignore
+          }
         }
-        await html5QrCode.start(
-          cameraSource,
-          fallbackConfig,
-          onScanSuccess,
-          () => {}
+
+        // 1. Enable Hardware-Accelerated BarcodeDetector (Chrome/Edge C++ Native Engine)
+        const html5QrCode = new Html5Qrcode('qr-reader-container', {
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.UPC_A,
+          ],
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true,
+          },
+          verbose: false,
+        });
+        html5QrCodeRef.current = html5QrCode;
+
+        // Determine effective facing and device ID
+        const effectiveFacing = overrideFacing || cameraFacing;
+        const effectiveDeviceId =
+          overrideDeviceId !== undefined ? overrideDeviceId : selectedCameraId;
+
+        // 2. Determine camera device or facing mode
+        // If device ID is available, attempt exact device first; fallback to facingMode if rejected
+        const cameraSource: any = effectiveDeviceId
+          ? { deviceId: { exact: effectiveDeviceId } }
+          : { facingMode: effectiveFacing };
+
+        // 3. Scan callback
+        const onScanSuccess = (decodedText: string) => {
+          const now = Date.now();
+          if (
+            decodedText === lastScannedCodeRef.current &&
+            now - lastScannedTimeRef.current < 2500
+          ) {
+            return;
+          }
+          lastScannedCodeRef.current = decodedText;
+          lastScannedTimeRef.current = now;
+          handleAttendanceScan(decodedText);
+        };
+
+        // 4. Configuration optimized for PC 720p webcams & mobile cameras:
+        const scanConfig: any = {
+          fps: 15,
+          videoConstraints: {
+            facingMode: effectiveFacing,
+            width: { min: 640, ideal: 1280, max: 1920 },
+            height: { min: 480, ideal: 720, max: 1080 },
+            aspectRatio: { ideal: 1.7777777778 },
+          },
+        };
+
+        if (!scanFullFrame) {
+          scanConfig.qrbox = (viewfinderWidth: number, viewfinderHeight: number) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const edge = Math.max(220, Math.floor(minEdge * 0.85));
+            return { width: edge, height: edge };
+          };
+        }
+
+        try {
+          await html5QrCode.start(
+            cameraSource,
+            scanConfig,
+            onScanSuccess,
+            () => {}
+          );
+        } catch (hdErr) {
+          console.warn('Primary camera config rejected, trying facingMode fallback:', hdErr);
+          // Fallback for Android tablets / mobile where exact deviceId or HD constraints might fail
+          const fallbackSource: any = { facingMode: effectiveFacing };
+          const fallbackConfig: any = {
+            fps: 15,
+          };
+          if (!scanFullFrame) {
+            fallbackConfig.qrbox = { width: 250, height: 250 };
+          }
+          await html5QrCode.start(
+            fallbackSource,
+            fallbackConfig,
+            onScanSuccess,
+            () => {}
+          );
+        }
+
+        setIsScannerRunning(true);
+
+        // Re-apply zoom level once stream is playing
+        setTimeout(() => {
+          applyZoom(zoomLevel);
+        }, 350);
+
+        // Re-populate camera list once permission is granted
+        Html5Qrcode.getCameras()
+          .then(devices => {
+            if (devices && devices.length > 0) {
+              setAvailableCameras(devices);
+            }
+          })
+          .catch(() => {});
+      } catch (err: any) {
+        console.warn('Camera initialization warning:', err);
+        setIsScannerRunning(false);
+        setScannerError(
+          'Kamera fisik tidak dapat diakses atau diblokir izinnya oleh browser. Pastikan izin kamera aktif (Allow), atau gunakan tombol "Pindai File Gambar" / input NIS manual di bawah.'
         );
       }
-
-      setIsScannerRunning(true);
-
-      // Re-apply zoom level once stream is playing
-      setTimeout(() => {
-        applyZoom(zoomLevel);
-      }, 350);
-
-      // Re-populate camera list once permission is granted
-      Html5Qrcode.getCameras()
-        .then(devices => {
-          if (devices && devices.length > 0) {
-            setAvailableCameras(devices);
-          }
-        })
-        .catch(() => {});
-    } catch (err: any) {
-      console.warn('Camera initialization warning:', err);
-      setIsScannerRunning(false);
-      setScannerError(
-        'Kamera fisik tidak dapat diakses atau diblokir izinnya oleh browser. Pastikan izin kamera aktif (Allow), atau gunakan tombol "Pindai File Gambar" / input NIS manual di bawah.'
-      );
-    }
-  }, [cameraFacing, selectedCameraId, scanFullFrame, zoomLevel, handleAttendanceScan, applyZoom]);
+    },
+    [cameraFacing, selectedCameraId, scanFullFrame, zoomLevel, handleAttendanceScan, applyZoom]
+  );
 
   const stopCameraScanner = useCallback(async () => {
     if (html5QrCodeRef.current && isScannerRunning) {
@@ -651,19 +676,130 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
     }
   }, [isScannerRunning]);
 
-  // Handle switching camera device
+  // Handle switching camera device from dropdown
   const handleCameraChange = async (cameraId: string) => {
     setSelectedCameraId(cameraId);
+    const selected = availableCameras.find(c => c.id === cameraId);
+    if (selected) {
+      const isBack =
+        selected.label.toLowerCase().includes('back') ||
+        selected.label.toLowerCase().includes('belakang') ||
+        selected.label.toLowerCase().includes('rear') ||
+        selected.label.toLowerCase().includes('environment');
+      setCameraFacing(isBack ? 'environment' : 'user');
+    }
     if (isScannerRunning && html5QrCodeRef.current) {
       try {
         await html5QrCodeRef.current.stop();
         setIsScannerRunning(false);
         setTimeout(() => {
-          startCameraScanner();
+          startCameraScanner(undefined, cameraId);
         }, 300);
       } catch {
         // ignore
       }
+    }
+  };
+
+  // Robust toggle front/back camera with auto device selection & live restart
+  const handleToggleCamera = useCallback(async () => {
+    if (cameraSwitching) return;
+    setCameraSwitching(true);
+    setScannerError(null);
+
+    const nextFacing: 'user' | 'environment' = cameraFacing === 'user' ? 'environment' : 'user';
+    setCameraFacing(nextFacing);
+
+    // Pick corresponding camera from availableCameras if available
+    let nextDeviceId = '';
+    if (availableCameras && availableCameras.length > 1) {
+      if (nextFacing === 'environment') {
+        const backCam = availableCameras.find(d =>
+          d.label.toLowerCase().includes('back') ||
+          d.label.toLowerCase().includes('belakang') ||
+          d.label.toLowerCase().includes('rear') ||
+          d.label.toLowerCase().includes('environment')
+        );
+        nextDeviceId = backCam
+          ? backCam.id
+          : availableCameras.find(d => d.id !== selectedCameraId)?.id || availableCameras[0].id;
+      } else {
+        const frontCam = availableCameras.find(d =>
+          d.label.toLowerCase().includes('front') ||
+          d.label.toLowerCase().includes('depan') ||
+          d.label.toLowerCase().includes('user') ||
+          d.label.toLowerCase().includes('selfie')
+        );
+        nextDeviceId = frontCam
+          ? frontCam.id
+          : availableCameras.find(d => d.id !== selectedCameraId)?.id || availableCameras[1]?.id || availableCameras[0].id;
+      }
+    } else {
+      nextDeviceId = '';
+    }
+
+    setSelectedCameraId(nextDeviceId);
+
+    // If scanner is running, restart it with the new camera
+    if (html5QrCodeRef.current && isScannerRunning) {
+      try {
+        await html5QrCodeRef.current.stop();
+        setIsScannerRunning(false);
+      } catch (e) {
+        console.warn('Error stopping scanner during switch:', e);
+      }
+
+      setTimeout(async () => {
+        try {
+          await startCameraScanner(nextFacing, nextDeviceId);
+        } finally {
+          setCameraSwitching(false);
+        }
+      }, 350);
+    } else {
+      setCameraSwitching(false);
+    }
+  }, [cameraFacing, cameraSwitching, availableCameras, selectedCameraId, isScannerRunning, startCameraScanner]);
+
+  // Audio handlers with Android Tablet AudioContext unlocker
+  const handleToggleSound = async () => {
+    const next = !soundActive;
+    setSoundActive(next);
+    if (next) {
+      await soundService.unlockAudio();
+      soundService.playSuccess();
+    }
+  };
+
+  const handleToggleVoice = async () => {
+    const next = !voiceActive;
+    setVoiceActive(next);
+    if (next) {
+      await soundService.unlockAudio();
+      soundService.speak('Suara sambutan absensi aktif');
+    }
+  };
+
+  const handleTestTabletAudio = async () => {
+    setIsTestingAudio(true);
+    setAudioDiagnosticMessage(null);
+    try {
+      const res = await soundService.testAudioAndSpeech();
+      if (!res.hasIndonesianVoice) {
+        setAudioDiagnosticMessage(
+          `🔊 Bip berhasil dibunyikan! Mesin suara saat ini: ${res.voiceName}. Bila ucapan bahasa Indonesia belum keluar di tablet, pasang paket bahasa Indonesia di Pengaturan Tablet Android.`
+        );
+      } else {
+        setAudioDiagnosticMessage(
+          `✅ Audio & Suara Tablet Aktif! Suara: ${res.voiceName}. Bip dan ucapan siap berfungsi otomatis.`
+        );
+      }
+    } catch {
+      setAudioDiagnosticMessage(
+        '⚠️ Gagal mengaktifkan audio. Pastikan volume tablet tidak di-mute dan izin audio diperbolehkan.'
+      );
+    } finally {
+      setIsTestingAudio(false);
     }
   };
 
@@ -792,35 +928,95 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
           </div>
 
           {/* Quick Audio & Voice Toggles */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <button
-              onClick={() => setSoundActive(!soundActive)}
+              type="button"
+              onClick={handleToggleSound}
               className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                 soundActive
-                  ? 'bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-750'
+                  ? 'bg-slate-800 text-slate-100 border border-slate-700 hover:bg-slate-750'
                   : 'bg-slate-950/60 text-slate-500 border border-slate-850'
               }`}
-              title="Efek suara bip"
+              title="Klik untuk menghidupkan/mematikan efek suara bip"
             >
               {soundActive ? <Volume2 className="w-3.5 h-3.5 text-blue-400" /> : <VolumeX className="w-3.5 h-3.5" />}
               <span>{soundActive ? 'Bip Aktif' : 'Bip Nonaktif'}</span>
             </button>
 
             <button
-              onClick={() => setVoiceActive(!voiceActive)}
+              type="button"
+              onClick={handleToggleVoice}
               className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                 voiceActive
-                  ? 'bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-750'
+                  ? 'bg-slate-800 text-slate-100 border border-slate-700 hover:bg-slate-750'
                   : 'bg-slate-950/60 text-slate-500 border border-slate-850'
               }`}
-              title="Pengumuman sambutan suara"
+              title="Klik untuk menghidupkan/mematikan suara sambutan"
             >
               <Sparkles className={`w-3.5 h-3.5 ${voiceActive ? 'text-amber-400' : 'text-slate-500'}`} />
               <span>{voiceActive ? 'Suara Aktif' : 'Suara Nonaktif'}</span>
             </button>
+
+            {/* Tablet / Kiosk Audio Test & Unlock Button */}
+            <button
+              type="button"
+              onClick={handleTestTabletAudio}
+              disabled={isTestingAudio}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-75"
+              title="Buka blokir audio browser & tes speaker tablet"
+            >
+              <Volume2 className={`w-3.5 h-3.5 text-slate-950 ${isTestingAudio ? 'animate-pulse' : ''}`} />
+              <span>{isTestingAudio ? 'Menguji...' : 'Tes Audio Tablet'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowAudioGuide(prev => !prev)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
+              title="Bantuan masalah suara tablet Android"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Tablet Audio Notification / Diagnostic Banner */}
+      {(audioDiagnosticMessage || showAudioGuide) && (
+        <div className="bg-slate-900 border border-amber-400/40 text-slate-200 p-4 rounded-2xl shadow-md text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-amber-300 text-sm">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Status &amp; Solusi Audio Tablet Android</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setAudioDiagnosticMessage(null);
+                setShowAudioGuide(false);
+              }}
+              className="text-slate-400 hover:text-white text-xs underline cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
+          {audioDiagnosticMessage && (
+            <p className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 font-mono text-[11px] text-emerald-300">
+              {audioDiagnosticMessage}
+            </p>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-slate-300 leading-relaxed text-[11.5px]">
+            <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800">
+              <strong className="text-white block mb-1">1. Mengapa di Smartphone Normal tapi di Tablet Sempat Bisu?</strong>
+              Pada tablet yang dipasang di meja/stand (mode kiosk), tidak ada yang menyentuh layar. Browser Chrome memblokir audio otomatis (*Autoplay Policy*) sampai layar disentuh minimal 1 kali. Cukup klik tombol <strong>"Tes Audio Tablet"</strong> untuk membuka izin selamanya.
+            </div>
+            <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800">
+              <strong className="text-white block mb-1">2. Jika Suara Ucapan Belum Terdengar di Tablet:</strong>
+              Pastikan paket offline Bahasa Indonesia terpasang di tablet: Buka <em>Pengaturan Tablet &gt; Manajemen Umum &gt; Bahasa &amp; Input &gt; Teks ke Ucapan (TTS) &gt; Mesin Google TTS &gt; Pasang data suara Bahasa Indonesia</em>.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid: Left = Camera / Scanner, Right = Last Scan Result & Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -905,16 +1101,28 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   )}
                 </button>
 
-                {/* Switch Front/Back */}
+                {/* Switch Front/Back Camera */}
                 <button
                   type="button"
-                  onClick={() =>
-                    setCameraFacing(prev => (prev === 'user' ? 'environment' : 'user'))
-                  }
-                  className="p-1.5 sm:p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition border border-slate-300 cursor-pointer"
-                  title="Ganti Kamera Depan/Belakang"
+                  onClick={handleToggleCamera}
+                  disabled={cameraSwitching}
+                  className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition cursor-pointer border shadow-2xs ${
+                    cameraFacing === 'environment'
+                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100'
+                      : 'bg-indigo-50 text-indigo-900 border-indigo-300 hover:bg-indigo-100'
+                  }`}
+                  title={`Klik untuk berganti ke Kamera ${cameraFacing === 'user' ? 'Belakang' : 'Depan'}`}
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw
+                    className={`w-4 h-4 ${cameraSwitching ? 'animate-spin text-amber-600' : ''}`}
+                  />
+                  <span>
+                    {cameraSwitching
+                      ? 'Mengganti...'
+                      : cameraFacing === 'environment'
+                      ? 'Kamera: Belakang'
+                      : 'Kamera: Depan'}
+                  </span>
                 </button>
 
                 {/* Start / Stop Toggle */}
@@ -929,7 +1137,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                 ) : (
                   <button
                     type="button"
-                    onClick={startCameraScanner}
+                    onClick={() => startCameraScanner()}
                     className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-black text-amber-300 transition flex items-center gap-2 shadow-sm cursor-pointer border border-slate-800"
                   >
                     <Camera className="w-4 h-4 text-amber-400" />
@@ -1062,7 +1270,8 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
 
                     <div className="w-full pb-1 flex flex-col gap-2">
                       <button
-                        onClick={startCameraScanner}
+                        type="button"
+                        onClick={() => startCameraScanner()}
                         className="w-full py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 hover:from-amber-300 hover:to-yellow-400 shadow-lg flex items-center justify-center gap-2 transition cursor-pointer font-heading"
                       >
                         <Camera className="w-3.5 h-3.5 text-slate-950" />
