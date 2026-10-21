@@ -652,43 +652,6 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
         </div>
       </div>
 
-      {/* Photo Info & Solution Banner */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0">
-            <Camera className="w-5 h-5 text-amber-700" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-slate-900">
-                Penyebab &amp; Cara Mengganti Pas Foto Asli Siswa
-              </h4>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900">
-                Panduan
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-              File Excel Dapodik yang di-impor hanya berisi data teks tanpa file gambar fisik, sehingga sistem otomatis memasang avatar contoh agar kartu tidak kosong.
-              <br className="hidden sm:inline" />
-              Untuk memasang <strong>pas foto asli siswa</strong>:
-              <br />
-              1. <strong>Massal Sekaligus (Rekomendasi)</strong>: Klik tombol <span className="font-semibold text-indigo-700">"Upload Foto Massal"</span> di atas, pilih sekaligus seluruh file foto siswa (cukup beri nama file sesuai NIS siswa, misal: <code className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-amber-300 text-amber-900">124015101.jpg</code>).
-              <br />
-              2. <strong>Per Siswa</strong>: Klik foto siswa di tabel di bawah untuk unggah foto dari galeri HP/laptop atau foto langsung.
-            </p>
-          </div>
-        </div>
-        <div className="shrink-0 flex items-center gap-2 self-start md:self-center">
-          <button
-            type="button"
-            onClick={() => bulkPhotoInputRef.current?.click()}
-            className="px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer whitespace-nowrap"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            <span>Pilih File Foto Sekaligus</span>
-          </button>
-        </div>
-      </div>
 
       {/* Import Notification Toast */}
       {importNotification && (
