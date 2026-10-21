@@ -417,7 +417,7 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
   };
 
   const handleResetDemoData = () => {
-    if (confirm('Kembalikan data siswa ke data bawaan demo SMKS PGRI 1 Sukabumi?')) {
+    if (confirm('Kembalikan data siswa ke 23 siswa resmi SMKS PGRI 1 Sukabumi (Kelas XII TKJ 2)?')) {
       onUpdateStudents(INITIAL_STUDENTS);
     }
   };

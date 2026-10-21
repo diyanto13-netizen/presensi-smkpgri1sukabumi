@@ -146,16 +146,37 @@ export default function App() {
         saveSchoolConfig(finalConfig);
       }
 
-      // 4. Apply resolved students or auto-seed Firestore if local browser has real students (e.g. Chrome)
-      if (finalStudents && finalStudents.length > 0) {
-        setStudents(finalStudents);
-        saveStudents(finalStudents);
-      } else {
-        const local = getStoredStudents();
-        if (local && local.length > 0) {
-          syncAllStudentsApi(local).catch(() => {});
-          syncStudentsToFirestore(local).catch(() => {});
+      // 4. Apply resolved students with protective merge (prevents real students from being overwritten by stale sample data)
+      const local = getStoredStudents();
+      const hasLocalXII = local && local.some(s => s.kelas === 'XII TKJ 2');
+      const hasRemoteXII = finalStudents && finalStudents.some(s => s.kelas === 'XII TKJ 2');
+
+      if (hasLocalXII && !hasRemoteXII) {
+        // Local has real XII TKJ 2 students, never let stale remote overwrite it; push local to cloud
+        setStudents(local);
+        saveStudents(local);
+        syncAllStudentsApi(local).catch(() => {});
+        syncStudentsToFirestore(local).catch(() => {});
+      } else if (finalStudents && finalStudents.length > 0) {
+        if (local && local.length > finalStudents.length) {
+          // Local has more records (e.g. newly imported), merge and update cloud
+          const mergedMap = new Map<string, Siswa>();
+          finalStudents.forEach(s => mergedMap.set(s.nis, s));
+          local.forEach(s => mergedMap.set(s.nis, s));
+          const merged = Array.from(mergedMap.values());
+          setStudents(merged);
+          saveStudents(merged);
+          syncAllStudentsApi(merged).catch(() => {});
+          syncStudentsToFirestore(merged).catch(() => {});
+        } else {
+          setStudents(finalStudents);
+          saveStudents(finalStudents);
         }
+      } else if (local && local.length > 0) {
+        setStudents(local);
+        saveStudents(local);
+        syncAllStudentsApi(local).catch(() => {});
+        syncStudentsToFirestore(local).catch(() => {});
       }
 
       // 5. Apply resolved attendance records
