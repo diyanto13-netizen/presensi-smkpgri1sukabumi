@@ -77,14 +77,14 @@ test('processAttendanceRules handles first scan in morning as check-in', () => {
 
 test('processAttendanceRules rejects checkout before time and allows when time arrived', () => {
   const earlyAttempt = processAttendanceRules({
-    currentTime: '12:30',
+    currentTime: '14:00',
     studentJamPulang: '15:00',
     hasCheckedIn: true,
     hasCheckedOut: false,
   });
   assert.equal(earlyAttempt.allowed, false);
   assert.equal(earlyAttempt.type, 'REJECTED');
-  assert.equal(earlyAttempt.minutesEarly, 150);
+  assert.equal(earlyAttempt.minutesEarly, 60);
 
   const validCheckout = processAttendanceRules({
     currentTime: '15:05',

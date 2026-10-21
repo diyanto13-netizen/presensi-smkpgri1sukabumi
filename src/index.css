@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-heading: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -10,6 +12,10 @@
     font-size: 15px; /* Comfortable legible base font size */
   }
 
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
     font-family: var(--font-sans);
     background-color: #f8fafc;
@@ -17,6 +23,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  html.dark body {
+    background-color: #0b0f19;
+    color: #f8fafc;
   }
 }
 
@@ -29,12 +41,161 @@
   font-family: var(--font-sans);
 }
 
+/* =========================================================
+   DARK MODE TEXT & COLOR CONTRAST GUARANTEE
+   Ensures all text remains crisp, legible, and never dark-on-dark
+   ========================================================= */
+.dark body {
+  background-color: #0b0f19;
+  color: #f8fafc;
+}
+
+/* Base Surfaces in Dark Mode */
+.dark .bg-slate-50:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  background-color: #0b0f19;
+}
+
+.dark .bg-white:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]) {
+  background-color: #111827;
+}
+
+.dark .bg-slate-100:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  background-color: #1e293b;
+}
+
+.dark .bg-slate-200:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  background-color: #334155;
+}
+
+.dark .hover\:bg-slate-50:hover:not(.preserve-theme) {
+  background-color: #1e293b;
+}
+
+.dark .hover\:bg-slate-100:hover:not(.preserve-theme) {
+  background-color: #334155;
+}
+
+/* High-Contrast Borders in Dark Mode */
+.dark .border-slate-200:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .border-slate-200\/80:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .border-slate-200\/90:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .border-slate-200\/60:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  border-color: #1e293b;
+}
+
+.dark .border-slate-300:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  border-color: #334155;
+}
+
+/* Font Legibility in Dark Mode - High Contrast Guarantee */
+.dark .text-slate-900:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .text-slate-950:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .text-gray-900:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #f8fafc;
+}
+
+.dark .text-slate-800:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .text-gray-800:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #f1f5f9;
+}
+
+.dark .text-slate-700:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .text-gray-700:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #e2e8f0;
+}
+
+.dark .text-slate-600:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .text-gray-600:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #cbd5e1;
+}
+
+.dark .text-slate-500:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #94a3b8;
+}
+
+.dark .text-slate-400:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #94a3b8;
+}
+
+/* High-Contrast Special Heading & Primary Accents in Dark Mode */
+.dark .text-blue-950:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .text-blue-900:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #93c5fd;
+}
+
+.dark .bg-blue-50:not(.preserve-theme) {
+  background-color: rgba(30, 58, 138, 0.25);
+}
+
+.dark .bg-blue-100:not(.preserve-theme) {
+  background-color: rgba(30, 58, 138, 0.45);
+}
+
+.dark .text-blue-700:not(.preserve-theme),
+.dark .text-blue-800:not(.preserve-theme) {
+  color: #60a5fa;
+}
+
+.dark .bg-amber-50:not(.preserve-theme) {
+  background-color: rgba(120, 53, 15, 0.25);
+}
+
+.dark .text-amber-900:not(.preserve-theme),
+.dark .text-amber-800:not(.preserve-theme) {
+  color: #fde68a;
+}
+
+.dark .bg-emerald-50:not(.preserve-theme) {
+  background-color: rgba(6, 78, 59, 0.25);
+}
+
+.dark .text-emerald-950:not(.preserve-theme),
+.dark .text-emerald-800:not(.preserve-theme),
+.dark .text-emerald-700:not(.preserve-theme) {
+  color: #a7f3d0;
+}
+
+.dark .bg-rose-50:not(.preserve-theme) {
+  background-color: rgba(136, 19, 55, 0.25);
+}
+
+.dark .text-rose-950:not(.preserve-theme),
+.dark .text-rose-800:not(.preserve-theme),
+.dark .text-rose-700:not(.preserve-theme) {
+  color: #fecdd3;
+}
+
+/* Form Inputs, Selects & Textareas in Dark Mode */
+.dark input:not([type="checkbox"]):not([type="radio"]):not(.preserve-input):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark select:not(.preserve-input):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark textarea:not(.preserve-input):not(.id-card-landscape *):not(.id-card-portrait *) {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #475569;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8;
+}
+
+.dark option {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
 /* Premium Card & Glassmorphism Styling */
 .premium-card {
   background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.95);
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 8px -1px rgba(15, 23, 42, 0.04);
   border-radius: 1.25rem;
+}
+
+.dark .premium-card {
+  background: #111827;
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
 }
 
 .premium-card-hover {
@@ -46,11 +207,20 @@
   box-shadow: 0 16px 32px -4px rgba(15, 23, 42, 0.1), 0 6px 14px -2px rgba(15, 23, 42, 0.05);
 }
 
+.dark .premium-card-hover:hover {
+  box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.6);
+}
+
 .glass-nav {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.dark .glass-nav {
+  background: rgba(15, 23, 42, 0.94);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.7);
 }
 
 /* ID-1 Card Exact Dimensions: 85.6mm x 54mm (Landscape) and 54mm x 85.6mm (Portrait) */
@@ -149,13 +319,25 @@
   background: #f1f5f9;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 /* Print CSS */

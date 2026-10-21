@@ -19,8 +19,10 @@ import {
   CloudCheck,
   Calendar,
   Sun,
+  Moon,
   Coffee,
 } from 'lucide-react';
+import { applyThemeToDocument, getInitialTheme, Theme } from '../utils/theme';
 import { SchoolConfig, HariSekolah, JamMasukHarian, JamPulangHarian } from '../types/index.ts';
 import { SchoolLogo } from './SchoolLogo';
 import {
@@ -59,6 +61,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'sholat' | 'umum' | 'fonnte' | 'database'>('jadwal_pulang');
   const [selectedDayTab, setSelectedDayTab] = useState<HariSekolah>('senin');
+  const [currentTheme, setCurrentTheme] = useState<Theme>(getInitialTheme);
   
   // Ensure jam_pulang_per_kelas, jam_masuk_harian, and jam_pulang_harian_per_kelas exist
   const [formData, setFormData] = useState<SchoolConfig>(() => ({
@@ -284,42 +287,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200 my-auto flex flex-col max-h-[92vh]">
+      <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl max-w-4xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 my-auto flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200 shrink-0">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-100 text-blue-950 rounded-xl">
-              <Clock className="w-6 h-6 text-blue-900" />
+            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/60 text-blue-950 dark:text-blue-300 rounded-xl">
+              <Clock className="w-6 h-6 text-blue-900 dark:text-blue-400" />
             </div>
             <div>
-              <h3 className="font-heading font-black text-lg sm:text-xl text-blue-950">
+              <h3 className="font-heading font-black text-lg sm:text-xl text-blue-950 dark:text-blue-300">
                 Pengaturan Sistem &amp; Jam Pulang Kelas
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
                 SMKS PGRI 1 Kota Sukabumi • NPSN: {formData.npsn}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer transition"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Buttons */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/60 my-3 shrink-0 overflow-x-auto text-xs font-semibold">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700 my-3 shrink-0 overflow-x-auto text-xs font-semibold">
           <button
             type="button"
             onClick={() => setActiveTab('jadwal_pulang')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'jadwal_pulang'
-                ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Clock className={`w-3.5 h-3.5 ${activeTab === 'jadwal_pulang' ? 'text-blue-600' : 'text-slate-500'}`} />
+            <Clock className={`w-3.5 h-3.5 ${activeTab === 'jadwal_pulang' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
             <span>Jadwal Jam Masuk &amp; Pulang</span>
           </button>
 
@@ -328,8 +331,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab('sholat')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'sholat'
-                ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>🕌</span>
@@ -341,12 +344,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab('umum')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'umum'
-                ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <School className={`w-3.5 h-3.5 ${activeTab === 'umum' ? 'text-blue-600' : 'text-slate-500'}`} />
-            <span>Identitas Sekolah</span>
+            <School className={`w-3.5 h-3.5 ${activeTab === 'umum' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+            <span>Identitas Sekolah &amp; Tema</span>
           </button>
 
           <button
@@ -354,11 +357,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab('fonnte')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'fonnte'
-                ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Key className={`w-3.5 h-3.5 ${activeTab === 'fonnte' ? 'text-blue-600' : 'text-slate-500'}`} />
+            <Key className={`w-3.5 h-3.5 ${activeTab === 'fonnte' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
             <span>WhatsApp (Fonnte)</span>
           </button>
 
@@ -367,11 +370,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab('database')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
               activeTab === 'database'
-                ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Database className={`w-3.5 h-3.5 ${activeTab === 'database' ? 'text-blue-600' : 'text-slate-500'}`} />
+            <Database className={`w-3.5 h-3.5 ${activeTab === 'database' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
             <span>Database Cloud</span>
           </button>
         </div>
@@ -994,10 +997,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* ================= TAB 2: PENGATURAN UMUM & IDENTITAS ================= */}
             {activeTab === 'umum' && (
               <div className="space-y-4">
+                {/* Mode Tema Tampilan: Terang / Gelap */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <label className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+                      <Sun className="w-4.5 h-4.5 text-amber-500" />
+                      <span>Mode Tampilan Aplikasi (Terang / Gelap):</span>
+                    </label>
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-200 dark:bg-slate-950 rounded-xl border border-slate-300 dark:border-slate-700 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentTheme('light');
+                          applyThemeToDocument('light');
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                          currentTheme === 'light'
+                            ? 'bg-white text-slate-900 shadow-2xs font-black'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                      >
+                        <Sun className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Mode Terang</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentTheme('dark');
+                          applyThemeToDocument('dark');
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                          currentTheme === 'dark'
+                            ? 'bg-slate-800 text-amber-300 shadow-2xs font-black'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                      >
+                        <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Mode Gelap</span>
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Pilih antara <strong>Mode Terang (Light Mode)</strong> dan <strong>Mode Gelap (Dark Mode)</strong>. Pada Mode Gelap, seluruh teks, tabel data siswa, dan angka kehadiran tetap memiliki kontras tinggi sehingga tidak melelahkan mata dan terbaca jelas secara maksimal.
+                  </p>
+                </div>
+
                 {/* Jam Masuk Batas */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <label className="font-bold text-slate-900 flex items-center gap-2">
+                    <label className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Clock className="w-4.5 h-4.5 text-amber-600" />
                       <span>Batas Jam Masuk Pagi (Tepat Waktu):</span>
                     </label>

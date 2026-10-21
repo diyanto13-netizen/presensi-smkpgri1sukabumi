@@ -19,7 +19,10 @@ import {
   RotateCw,
   Database,
   Presentation,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { Theme, getInitialTheme, applyThemeToDocument } from './utils/theme';
 import { Siswa, Absensi, SchoolConfig } from './types';
 import {
   getStoredStudents,
@@ -70,6 +73,17 @@ export default function App() {
   const [headerTime, setHeaderTime] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState<boolean>(true);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
+
+  // Dark / Light Mode Theme State
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+
+  useEffect(() => {
+    applyThemeToDocument(theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // Live ticking clock in header
   useEffect(() => {
@@ -260,14 +274,14 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-200">
       {/* Global Navigation Header (Hidden on print) */}
-      <header className="no-print sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
+      <header className="no-print sticky top-0 z-40 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-4">
             {/* School Branding with Official Insignia */}
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-2xs p-1 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 dark:border-slate-700 shadow-2xs p-1 flex items-center justify-center shrink-0">
                 <SchoolLogo
                   src={schoolConfig.logo_url}
                   className="w-full h-full object-contain"
@@ -275,30 +289,30 @@ export default function App() {
                 />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
-                  <span className="font-semibold text-slate-700 tracking-tight">Presensi QR</span>
-                  <span aria-hidden="true" className="text-slate-300">·</span>
+                <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                  <span className="font-semibold text-slate-700 dark:text-slate-200 tracking-tight">Presensi QR</span>
+                  <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">·</span>
                   <span>NPSN {schoolConfig.npsn}</span>
-                  <span aria-hidden="true" className="text-slate-300 hidden sm:inline">·</span>
-                  <span className="hidden sm:inline text-emerald-700 font-semibold">{schoolConfig.akreditasi}</span>
+                  <span aria-hidden="true" className="text-slate-300 dark:text-slate-600 hidden sm:inline">·</span>
+                  <span className="hidden sm:inline text-emerald-700 dark:text-emerald-400 font-semibold">{schoolConfig.akreditasi}</span>
                 </div>
-                <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate">
+                <h1 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
                   {schoolConfig.nama_sekolah}
                 </h1>
               </div>
             </div>
 
             {/* Navigation Tabs (Refined Segmented Controls) */}
-            <nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
+            <nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
               <button
                 onClick={() => setActiveTab('scanner')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'scanner'
-                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
                 }`}
               >
-                <Camera className={`w-3.5 h-3.5 ${activeTab === 'scanner' ? 'text-blue-600' : 'text-slate-500'}`} />
+                <Camera className={`w-3.5 h-3.5 ${activeTab === 'scanner' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                 <span>Terminal Scanner</span>
               </button>
 
@@ -306,11 +320,11 @@ export default function App() {
                 onClick={() => setActiveTab('generator')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'generator'
-                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
                 }`}
               >
-                <CreditCard className={`w-3.5 h-3.5 ${activeTab === 'generator' ? 'text-blue-600' : 'text-slate-500'}`} />
+                <CreditCard className={`w-3.5 h-3.5 ${activeTab === 'generator' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                 <span>Cetak Kartu QR</span>
               </button>
 
@@ -318,11 +332,11 @@ export default function App() {
                 onClick={() => setActiveTab('students')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'students'
-                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
                 }`}
               >
-                <Users className={`w-3.5 h-3.5 ${activeTab === 'students' ? 'text-blue-600' : 'text-slate-500'}`} />
+                <Users className={`w-3.5 h-3.5 ${activeTab === 'students' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                 <span>Data Siswa</span>
               </button>
 
@@ -330,11 +344,11 @@ export default function App() {
                 onClick={() => setActiveTab('recap')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'recap'
-                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
                 }`}
               >
-                <BarChart3 className={`w-3.5 h-3.5 ${activeTab === 'recap' ? 'text-blue-600' : 'text-slate-500'}`} />
+                <BarChart3 className={`w-3.5 h-3.5 ${activeTab === 'recap' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                 <span>Rekap Absensi</span>
               </button>
 
@@ -342,36 +356,61 @@ export default function App() {
                 onClick={() => setActiveTab('docs')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                   activeTab === 'docs'
-                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
                 }`}
                 title="Panduan Skema Database SQL & API"
               >
-                <BookOpen className={`w-3.5 h-3.5 ${activeTab === 'docs' ? 'text-blue-600' : 'text-slate-500'}`} />
+                <BookOpen className={`w-3.5 h-3.5 ${activeTab === 'docs' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                 <span>SQL &amp; Docs</span>
               </button>
             </nav>
 
             {/* Header Right Actions & Live Clock */}
             <div className="flex items-center gap-2">
+              {/* Dark / Light Mode Switcher Button */}
+              <button
+                type="button"
+                onClick={handleToggleTheme}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer select-none ${
+                  theme === 'dark'
+                    ? 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700 hover:text-amber-200'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+                title={theme === 'dark' ? 'Klik untuk beralih ke Mode Terang (Light Mode)' : 'Klik untuk beralih ke Mode Gelap (Dark Mode)'}
+                aria-label="Ganti Mode Gelap / Terang"
+              >
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="hidden sm:inline font-bold text-amber-300">Mode Terang</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <span className="hidden sm:inline font-bold text-slate-700">Mode Gelap</span>
+                  </>
+                )}
+              </button>
+
               {/* Cloud Database Sync Status */}
               <button
                 type="button"
                 onClick={handleManualSync}
                 disabled={isSyncing}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition shadow-2xs cursor-pointer disabled:opacity-60"
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition shadow-2xs cursor-pointer disabled:opacity-60"
                 title="Sinkronisasi Cloud Database (PostgreSQL & Firestore)"
               >
-                <Database className="w-3.5 h-3.5 text-slate-500" />
+                <Database className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                 <span>{isSyncing ? 'Sinkron...' : 'Cloud Sync'}</span>
-                <RotateCw className={`w-3 h-3 text-slate-400 ${isSyncing ? 'animate-spin text-blue-600' : ''}`} />
+                <RotateCw className={`w-3 h-3 text-slate-400 ${isSyncing ? 'animate-spin text-blue-600 dark:text-blue-400' : ''}`} />
               </button>
 
               {/* Live WIB Clock badge */}
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/90 border border-slate-200/80 text-xs font-mono font-medium text-slate-700">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-xs font-mono font-medium text-slate-700 dark:text-slate-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>{headerTime || '07:00:00'}</span>
-                <span className="text-[10px] text-slate-600 font-sans font-semibold">WIB</span>
+                <span className="text-[10px] text-slate-600 dark:text-slate-400 font-sans font-semibold">WIB</span>
               </div>
 
               {/* Proposal Presentation Slide Deck Link */}
@@ -379,20 +418,20 @@ export default function App() {
                 href="/presentation.html"
                 target="_blank"
                 rel="noreferrer"
-                className="px-3 py-1.5 text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition flex items-center gap-1.5 text-xs font-semibold shadow-2xs cursor-pointer"
+                className="px-2.5 sm:px-3 py-1.5 text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-300 dark:border-amber-700/60 rounded-lg transition flex items-center gap-1.5 text-xs font-semibold shadow-2xs cursor-pointer"
                 title="Buka Slide Presentasi Penawaran untuk Pihak Sekolah (Bisa Tayang Fullscreen / Cetak PDF)"
               >
-                <Presentation className="w-3.5 h-3.5 text-amber-700" />
-                <span className="hidden sm:inline">Slide Penawaran</span>
+                <Presentation className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+                <span className="hidden md:inline">Slide Penawaran</span>
               </a>
 
               {/* Settings button */}
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="px-3 py-1.5 text-slate-700 hover:text-slate-950 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition flex items-center gap-1.5 text-xs font-medium shadow-2xs cursor-pointer"
+                className="px-2.5 sm:px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition flex items-center gap-1.5 text-xs font-medium shadow-2xs cursor-pointer"
                 title="Pengaturan Sekolah & Fonnte"
               >
-                <Settings className="w-3.5 h-3.5 text-slate-500" />
+                <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                 <span className="hidden md:inline">Pengaturan</span>
               </button>
             </div>
@@ -400,11 +439,11 @@ export default function App() {
         </div>
 
         {/* Mobile Navigation Bar */}
-        <div className="lg:hidden border-t border-slate-200/80 px-2 py-1.5 grid grid-cols-5 gap-1 bg-white/95 text-[11px] font-semibold text-center">
+        <div className="lg:hidden border-t border-slate-200/80 dark:border-slate-800 px-2 py-1.5 grid grid-cols-5 gap-1 bg-white/95 dark:bg-slate-900/95 text-[11px] font-semibold text-center">
           <button
             onClick={() => setActiveTab('scanner')}
             className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
-              activeTab === 'scanner' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'scanner' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/80 dark:bg-blue-950/60' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Camera className="w-4 h-4" />
@@ -413,7 +452,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('generator')}
             className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
-              activeTab === 'generator' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'generator' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/80 dark:bg-blue-950/60' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <CreditCard className="w-4 h-4" />
@@ -422,7 +461,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('students')}
             className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
-              activeTab === 'students' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'students' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/80 dark:bg-blue-950/60' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Users className="w-4 h-4" />
@@ -431,7 +470,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('recap')}
             className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
-              activeTab === 'recap' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'recap' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/80 dark:bg-blue-950/60' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -440,7 +479,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('docs')}
             className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
-              activeTab === 'docs' ? 'text-blue-600 font-bold bg-blue-50/80' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'docs' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/80 dark:bg-blue-950/60' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -509,13 +548,13 @@ export default function App() {
       </main>
 
       {/* Footer (Hidden on print) */}
-      <footer className="no-print mt-auto border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-600">
+      <footer className="no-print mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 text-center text-sm text-slate-600 dark:text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="font-semibold text-slate-800 text-sm">
-            © 2026 <strong className="text-blue-950 font-black">{schoolConfig.nama_sekolah}</strong>. Sistem Absensi &amp; Generator Kartu Pelajar QR.
+          <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+            © 2026 <strong className="text-blue-950 dark:text-blue-400 font-black">{schoolConfig.nama_sekolah}</strong>. Sistem Absensi &amp; Generator Kartu Pelajar QR.
           </p>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            NPSN: <span className="font-bold text-slate-800">{schoolConfig.npsn}</span> • {schoolConfig.alamat}
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+            NPSN: <span className="font-bold text-slate-800 dark:text-slate-200">{schoolConfig.npsn}</span> • {schoolConfig.alamat}
           </p>
         </div>
       </footer>
