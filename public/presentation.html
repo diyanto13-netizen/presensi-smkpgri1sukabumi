@@ -30,81 +30,276 @@
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       background: #090d16;
       color: #f8fafc;
-      overflow: hidden;
-      height: 100vh;
+      min-height: 100vh;
       width: 100vw;
-      user-select: none;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-top: 72px; /* Space for sticky header */
+      padding-bottom: 80px; /* Space for bottom indicator */
     }
 
-    /* Presentation Deck Container */
-    .deck-container {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
+    /* ================= TOP STICKY CONTROLLER BAR ================= */
+    .top-navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-badge {
+      font-size: 11px;
+      font-weight: 800;
+      background: #f59e0b;
+      color: #0f172a;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .nav-title {
+        display: block;
+      }
+    }
+
+    /* Slide Switcher Center Controls */
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-indicator {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 5px 12px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    .btn-nav {
+      padding: 7px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-nav-prev {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .btn-nav-prev:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
+
+    .btn-nav-next {
+      background: #fbbf24;
+      color: #0f172a;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
+    }
+
+    .btn-nav-next:hover {
+      background: #f59e0b;
+      transform: translateY(-1px);
+    }
+
+    /* Direct Slide Quick Jump Buttons */
+    .slide-pills {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      margin: 0 4px;
+    }
+
+    @media (min-width: 1024px) {
+      .slide-pills {
+        display: flex;
+      }
+    }
+
+    .pill-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #090d16 100%);
+      transition: all 0.15s;
     }
 
-    /* Individual Slide */
+    .pill-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+
+    .pill-btn.active {
+      background: #fbbf24;
+      color: #0f172a;
+      border-color: #f59e0b;
+      font-weight: 800;
+    }
+
+    /* Right Action Group */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-view-mode {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-view-mode:hover {
+      background: rgba(59, 130, 246, 0.25);
+      color: #93c5fd;
+    }
+
+    .btn-back-app {
+      background: rgba(255, 255, 255, 0.06);
+      color: #cbd5e1;
+      border-color: rgba(255, 255, 255, 0.14);
+      text-decoration: none;
+    }
+
+    .btn-back-app:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+    }
+
+    /* ================= MAIN SLIDES CONTAINER ================= */
+    .deck-container {
+      width: 100%;
+      min-height: calc(100vh - 150px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px 20px;
+    }
+
+    /* Individual Slide Card */
     .slide {
       display: none;
-      width: 92vw;
-      max-width: 1280px;
-      height: 86vh;
-      max-height: 720px;
+      width: 100%;
+      max-width: 1180px;
+      min-height: 540px;
       background: #0f172a;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 28px;
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(30, 58, 138, 0.2);
-      padding: 44px 56px;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6), 0 0 30px rgba(30, 58, 138, 0.2);
+      padding: 32px 40px;
       flex-direction: column;
       justify-content: space-between;
       position: relative;
-      overflow: hidden;
-      animation: slideIn 0.35s ease-out;
+      margin-bottom: 24px;
+      animation: slideIn 0.25s ease-out;
     }
 
     .slide.active {
       display: flex;
     }
 
+    /* Scroll Mode: Show all 10 slides sequentially */
+    body.scroll-mode .slide {
+      display: flex !important;
+      margin-bottom: 40px;
+    }
+
+    body.scroll-mode .nav-controls .btn-nav-prev,
+    body.scroll-mode .nav-controls .btn-nav-next,
+    body.scroll-mode .nav-controls .slide-pills {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
     @keyframes slideIn {
-      from { opacity: 0; transform: scale(0.98) translateY(10px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* Header & Badge */
     .slide-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
+      gap: 6px;
+      padding: 4px 12px;
       border-radius: 9999px;
       background: rgba(245, 158, 11, 0.15);
       border: 1px solid rgba(245, 158, 11, 0.35);
       color: #fbbf24;
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 800;
       letter-spacing: 0.5px;
       text-transform: uppercase;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
       width: fit-content;
     }
 
     .slide-title {
-      font-size: 34px;
+      font-size: 28px;
       font-weight: 800;
       color: #ffffff;
       line-height: 1.25;
       letter-spacing: -0.5px;
     }
 
+    @media (min-width: 768px) {
+      .slide-title {
+        font-size: 32px;
+      }
+    }
+
     .slide-subtitle {
-      font-size: 16px;
+      font-size: 14.5px;
       color: #94a3b8;
-      margin-top: 6px;
+      margin-top: 5px;
       font-weight: 500;
     }
 
@@ -112,15 +307,21 @@
     .slide-body {
       flex: 1;
       display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 36px;
+      grid-template-columns: 1fr;
+      gap: 24px;
       align-items: center;
-      margin-top: 24px;
+      margin-top: 20px;
       margin-bottom: 20px;
     }
 
+    @media (min-width: 900px) {
+      .slide-body {
+        grid-template-columns: 1.15fr 0.85fr;
+      }
+    }
+
     .slide-body.full-width {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr !important;
     }
 
     /* List Points */
@@ -128,108 +329,99 @@
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
 
     .point-item {
       display: flex;
       align-items: flex-start;
-      gap: 14px;
+      gap: 12px;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.07);
-      padding: 14px 18px;
-      border-radius: 16px;
-      transition: all 0.2s;
+      padding: 12px 16px;
+      border-radius: 14px;
+      transition: all 0.15s;
     }
 
     .point-item:hover {
       background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(245, 158, 11, 0.4);
-      transform: translateX(4px);
+      border-color: rgba(245, 158, 11, 0.35);
     }
 
     .point-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
       background: linear-gradient(135deg, #1e3a8a, #3b82f6);
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 15px;
+      font-size: 13.5px;
       flex-shrink: 0;
       margin-top: 2px;
     }
 
-    .point-icon.emerald {
-      background: linear-gradient(135deg, #065f46, #10b981);
-    }
-
-    .point-icon.amber {
-      background: linear-gradient(135deg, #b45309, #f59e0b);
-    }
-
-    .point-icon.rose {
-      background: linear-gradient(135deg, #9f1239, #f43f5e);
-    }
+    .point-icon.emerald { background: linear-gradient(135deg, #065f46, #10b981); }
+    .point-icon.amber { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .point-icon.rose { background: linear-gradient(135deg, #9f1239, #f43f5e); }
 
     .point-title {
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 700;
       color: #f1f5f9;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
 
     .point-desc {
-      font-size: 13.5px;
+      font-size: 12.5px;
       color: #94a3b8;
       line-height: 1.45;
     }
 
-    /* Visual Mockup Container (Right Column) */
+    /* Visual Mockup Card (Right Column) */
     .mockup-card {
       background: linear-gradient(145deg, #1e293b, #0f172a);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 20px;
-      padding: 24px;
+      border-radius: 18px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 20px 30px -10px rgba(0, 0, 0, 0.5);
+      gap: 14px;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 15px 25px -10px rgba(0, 0, 0, 0.5);
     }
 
-    /* Mini Simulated UI Elements */
+    /* Simulated Student Card Mockup */
     .simulated-card {
       background: #ffffff;
       color: #0f172a;
-      border-radius: 14px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 14px;
       border: 2px solid #fbbf24;
       display: flex;
-      gap: 14px;
+      gap: 12px;
       align-items: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
     }
 
     .simulated-photo {
-      width: 60px;
-      height: 75px;
+      width: 52px;
+      height: 65px;
       background: #e2e8f0;
-      border-radius: 8px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
+      font-size: 22px;
       border: 1px solid #cbd5e1;
     }
 
     .simulated-qr {
-      width: 65px;
-      height: 65px;
+      width: 56px;
+      height: 56px;
       background: #0f172a;
-      border-radius: 8px;
-      padding: 5px;
+      border-radius: 6px;
+      padding: 4px;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 2px;
@@ -237,28 +429,28 @@
 
     .qr-block {
       background: white;
-      border-radius: 2px;
+      border-radius: 1.5px;
     }
 
+    /* WhatsApp Bubble Mockup */
     .wa-bubble {
       background: #075e54;
-      border-radius: 16px;
-      padding: 16px;
+      border-radius: 14px;
+      padding: 14px;
       color: white;
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.5;
       border: 1px solid rgba(255,255,255,0.1);
-      position: relative;
     }
 
     .wa-bubble::before {
       content: "💬 NOTIFIKASI WHATSAPP WALI MURID";
       display: block;
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 800;
       letter-spacing: 0.5px;
       color: #25d366;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
 
     /* Comparison Table */
@@ -266,15 +458,15 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.1);
-      font-size: 13.5px;
+      font-size: 12.5px;
     }
 
     .compare-table th {
       background: #1e293b;
-      padding: 14px 18px;
+      padding: 12px 14px;
       text-align: left;
       font-weight: 700;
       color: #f8fafc;
@@ -282,7 +474,7 @@
     }
 
     .compare-table td {
-      padding: 12px 18px;
+      padding: 10px 14px;
       background: rgba(15, 23, 42, 0.6);
       border-bottom: 1px solid rgba(255,255,255,0.05);
       color: #cbd5e1;
@@ -298,63 +490,51 @@
       font-weight: 700;
     }
 
-    /* Bottom Control Bar */
-    .control-bar {
+    /* In-Slide Footer Controls */
+    .slide-footer-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-top: 18px;
+      padding-top: 14px;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 12px;
     }
 
-    .slide-counter {
+    .slide-footer-counter {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 700;
       color: #fbbf24;
-      background: rgba(245, 158, 11, 0.12);
-      padding: 4px 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(245, 158, 11, 0.25);
     }
 
-    .btn-group {
-      display: flex;
-      gap: 10px;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 13.5px;
-      cursor: pointer;
-      border: 1px solid transparent;
+    /* Floating Quick Bar at Bottom */
+    .bottom-helper-bar {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+      padding: 6px 18px;
+      font-size: 12px;
+      color: #94a3b8;
       display: flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      z-index: 999;
     }
 
-    .btn-primary {
-      background: #fbbf24;
-      color: #0f172a;
-    }
-
-    .btn-primary:hover {
-      background: #f59e0b;
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: #e2e8f0;
-      border-color: rgba(255, 255, 255, 0.15);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.14);
-      color: white;
+    .kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #fbbf24;
     }
 
     /* Print View */
@@ -362,17 +542,16 @@
       body {
         background: white !important;
         color: black !important;
+        padding: 0 !important;
         overflow: visible !important;
-        height: auto !important;
       }
-      .control-bar {
+      .top-navbar, .bottom-helper-bar, .slide-footer-bar {
         display: none !important;
       }
       .slide {
         display: flex !important;
         page-break-after: always;
-        height: 100vh !important;
-        max-height: none !important;
+        min-height: 95vh !important;
         border: none !important;
         box-shadow: none !important;
         background: white !important;
@@ -388,10 +567,66 @@
 </head>
 <body>
 
-  <div class="deck-container">
+  <!-- ================= TOP STICKY CONTROLLER BAR ================= -->
+  <header class="top-navbar">
+    <div class="nav-brand">
+      <span class="nav-badge">PENAWARAN</span>
+      <span class="nav-title">Presensi Kartu Pelajar Digital</span>
+    </div>
+
+    <!-- Center Navigation Controls -->
+    <div class="nav-controls">
+      <button class="btn-nav btn-nav-prev" onclick="prevSlide()" title="Tombol panah kiri keyboard (◀)">
+        <span>◀</span>
+        <span class="hidden sm:inline">Sebelumnya</span>
+      </button>
+
+      <div class="slide-indicator" id="slide-indicator">
+        SLIDE 1 DARI 10
+      </div>
+
+      <button class="btn-nav btn-nav-next" onclick="nextSlide()" title="Tombol panah kanan keyboard (▶) atau Spasi">
+        <span>Berikutnya</span>
+        <span>▶</span>
+      </button>
+
+      <!-- Jump Pills (1 s/d 10) -->
+      <div class="slide-pills" id="slide-pills">
+        <button class="pill-btn active" onclick="goToSlide(0)">1</button>
+        <button class="pill-btn" onclick="goToSlide(1)">2</button>
+        <button class="pill-btn" onclick="goToSlide(2)">3</button>
+        <button class="pill-btn" onclick="goToSlide(3)">4</button>
+        <button class="pill-btn" onclick="goToSlide(4)">5</button>
+        <button class="pill-btn" onclick="goToSlide(5)">6</button>
+        <button class="pill-btn" onclick="goToSlide(6)">7</button>
+        <button class="pill-btn" onclick="goToSlide(7)">8</button>
+        <button class="pill-btn" onclick="goToSlide(8)">9</button>
+        <button class="pill-btn" onclick="goToSlide(9)">10</button>
+      </div>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="nav-actions">
+      <!-- Toggle Mode: 1 Slide vs All 10 Slides Scroll -->
+      <button class="btn-nav btn-view-mode" id="btn-toggle-mode" onclick="toggleScrollMode()" title="Ganti antara mode per slide atau tampilkan semua 10 slide memanjang ke bawah">
+        📜 Tampilkan Semua 10 Slide
+      </button>
+
+      <button class="btn-nav btn-nav-prev" onclick="window.print()" title="Cetak atau Simpan Presentasi ke format PDF">
+        🖨️ PDF
+      </button>
+
+      <a href="/" class="btn-nav btn-back-app" title="Kembali ke Dashboard Aplikasi">
+        ✕ Tutup
+      </a>
+    </div>
+  </header>
+
+  <!-- ================= DECK CONTAINER (10 SLIDES) ================= -->
+  <main class="deck-container">
 
     <!-- SLIDE 1: COVER -->
-    <div class="slide active" id="slide-1">
+    <section class="slide active" id="slide-1">
       <div>
         <div class="slide-badge">PROPOSAL PENAWARAN DIGITALISASI SEKOLAH</div>
         <h1 class="slide-title">Sistem Presensi Kartu Pelajar Digital (QR Code) &amp; Notifikasi WhatsApp</h1>
@@ -424,14 +659,14 @@
         </div>
 
         <div class="mockup-card">
-          <div style="text-align: center; font-size: 12px; font-weight: 700; color: #fbbf24; letter-spacing: 0.5px;">MOCKUP KARTU PELAJAR MULTIFUNGSI</div>
+          <div style="text-align: center; font-size: 11px; font-weight: 700; color: #fbbf24; letter-spacing: 0.5px;">MOCKUP KARTU PELAJAR MULTIFUNGSI</div>
           <div class="simulated-card">
             <div class="simulated-photo">👨‍🎓</div>
             <div style="flex: 1;">
-              <div style="font-size: 11px; font-weight: 800; color: #1e3a8a;">KARTU PELAJAR RESMI</div>
-              <div style="font-size: 14px; font-weight: 800; color: #0f172a;">AHMAD FAUZAN</div>
-              <div style="font-size: 11px; color: #64748b; font-weight: 600;">NIS: 124015112 • X TJKT 1</div>
-              <div style="display: inline-block; font-size: 9px; font-weight: 700; background: #dcfce7; color: #15803d; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">AKTIF KBM &amp; SHALAT</div>
+              <div style="font-size: 10px; font-weight: 800; color: #1e3a8a;">KARTU PELAJAR RESMI</div>
+              <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">AHMAD FAUZAN</div>
+              <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">NIS: 124015112 • X TJKT 1</div>
+              <div style="display: inline-block; font-size: 8.5px; font-weight: 700; background: #dcfce7; color: #15803d; padding: 2px 5px; border-radius: 4px; margin-top: 3px;">AKTIF KBM &amp; SHALAT</div>
             </div>
             <div class="simulated-qr">
               <div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div>
@@ -440,21 +675,18 @@
               <div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div>
             </div>
           </div>
-          <div style="font-size: 11.5px; color: #94a3b8; text-align: center;">Mendukung webcam PC 720p, Tablet Kiosk Meja Gerbang, &amp; Smartphone Android.</div>
+          <div style="font-size: 11px; color: #94a3b8; text-align: center;">Mendukung webcam PC 720p, Tablet Kiosk Meja Gerbang, &amp; Smartphone Android.</div>
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 01 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <span class="slide-footer-counter">SLIDE 01 / 10 • COVER PENAWARAN</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 2 ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 2: THE PROBLEMS -->
-    <div class="slide" id="slide-2">
+    <section class="slide" id="slide-2">
       <div>
         <div class="slide-badge">LATAR BELAKANG &amp; PERMASALAHAN</div>
         <h1 class="slide-title">Kendala Presensi Sekolah Saat Ini</h1>
@@ -494,25 +726,23 @@
         </div>
 
         <div class="mockup-card" style="justify-content: center; text-align: center;">
-          <div style="font-size: 54px;">⏱️ ➡️ 📱</div>
-          <div style="font-size: 16px; font-weight: 800; color: #f8fafc;">Butuh Solusi yang Cepat, Praktis, &amp; Transparan</div>
-          <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
+          <div style="font-size: 48px;">⏱️ ➡️ 📱</div>
+          <div style="font-size: 15px; font-weight: 800; color: #f8fafc;">Butuh Solusi yang Cepat, Praktis, &amp; Transparan</div>
+          <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.6;">
             Sekolah membutuhkan sistem modern yang tidak membebani anggaran, mudah dioperasikan guru piket, dan dapat dipantau langsung oleh pimpinan sekolah.
           </p>
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 02 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 1</button>
+        <span class="slide-footer-counter">SLIDE 02 / 10 • MASALAH NYATA SEKOLAH</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 3 ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 3: SOLUSI -->
-    <div class="slide" id="slide-3">
+    <section class="slide" id="slide-3">
       <div>
         <div class="slide-badge">SOLUSI DIGITAL TERPADU</div>
         <h1 class="slide-title">Presensi Kartu Pelajar QR Code Pintar</h1>
@@ -545,32 +775,30 @@
         </div>
 
         <div class="mockup-card">
-          <div style="font-size: 12px; font-weight: 700; color: #38bdf8;">ALUR KERJA PRESENSI GERBANG</div>
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 10px; font-size: 13px;">
-              <strong>1. Tunjukkan Kartu:</strong> Siswa menatap kamera (30 cm).
+          <div style="font-size: 11px; font-weight: 700; color: #38bdf8;">ALUR KERJA PRESENSI GERBANG</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; font-size: 12px;">
+              <strong>1. Tunjukkan Kartu:</strong> Siswa mengarahkan kartu ke kamera (30 cm).
             </div>
-            <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 10px; font-size: 13px;">
+            <div style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; font-size: 12px;">
               <strong>2. Deteksi Seketika (&lt;1s):</strong> Bunyi bip + foto &amp; nama muncul di layar.
             </div>
-            <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 10px; font-size: 13px;">
+            <div style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; font-size: 12px;">
               <strong>3. WhatsApp Terkirim:</strong> Notifikasi masuk ke HP orang tua secara otomatis.
             </div>
           </div>
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 03 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 2</button>
+        <span class="slide-footer-counter">SLIDE 03 / 10 • SOLUSI KARTU PINTAR</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 4 ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 4: FITUR SHALAT (NILAI JUAL UTAMA) -->
-    <div class="slide" id="slide-4">
+    <section class="slide" id="slide-4">
       <div>
         <div class="slide-badge">NILAI PLUS PENDIDIKAN KARAKTER</div>
         <h1 class="slide-title">Presensi Khusus Shalat Berjamaah</h1>
@@ -603,27 +831,25 @@
         </div>
 
         <div class="mockup-card">
-          <div style="font-size: 12px; font-weight: 700; color: #34d399;">STATISTIK SHALAT BERJAMAAH</div>
-          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 14px;">
-            <div style="font-size: 11px; color: #a7f3d0; font-weight: 700;">HARI INI (DZUHUR &amp; ASHAR)</div>
-            <div style="font-size: 28px; font-weight: 900; color: #34d399; margin: 4px 0;">94.8% Hadir</div>
-            <div style="font-size: 12px; color: #cbd5e1;">412 Siswa Terdata Hadir Berjamaah di Masjid</div>
+          <div style="font-size: 11px; font-weight: 700; color: #34d399;">STATISTIK SHALAT BERJAMAAH</div>
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 12px;">
+            <div style="font-size: 10px; color: #a7f3d0; font-weight: 700;">HARI INI (DZUHUR &amp; ASHAR)</div>
+            <div style="font-size: 24px; font-weight: 900; color: #34d399; margin: 3px 0;">94.8% Hadir</div>
+            <div style="font-size: 11.5px; color: #cbd5e1;">412 Siswa Terdata Hadir Berjamaah di Masjid</div>
           </div>
-          <div style="font-size: 11px; color: #94a3b8;">Terintegrasi dengan filter status khusus (Hadir / Berhalangan / Izin).</div>
+          <div style="font-size: 10.5px; color: #94a3b8;">Terintegrasi dengan filter status khusus (Hadir / Berhalangan / Izin).</div>
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 04 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 3</button>
+        <span class="slide-footer-counter">SLIDE 04 / 10 • PANTAUAN IBADAH SHALAT</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 5 ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 5: NOTIFIKASI WA -->
-    <div class="slide" id="slide-5">
+    <section class="slide" id="slide-5">
       <div>
         <div class="slide-badge">KEMITRAAN DENGAN ORANG TUA</div>
         <h1 class="slide-title">Notifikasi WhatsApp Real-Time ke Wali Murid</h1>
@@ -668,17 +894,15 @@
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 05 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 4</button>
+        <span class="slide-footer-counter">SLIDE 05 / 10 • NOTIFIKASI WHATSAPP</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 6 ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 6: GENERATOR CETAK KARTU MANDIRI -->
-    <div class="slide" id="slide-6">
+    <section class="slide" id="slide-6">
       <div>
         <div class="slide-badge">MANDIRI &amp; HEMAT BIAYA</div>
         <h1 class="slide-title">Generator Cetak Kartu Pelajar Mandiri</h1>
@@ -710,26 +934,24 @@
           </div>
         </div>
 
-        <div class="mockup-card" style="text-align: center;">
-          <div style="font-size: 38px;">🎴 ➡️ 📄</div>
-          <div style="font-size: 15px; font-weight: 800; color: #f8fafc;">Bebas Biaya Percetakan Luar</div>
-          <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">
+        <div class="mockup-card" style="text-align: center; justify-content: center;">
+          <div style="font-size: 34px;">🎴 ➡️ 📄</div>
+          <div style="font-size: 14.5px; font-weight: 800; color: #f8fafc;">Bebas Biaya Percetakan Luar</div>
+          <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">
             Sekolah menghemat jutaan rupiah biaya cetak kartu setiap tahun ajaran baru.
           </div>
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 06 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 5</button>
+        <span class="slide-footer-counter">SLIDE 06 / 10 • CETAK KARTU MANDIRI</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 7 ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 7: REKAPITULASI EXCEL & PDF -->
-    <div class="slide" id="slide-7">
+    <section class="slide" id="slide-7">
       <div>
         <div class="slide-badge">ADMINISTRASI TERTIB</div>
         <h1 class="slide-title">Laporan Rekapitulasi Excel &amp; PDF Siap Cetak</h1>
@@ -762,8 +984,8 @@
         </div>
 
         <div class="mockup-card">
-          <div style="font-size: 12px; font-weight: 700; color: #34d399;">CONTOH FORMAT LAPORAN EXCEL</div>
-          <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #e2e8f0; line-height: 1.6;">
+          <div style="font-size: 11px; font-weight: 700; color: #34d399;">CONTOH FORMAT LAPORAN EXCEL</div>
+          <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #e2e8f0; line-height: 1.5;">
             [KOP SEKOLAH]<br>
             LAPORAN PRESENSI KBM &amp; SHALAT<br>
             --------------------------------<br>
@@ -775,17 +997,15 @@
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 07 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 6</button>
+        <span class="slide-footer-counter">SLIDE 07 / 10 • LAPORAN SIAP CETAK</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 8 ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 8: PERBANDINGAN BIAYA -->
-    <div class="slide" id="slide-8">
+    <section class="slide" id="slide-8">
       <div>
         <div class="slide-badge">EFISIENSI ANGGARAN SEKOLAH</div>
         <h1 class="slide-title">Perbandingan Biaya &amp; Efisiensi</h1>
@@ -831,17 +1051,15 @@
         </table>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 08 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 7</button>
+        <span class="slide-footer-counter">SLIDE 08 / 10 • EFISIENSI ANGGARAN</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 9 ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 9: RENCANA IMPLEMENTASI -->
-    <div class="slide" id="slide-9">
+    <section class="slide" id="slide-9">
       <div>
         <div class="slide-badge">KEMUDAHAN PENERAPAN</div>
         <h1 class="slide-title">3 Langkah Mudah Penerapan di Sekolah</h1>
@@ -874,25 +1092,23 @@
         </div>
 
         <div class="mockup-card" style="text-align: center; justify-content: center;">
-          <div style="font-size: 44px;">🚀</div>
-          <div style="font-size: 16px; font-weight: 800; color: #fbbf24;">Siap Uji Coba Cepat</div>
-          <div style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
+          <div style="font-size: 38px;">🚀</div>
+          <div style="font-size: 15px; font-weight: 800; color: #fbbf24;">Siap Uji Coba Cepat</div>
+          <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">
             Kami siap mendampingi tim IT &amp; Guru Piket sekolah dari awal setting hingga sistem berjalan lancar.
           </div>
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 09 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 8</button>
+        <span class="slide-footer-counter">SLIDE 09 / 10 • LANGKAH PENERAPAN</span>
+        <button class="btn-nav btn-nav-next" onclick="nextSlide()">Lanjut ke Slide 10 (Penutup) ▶</button>
       </div>
-    </div>
+    </section>
 
     <!-- SLIDE 10: PENUTUP & PENAWARAN UJI COBA -->
-    <div class="slide" id="slide-10">
+    <section class="slide" id="slide-10">
       <div>
         <div class="slide-badge">PENUTUP &amp; KEMITRAAN</div>
         <h1 class="slide-title">Penawaran Uji Coba Gratis (Pilot Project)</h1>
@@ -925,44 +1141,74 @@
         </div>
 
         <div class="mockup-card" style="text-align: center; justify-content: center; background: linear-gradient(135deg, #1e3a8a, #065f46);">
-          <div style="font-size: 13px; font-weight: 800; color: #fbbf24; text-transform: uppercase;">SESI TANYA JAWAB &amp; DEMO LANGSUNG</div>
-          <div style="font-size: 22px; font-weight: 900; color: #ffffff; margin: 10px 0;">Terima Kasih</div>
-          <div style="font-size: 13px; color: #e2e8f0; line-height: 1.5;">
+          <div style="font-size: 12px; font-weight: 800; color: #fbbf24; text-transform: uppercase;">SESI TANYA JAWAB &amp; DEMO LANGSUNG</div>
+          <div style="font-size: 20px; font-weight: 900; color: #ffffff; margin: 8px 0;">Terima Kasih</div>
+          <div style="font-size: 12px; color: #e2e8f0; line-height: 1.5;">
             "Waktunya beralih ke presensi modern yang membanggakan sekolah kita."
           </div>
-          <div style="margin-top: 14px; font-size: 13px; font-weight: 700; color: #fef08a;">
-            👉 Mari kita coba demonstrasi scan langsung sekarang!
+          <div style="margin-top: 10px; font-size: 12px; font-weight: 700; color: #fef08a;">
+            👉 Mari kita coba demonstrasi scan kartu langsung sekarang!
           </div>
         </div>
       </div>
 
-      <div class="control-bar">
-        <div class="slide-counter">SLIDE 10 / 10</div>
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
-          <button class="btn btn-secondary" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
-          <button class="btn btn-primary" onclick="goToSlide(0)">Ulangi dari Awal ↺</button>
-        </div>
+      <div class="slide-footer-bar">
+        <button class="btn-nav btn-nav-prev" onclick="prevSlide()">◀ Kembali ke Slide 9</button>
+        <span class="slide-footer-counter">SLIDE 10 / 10 • PENUTUP &amp; KEMITRAAN</span>
+        <button class="btn-nav btn-nav-next" onclick="goToSlide(0)">Ulangi dari Slide 1 ↺</button>
       </div>
-    </div>
+    </section>
 
+  </main>
+
+  <!-- ================= FLOATING BOTTOM HELPER ================= -->
+  <div class="bottom-helper-bar">
+    <span>💡 Navigasi: <span class="kbd">◀</span> <span class="kbd">▶</span> atau <span class="kbd">Spasi</span></span>
+    <span>•</span>
+    <span>Gunakan tombol angka 1–10 di atas untuk melompat slide</span>
   </div>
 
   <script>
     let currentSlide = 0;
     const slides = document.querySelectorAll('.slide');
     const totalSlides = slides.length;
+    const indicatorEl = document.getElementById('slide-indicator');
+    const pills = document.querySelectorAll('.pill-btn');
+    let isScrollMode = false;
 
     function showSlide(index) {
       if (index < 0) index = 0;
       if (index >= totalSlides) index = totalSlides - 1;
       currentSlide = index;
 
-      slides.forEach((slide, idx) => {
+      if (!isScrollMode) {
+        slides.forEach((slide, idx) => {
+          if (idx === currentSlide) {
+            slide.classList.add('active');
+          } else {
+            slide.classList.remove('active');
+          }
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // In scroll mode, scroll to that specific slide element
+        const targetSlide = document.getElementById(`slide-${currentSlide + 1}`);
+        if (targetSlide) {
+          targetSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+
+      // Update indicator
+      if (indicatorEl) {
+        indicatorEl.textContent = `SLIDE ${currentSlide + 1} DARI ${totalSlides}`;
+      }
+
+      // Update pills
+      pills.forEach((pill, idx) => {
         if (idx === currentSlide) {
-          slide.classList.add('active');
+          pill.classList.add('active');
         } else {
-          slide.classList.remove('active');
+          pill.classList.remove('active');
         }
       });
     }
@@ -983,18 +1229,73 @@
       showSlide(index);
     }
 
-    // Keyboard navigation: Arrow Right/Left, Spacebar
+    // Toggle Scroll Mode (Show All 10 slides at once)
+    function toggleScrollMode() {
+      isScrollMode = !isScrollMode;
+      const btn = document.getElementById('btn-toggle-mode');
+
+      if (isScrollMode) {
+        document.body.classList.add('scroll-mode');
+        btn.innerHTML = '🎯 Mode 1 Slide Per Layar';
+        btn.classList.add('active');
+        if (indicatorEl) {
+          indicatorEl.textContent = 'MODE SEMUA SLIDE (GULIR KE BAWAH)';
+        }
+      } else {
+        document.body.classList.remove('scroll-mode');
+        btn.innerHTML = '📜 Tampilkan Semua 10 Slide';
+        btn.classList.remove('active');
+        showSlide(currentSlide);
+      }
+    }
+
+    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
-        nextSlide();
+        if (!isScrollMode) {
+          e.preventDefault();
+          nextSlide();
+        }
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        prevSlide();
+        if (!isScrollMode) {
+          e.preventDefault();
+          prevSlide();
+        }
       } else if (e.key === 'Home') {
-        goToSlide(0);
+        if (!isScrollMode) {
+          e.preventDefault();
+          goToSlide(0);
+        }
       } else if (e.key === 'End') {
-        goToSlide(totalSlides - 1);
+        if (!isScrollMode) {
+          e.preventDefault();
+          goToSlide(totalSlides - 1);
+        }
+      } else if (e.key >= '1' && e.key <= '9') {
+        goToSlide(parseInt(e.key, 10) - 1);
+      } else if (e.key === '0') {
+        goToSlide(9);
       }
     });
+
+    // Touch swipe support for mobile/tablet
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      if (!isScrollMode) {
+        if (touchStartX - touchEndX > 50) {
+          nextSlide(); // Swipe left -> Next
+        } else if (touchEndX - touchStartX > 50) {
+          prevSlide(); // Swipe right -> Prev
+        }
+      }
+    }, { passive: true });
   </script>
 </body>
 </html>

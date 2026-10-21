@@ -68,7 +68,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const [zoomLevel, setZoomLevel] = useState<number>(1.4); // Default 1.4x digital zoom for PC 720p webcams
   const [highContrast, setHighContrast] = useState<boolean>(false); // High contrast black/white booster
   const [scanFullFrame, setScanFullFrame] = useState<boolean>(true); // Scan entire frame without cropping box
-  const [showWebcamGuide, setShowWebcamGuide] = useState<boolean>(false);
   const [isScanningFile, setIsScanningFile] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -1033,38 +1032,61 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               className="hidden"
             />
 
-            <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-white">
+            <div className="p-4 sm:p-5 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3.5 bg-white">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-amber-100/80 text-amber-900 rounded-xl border border-amber-300/60">
-                  <Camera className="w-5 h-5 text-amber-700" />
+                <div className="p-2.5 bg-slate-900 text-amber-400 rounded-xl border border-slate-800 shadow-2xs shrink-0">
+                  <Camera className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-heading font-black text-slate-900 text-base sm:text-lg">
+                    <h3 className="font-heading font-black text-slate-900 text-base sm:text-lg leading-tight">
                       Pemindai Kamera QR Code
                     </h3>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
-                      {viewMode === 'card' ? 'Format Portrait Kartu' : 'Mode Layar Lebar (16:9 PC)'}
+                    <span
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5 border ${
+                        isScannerRunning
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isScannerRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                        }`}
+                      />
+                      <span>{isScannerRunning ? 'Live Aktif' : 'Siap'}</span>
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 font-medium">
-                    Akselerasi hardware • Dioptimalkan untuk Webcam PC 720p &amp; Kamera HP
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Akselerasi hardware • Arahkan kartu presensi siswa ke arah kamera
                   </p>
                 </div>
               </div>
 
-              {/* Controls: Start/Stop, Switch Camera, File Upload Fallback, Wide/Card View */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Upload Image Fallback */}
+              {/* Action Buttons: Ganti Kamera, Dropdown, File Upload, dan Nyalakan/Hentikan */}
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {/* Switch Front/Back Camera */}
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isScanningFile}
-                  className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-300 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-xs"
-                  title="Pindai langsung dari file foto/gambar kartu"
+                  onClick={handleToggleCamera}
+                  disabled={cameraSwitching}
+                  className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border shadow-2xs ${
+                    cameraFacing === 'environment'
+                      ? 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200'
+                      : 'bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100'
+                  }`}
+                  title={`Klik untuk berganti ke Kamera ${cameraFacing === 'user' ? 'Belakang' : 'Depan'}`}
                 >
-                  <Upload className="w-4 h-4 text-blue-700" />
-                  <span>{isScanningFile ? 'Memindai...' : 'Pindai Foto'}</span>
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${cameraSwitching ? 'animate-spin text-blue-600' : 'text-slate-600'}`}
+                  />
+                  <span>
+                    {cameraSwitching
+                      ? 'Ganti...'
+                      : cameraFacing === 'environment'
+                      ? 'Kamera Belakang'
+                      : 'Kamera Depan'}
+                  </span>
                 </button>
 
                 {/* Camera device selector if multiple exist */}
@@ -1072,65 +1094,35 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   <select
                     value={selectedCameraId}
                     onChange={e => handleCameraChange(e.target.value)}
-                    className="text-xs bg-slate-100 border border-slate-300 rounded-xl px-2.5 py-1.5 sm:py-2 font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 max-w-[130px] truncate"
-                    title="Pilih perangkat kamera"
+                    className="text-xs bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 sm:py-2 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600 max-w-[125px] truncate cursor-pointer shadow-2xs"
+                    title="Pilih sensor kamera"
                   >
                     {availableCameras.map((cam, idx) => (
                       <option key={cam.id} value={cam.id}>
-                        {cam.label || `Kamera ${idx + 1}`}
+                        {cam.label || `Lensa ${idx + 1}`}
                       </option>
                     ))}
                   </select>
                 )}
 
-                {/* View Mode Toggle */}
+                {/* Upload Image Fallback */}
                 <button
                   type="button"
-                  onClick={() => setViewMode(prev => (prev === 'card' ? 'wide' : 'card'))}
-                  className="p-1.5 sm:p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition border border-slate-300 cursor-pointer"
-                  title={
-                    viewMode === 'card'
-                      ? 'Ganti ke Mode Layar Lebar 16:9 (Rekomendasi Webcam PC 720p)'
-                      : 'Ganti ke Mode Presisi Kartu Portrait'
-                  }
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isScanningFile}
+                  className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-2xs"
+                  title="Pindai langsung dari file foto/gambar kartu"
                 >
-                  {viewMode === 'card' ? (
-                    <Maximize2 className="w-4 h-4" />
-                  ) : (
-                    <Minimize2 className="w-4 h-4" />
-                  )}
+                  <Upload className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{isScanningFile ? 'Memindai...' : 'File Kartu'}</span>
                 </button>
 
-                {/* Switch Front/Back Camera */}
-                <button
-                  type="button"
-                  onClick={handleToggleCamera}
-                  disabled={cameraSwitching}
-                  className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition cursor-pointer border shadow-2xs ${
-                    cameraFacing === 'environment'
-                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100'
-                      : 'bg-indigo-50 text-indigo-900 border-indigo-300 hover:bg-indigo-100'
-                  }`}
-                  title={`Klik untuk berganti ke Kamera ${cameraFacing === 'user' ? 'Belakang' : 'Depan'}`}
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${cameraSwitching ? 'animate-spin text-amber-600' : ''}`}
-                  />
-                  <span>
-                    {cameraSwitching
-                      ? 'Mengganti...'
-                      : cameraFacing === 'environment'
-                      ? 'Kamera: Belakang'
-                      : 'Kamera: Depan'}
-                  </span>
-                </button>
-
-                {/* Start / Stop Toggle */}
+                {/* Start / Stop Toggle (Primary Button) */}
                 {isScannerRunning ? (
                   <button
                     type="button"
                     onClick={stopCameraScanner}
-                    className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-300 transition cursor-pointer"
+                    className="px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-300 transition cursor-pointer shadow-2xs"
                   >
                     Hentikan Kamera
                   </button>
@@ -1138,60 +1130,74 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   <button
                     type="button"
                     onClick={() => startCameraScanner()}
-                    className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-black text-amber-300 transition flex items-center gap-2 shadow-sm cursor-pointer border border-slate-800"
+                    className="px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-black text-amber-300 transition flex items-center gap-1.5 shadow-sm cursor-pointer border border-slate-800"
                   >
-                    <Camera className="w-4 h-4 text-amber-400" />
+                    <Camera className="w-3.5 h-3.5 text-amber-400" />
                     <span>Nyalakan Kamera</span>
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Sub-Toolbar: Optimasi Khusus Webcam PC 720p (Digital Zoom & Filter) */}
-            <div className="px-4 py-2 bg-slate-100/95 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-              {/* Digital Zoom Group */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-bold text-slate-700 flex items-center gap-1">
-                  <ZoomIn className="w-3.5 h-3.5 text-blue-700" />
-                  <span>Zoom PC:</span>
-                </span>
-                {[
-                  { label: '1.0x', val: 1.0 },
-                  { label: '1.4x (Fokus PC)', val: 1.4 },
-                  { label: '1.8x', val: 1.8 },
-                  { label: '2.2x', val: 2.2 },
-                ].map(z => (
-                  <button
-                    key={z.val}
-                    type="button"
-                    onClick={() => applyZoom(z.val)}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer text-[11px] ${
-                      zoomLevel === z.val
-                        ? 'bg-blue-950 text-amber-300 shadow-2xs border border-blue-900'
-                        : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
-                    }`}
-                  >
-                    {z.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Toggles: Kontras & Full Frame Scan */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* High Contrast Filter */}
+            {/* Sub-Toolbar: Precision Controls (View Mode, Zoom, Full Frame & Contrast) */}
+            <div className="px-4 py-2 bg-slate-50/90 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+              {/* Left: View Mode Segmented Switcher */}
+              <div className="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-lg border border-slate-300/70">
                 <button
                   type="button"
-                  onClick={() => setHighContrast(!highContrast)}
-                  className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer text-[11px] border ${
-                    highContrast
-                      ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-2xs'
-                      : 'bg-white text-slate-700 hover:bg-slate-200 border-slate-300'
+                  onClick={() => setViewMode('wide')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                    viewMode === 'wide'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
-                  title="Tingkatkan kontras hitam-putih untuk ruangan berpenerangan redup"
+                  title="Mode Layar Lebar 16:9 HD (Sangat direkomendasikan untuk Webcam PC & Laptop)"
                 >
-                  <Contrast className="w-3.5 h-3.5" />
-                  <span>Kontras: {highContrast ? 'Tinggi' : 'Normal'}</span>
+                  <Maximize2 className="w-3 h-3 text-blue-600" />
+                  <span>Layar Lebar (16:9)</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('card')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                    viewMode === 'card'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Mode Presisi Portrait Kartu Pelajar"
+                >
+                  <Minimize2 className="w-3 h-3 text-blue-600" />
+                  <span>Bingkai Kartu</span>
+                </button>
+              </div>
+
+              {/* Right: Digital Zoom & Scanner Tweaks */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Digital Zoom Segment */}
+                <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <span className="text-[11px] font-bold text-slate-500 pl-1.5 flex items-center gap-1">
+                    <ZoomIn className="w-3 h-3 text-slate-400" />
+                    <span>Zoom:</span>
+                  </span>
+                  {[
+                    { label: '1.0x', val: 1.0 },
+                    { label: '1.4x', val: 1.4 },
+                    { label: '1.8x', val: 1.8 },
+                  ].map(z => (
+                    <button
+                      key={z.val}
+                      type="button"
+                      onClick={() => applyZoom(z.val)}
+                      className={`px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer ${
+                        zoomLevel === z.val
+                          ? 'bg-slate-900 text-amber-300'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {z.label}
+                    </button>
+                  ))}
+                </div>
 
                 {/* Scan Full Frame Toggle */}
                 <button
@@ -1207,23 +1213,28 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   }}
                   className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer text-[11px] border ${
                     scanFullFrame
-                      ? 'bg-emerald-700 text-white border-emerald-800 shadow-2xs'
-                      : 'bg-white text-slate-700 hover:bg-slate-200 border-slate-300'
+                      ? 'bg-slate-900 text-slate-100 border-slate-850'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
                   }`}
-                  title="Pindai seluruh layar kamera (disarankan untuk webcam PC)"
+                  title="Pindai seluruh bidang kamera (tanpa kotak pembatas sempit)"
                 >
-                  <Scan className="w-3.5 h-3.5" />
-                  <span>{scanFullFrame ? 'Area: Seluruh Layar' : 'Area: Kotak Fokus'}</span>
+                  <Scan className="w-3 h-3 text-emerald-400" />
+                  <span>{scanFullFrame ? 'Seluruh Layar' : 'Kotak Fokus'}</span>
                 </button>
 
-                {/* Panduan & Solusi Modal/Expand Toggle */}
+                {/* High Contrast Toggle */}
                 <button
                   type="button"
-                  onClick={() => setShowWebcamGuide(!showWebcamGuide)}
-                  className="px-2.5 py-1 rounded-lg font-bold bg-amber-100 text-amber-950 border border-amber-300 hover:bg-amber-200 flex items-center gap-1 transition cursor-pointer text-[11px]"
+                  onClick={() => setHighContrast(!highContrast)}
+                  className={`px-2 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer text-[11px] border ${
+                    highContrast
+                      ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-2xs'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-300'
+                  }`}
+                  title="Peningkatan kontras hitam-putih untuk ruangan minim cahaya"
                 >
-                  <HelpCircle className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Solusi 720p</span>
+                  <Contrast className="w-3 h-3" />
+                  <span>{highContrast ? 'Kontras Tinggi' : 'Kontras'}</span>
                 </button>
               </div>
             </div>
@@ -1336,67 +1347,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     {/* Bottom Card Guide Footer */}
                     <div className="text-center text-[10px] font-semibold text-slate-100 bg-black/80 px-2 py-1 rounded-md backdrop-blur-xs border border-slate-700">
                       Pegang kartu stabil di jarak 35–45 cm dari kamera PC
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Practical Guidance Bar */}
-              <div className="mt-4 max-w-lg w-full bg-amber-50/90 border border-amber-200 rounded-xl p-3 text-xs text-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-amber-950 flex items-center gap-1.5 text-xs sm:text-sm">
-                    <HelpCircle className="w-4 h-4 text-amber-700" />
-                    <span>Panduan Khusus Webcam PC 720p:</span>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowWebcamGuide(!showWebcamGuide)}
-                    className="text-[11px] font-bold text-blue-900 underline hover:text-blue-950 cursor-pointer"
-                  >
-                    {showWebcamGuide ? 'Tutup Penjelasan' : 'Lihat Penyebab & Solusi'}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-700">
-                  <div className="bg-white p-2 rounded-lg border border-amber-200/60 shadow-2xs">
-                    <span className="font-bold text-slate-900 block">📏 Jarak 30–45 cm</span>
-                    Jangan terlalu dekat! Webcam PC 720p fokusnya tetap dan akan buram jika kartu berjarak &lt; 20 cm.
-                  </div>
-                  <div className="bg-white p-2 rounded-lg border border-amber-200/60 shadow-2xs">
-                    <span className="font-bold text-slate-900 block">🔍 Zoom Digital 1.4x</span>
-                    Aktifkan Zoom 1.4x/1.8x di atas agar QR membesar tanpa harus menempelkan kartu.
-                  </div>
-                  <div className="bg-white p-2 rounded-lg border border-amber-200/60 shadow-2xs">
-                    <span className="font-bold text-slate-900 block">💡 Miringkan 10°</span>
-                    Miringkan kartu sedikit jika ada pantulan cahaya lampu neon yang menutupi pola hitam-putih.
-                  </div>
-                </div>
-
-                {/* Expandable Deep Analysis Card */}
-                {showWebcamGuide && (
-                  <div className="mt-2.5 pt-2.5 border-t border-amber-200/80 text-[11px] text-slate-700 space-y-2">
-                    <div className="p-2.5 bg-amber-100/60 rounded-lg space-y-1">
-                      <p className="font-bold text-amber-950">🔍 Mengapa Webcam PC 720p Sempat Gagal Memindai?</p>
-                      <p>
-                        1. <strong>Lensa Fixed Focus (Fokus Tetap)</strong>: Berbeda dengan kamera ponsel yang memiliki autofokus dinamis, webcam PC/laptop 720p dirancang untuk wajah berjarak 40–60 cm. Saat kartu didekatkan ke kamera agar pas di kotak, lensa menjadi <em>out-of-focus</em> (buram total).
-                      </p>
-                      <p>
-                        2. <strong>Crop Rasio Sempit</strong>: Webcam 720p menghasilkan rasio 16:9. Pemotongan kotak sempit membuang banyak detail modul QR saat kartu berada di jarak fokus tajam.
-                      </p>
-                      <p>
-                        3. <strong>Pencahayaan Indoor</strong>: Shutter kamera 720p membutuhkan eksposur cahaya yang cukup agar modul hitam-putih kontras dan tidak blur saat kartu digerakkan.
-                      </p>
-                    </div>
-
-                    <div className="p-2.5 bg-emerald-50 rounded-lg space-y-1 border border-emerald-200/60">
-                      <p className="font-bold text-emerald-950">✅ Solusi yang Diterapkan di Sistem Ini:</p>
-                      <ul className="list-disc pl-4 space-y-0.5 text-emerald-900">
-                        <li><strong>Digital Zoom 1.4x / 1.8x</strong>: Memperbesar QR di tengah layar secara digital sehingga kartu tetap tajam di titik fokus aslinya.</li>
-                        <li><strong>Scan Seluruh Layar (Full Frame)</strong>: Seluruh bidang kamera 720p dipindai langsung tanpa terpotong kotak kecil.</li>
-                        <li><strong>Mode Layar Lebar 16:9</strong>: Rasio kamera asli 1280x720 tanpa pemotongan video palsu (zero crop).</li>
-                        <li><strong>Optimal 15 FPS</strong>: Memberikan waktu eksposur sensor 2x lebih lama sehingga gambar terang dan bebas motion blur.</li>
-                        <li><strong>Quiet Zone Standar ISO (margin: 2)</strong>: QR pada kartu absensi kini memiliki margin putih bersih sehingga modul tidak terdistorsi.</li>
-                      </ul>
                     </div>
                   </div>
                 )}
