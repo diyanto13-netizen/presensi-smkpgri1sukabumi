@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presentasi Penawaran: Sistem Presensi Kartu Pelajar Digital & Notifikasi WhatsApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-dark: #0f172a;
+      --accent: #f59e0b;
+      --accent-light: #fef3c7;
+      --emerald: #059669;
+      --emerald-dark: #064e3b;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --bg-slate: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #090d16;
+      color: #f8fafc;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    /* Presentation Deck Container */
+    .deck-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #090d16 100%);
+    }
+
+    /* Individual Slide */
+    .slide {
+      display: none;
+      width: 92vw;
+      max-width: 1280px;
+      height: 86vh;
+      max-height: 720px;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(30, 58, 138, 0.2);
+      padding: 44px 56px;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      animation: slideIn 0.35s ease-out;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: scale(0.98) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Header & Badge */
+    .slide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      width: fit-content;
+    }
+
+    .slide-title {
+      font-size: 34px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+    }
+
+    .slide-subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Slide Content Grid */
+    .slide-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 36px;
+      align-items: center;
+      margin-top: 24px;
+      margin-bottom: 20px;
+    }
+
+    .slide-body.full-width {
+      grid-template-columns: 1fr;
+    }
+
+    /* List Points */
+    .points-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .point-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 14px 18px;
+      border-radius: 16px;
+      transition: all 0.2s;
+    }
+
+    .point-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(245, 158, 11, 0.4);
+      transform: translateX(4px);
+    }
+
+    .point-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .point-icon.emerald {
+      background: linear-gradient(135deg, #065f46, #10b981);
+    }
+
+    .point-icon.amber {
+      background: linear-gradient(135deg, #b45309, #f59e0b);
+    }
+
+    .point-icon.rose {
+      background: linear-gradient(135deg, #9f1239, #f43f5e);
+    }
+
+    .point-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 3px;
+    }
+
+    .point-desc {
+      font-size: 13.5px;
+      color: #94a3b8;
+      line-height: 1.45;
+    }
+
+    /* Visual Mockup Container (Right Column) */
+    .mockup-card {
+      background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 20px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Mini Simulated UI Elements */
+    .simulated-card {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 14px;
+      padding: 16px;
+      border: 2px solid #fbbf24;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    .simulated-photo {
+      width: 60px;
+      height: 75px;
+      background: #e2e8f0;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .simulated-qr {
+      width: 65px;
+      height: 65px;
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 5px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+
+    .qr-block {
+      background: white;
+      border-radius: 2px;
+    }
+
+    .wa-bubble {
+      background: #075e54;
+      border-radius: 16px;
+      padding: 16px;
+      color: white;
+      font-size: 13px;
+      line-height: 1.5;
+      border: 1px solid rgba(255,255,255,0.1);
+      position: relative;
+    }
+
+    .wa-bubble::before {
+      content: "💬 NOTIFIKASI WHATSAPP WALI MURID";
+      display: block;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #25d366;
+      margin-bottom: 6px;
+    }
+
+    /* Comparison Table */
+    .compare-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 13.5px;
+    }
+
+    .compare-table th {
+      background: #1e293b;
+      padding: 14px 18px;
+      text-align: left;
+      font-weight: 700;
+      color: #f8fafc;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .compare-table td {
+      padding: 12px 18px;
+      background: rgba(15, 23, 42, 0.6);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: #cbd5e1;
+    }
+
+    .compare-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .highlight-cell {
+      background: rgba(5, 150, 105, 0.15) !important;
+      color: #34d399 !important;
+      font-weight: 700;
+    }
+
+    /* Bottom Control Bar */
+    .control-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.12);
+      padding: 4px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13.5px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #fbbf24;
+      color: #0f172a;
+    }
+
+    .btn-primary:hover {
+      background: #f59e0b;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: white;
+    }
+
+    /* Print View */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        overflow: visible !important;
+        height: auto !important;
+      }
+      .control-bar {
+        display: none !important;
+      }
+      .slide {
+        display: flex !important;
+        page-break-after: always;
+        height: 100vh !important;
+        max-height: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: white !important;
+        color: black !important;
+        padding: 20px !important;
+      }
+      .slide-title { color: #0f172a !important; }
+      .point-item { background: #f8fafc !important; border: 1px solid #cbd5e1 !important; }
+      .point-title { color: #0f172a !important; }
+      .point-desc { color: #475569 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deck-container">
+
+    <!-- SLIDE 1: COVER -->
+    <div class="slide active" id="slide-1">
+      <div>
+        <div class="slide-badge">PROPOSAL PENAWARAN DIGITALISASI SEKOLAH</div>
+        <h1 class="slide-title">Sistem Presensi Kartu Pelajar Digital (QR Code) &amp; Notifikasi WhatsApp</h1>
+        <p class="slide-subtitle">Solusi Modern: Tertib Masuk, Pantauan Shalat Berjamaah, Transparansi ke Orang Tua, &amp; Rekapitulasi Otomatis</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon">⚡</div>
+            <div>
+              <div class="point-title">Scan Cepat &lt;1 Detik</div>
+              <div class="point-desc">Cukup arahkan kartu ke kamera tablet/laptop, sistem otomatis mendeteksi tanpa kontak fisik.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon emerald">🕌</div>
+            <div>
+              <div class="point-title">Pemantauan Khusus Shalat Berjamaah</div>
+              <div class="point-desc">Mencatat presensi Shalat Dzuhur &amp; Ashar berjamaah di mushola untuk pembiasaan karakter islami.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon amber">📱</div>
+            <div>
+              <div class="point-title">WhatsApp Otomatis ke Wali Murid</div>
+              <div class="point-desc">Kabar instan ke orang tua begitu siswa tiba di sekolah, membebaskan orang tua dari rasa cemas.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card">
+          <div style="text-align: center; font-size: 12px; font-weight: 700; color: #fbbf24; letter-spacing: 0.5px;">MOCKUP KARTU PELAJAR MULTIFUNGSI</div>
+          <div class="simulated-card">
+            <div class="simulated-photo">👨‍🎓</div>
+            <div style="flex: 1;">
+              <div style="font-size: 11px; font-weight: 800; color: #1e3a8a;">KARTU PELAJAR RESMI</div>
+              <div style="font-size: 14px; font-weight: 800; color: #0f172a;">AHMAD FAUZAN</div>
+              <div style="font-size: 11px; color: #64748b; font-weight: 600;">NIS: 124015112 • X TJKT 1</div>
+              <div style="display: inline-block; font-size: 9px; font-weight: 700; background: #dcfce7; color: #15803d; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">AKTIF KBM &amp; SHALAT</div>
+            </div>
+            <div class="simulated-qr">
+              <div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div>
+              <div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div>
+              <div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div>
+              <div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div><div class="qr-block"></div>
+            </div>
+          </div>
+          <div style="font-size: 11.5px; color: #94a3b8; text-align: center;">Mendukung webcam PC 720p, Tablet Kiosk Meja Gerbang, &amp; Smartphone Android.</div>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 01 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: THE PROBLEMS -->
+    <div class="slide" id="slide-2">
+      <div>
+        <div class="slide-badge">LATAR BELAKANG &amp; PERMASALAHAN</div>
+        <h1 class="slide-title">Kendala Presensi Sekolah Saat Ini</h1>
+        <p class="slide-subtitle">Tantangan yang dihadapi guru piket, bagian kesiswaan, dan orang tua murid setiap hari.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon rose">1</div>
+            <div>
+              <div class="point-title">Mesin Fingerprint Mahal &amp; Sering Antre Panjang</div>
+              <div class="point-desc">Biaya pembelian unit tinggi, sering gagal baca sidik jari kotor/basah, dan rentan rusak terkena debu gerbang.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon rose">2</div>
+            <div>
+              <div class="point-title">Presensi Manual Menyita Waktu KBM</div>
+              <div class="point-desc">Guru harus memanggil nama satu per satu di kelas, membuang 10–15 menit jam efektif pelajaran pertama.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon rose">3</div>
+            <div>
+              <div class="point-title">Orang Tua Cemas &amp; Siswa Rawan Membolos</div>
+              <div class="point-desc">Siswa berangkat dari rumah tetapi tidak sampai di sekolah. Sekolah kesulitan mengabari ratusan wali murid secara cepat.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon rose">4</div>
+            <div>
+              <div class="point-title">Sulit Mengontrol Disiplin Ibadah Shalat</div>
+              <div class="point-desc">Guru pembina kesulitan mendata siapa saja yang hadir shalat berjamaah vs siswa yang bersembunyi di kantin.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card" style="justify-content: center; text-align: center;">
+          <div style="font-size: 54px;">⏱️ ➡️ 📱</div>
+          <div style="font-size: 16px; font-weight: 800; color: #f8fafc;">Butuh Solusi yang Cepat, Praktis, &amp; Transparan</div>
+          <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
+            Sekolah membutuhkan sistem modern yang tidak membebani anggaran, mudah dioperasikan guru piket, dan dapat dipantau langsung oleh pimpinan sekolah.
+          </p>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 02 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: SOLUSI -->
+    <div class="slide" id="slide-3">
+      <div>
+        <div class="slide-badge">SOLUSI DIGITAL TERPADU</div>
+        <h1 class="slide-title">Presensi Kartu Pelajar QR Code Pintar</h1>
+        <p class="slide-subtitle">Satu sistem terintegrasi untuk seluruh kebutuhan kedisiplinan dan pembinaan karakter siswa.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon amber">🪪</div>
+            <div>
+              <div class="point-title">Kartu Pelajar Fisik Multifungsi</div>
+              <div class="point-desc">Berfungsi ganda sebagai tanda pengenal resmi siswa sekaligus kartu absensi digital berstandar ID-1.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon">💻</div>
+            <div>
+              <div class="point-title">Hemat Perangkat (Gunakan Perangkat yang Ada)</div>
+              <div class="point-desc">Dapat dipasang di laptop sekolah, tablet meja piket, atau HP Android guru tanpa beli alat khusus.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon emerald">🔊</div>
+            <div>
+              <div class="point-title">Konfirmasi Audio Nyata (Bip &amp; Suara Nama)</div>
+              <div class="point-desc">Dilengkapi suara sambutan ramah: "Selamat datang Ahmad Fauzan, presensi masuk tepat waktu."</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card">
+          <div style="font-size: 12px; font-weight: 700; color: #38bdf8;">ALUR KERJA PRESENSI GERBANG</div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 10px; font-size: 13px;">
+              <strong>1. Tunjukkan Kartu:</strong> Siswa menatap kamera (30 cm).
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 10px; font-size: 13px;">
+              <strong>2. Deteksi Seketika (&lt;1s):</strong> Bunyi bip + foto &amp; nama muncul di layar.
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 10px; font-size: 13px;">
+              <strong>3. WhatsApp Terkirim:</strong> Notifikasi masuk ke HP orang tua secara otomatis.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 03 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: FITUR SHALAT (NILAI JUAL UTAMA) -->
+    <div class="slide" id="slide-4">
+      <div>
+        <div class="slide-badge">NILAI PLUS PENDIDIKAN KARAKTER</div>
+        <h1 class="slide-title">Presensi Khusus Shalat Berjamaah</h1>
+        <p class="slide-subtitle">Mendukung program pembiasaan ibadah Dzuhur &amp; Ashar di masjid/mushola sekolah.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon emerald">🕌</div>
+            <div>
+              <div class="point-title">Sesi Terpisah: Dzuhur &amp; Ashar</div>
+              <div class="point-desc">Sistem otomatis mengenali jam shalat dan mencatat kehadiran ibadah berjamaah secara akurat.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon emerald">📊</div>
+            <div>
+              <div class="point-title">Grafik Tren Kehadiran Shalat Harian</div>
+              <div class="point-desc">Visualisasi grafik Recharts interaktif yang memantau tingkat partisipasi ibadah per kelas dan per jurusan.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon emerald">📑</div>
+            <div>
+              <div class="point-title">Laporan Khusus Guru Pembina &amp; PAI</div>
+              <div class="point-desc">Rekapitulasi ibadah yang dapat langsung dicetak untuk evaluasi nilai sikap dan kepribadian siswa.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card">
+          <div style="font-size: 12px; font-weight: 700; color: #34d399;">STATISTIK SHALAT BERJAMAAH</div>
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 14px;">
+            <div style="font-size: 11px; color: #a7f3d0; font-weight: 700;">HARI INI (DZUHUR &amp; ASHAR)</div>
+            <div style="font-size: 28px; font-weight: 900; color: #34d399; margin: 4px 0;">94.8% Hadir</div>
+            <div style="font-size: 12px; color: #cbd5e1;">412 Siswa Terdata Hadir Berjamaah di Masjid</div>
+          </div>
+          <div style="font-size: 11px; color: #94a3b8;">Terintegrasi dengan filter status khusus (Hadir / Berhalangan / Izin).</div>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 04 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: NOTIFIKASI WA -->
+    <div class="slide" id="slide-5">
+      <div>
+        <div class="slide-badge">KEMITRAAN DENGAN ORANG TUA</div>
+        <h1 class="slide-title">Notifikasi WhatsApp Real-Time ke Wali Murid</h1>
+        <p class="slide-subtitle">Membangun transparansi dan kepercayaan tinggi antara sekolah dengan orang tua siswa.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon amber">✉️</div>
+            <div>
+              <div class="point-title">Terkirim Otomatis dalam Hitungan Detik</div>
+              <div class="point-desc">Begitu kartu di-scan di gerbang, server mengirimkan pesan WhatsApp ke nomor orang tua.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon amber">🛡️</div>
+            <div>
+              <div class="point-title">Cegah Bolos &amp; Siswa Terlambat</div>
+              <div class="point-desc">Jika siswa terlambat, pesan merincikan menit keterlambatan: <em>"Terlambat 15 menit"</em>.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon amber">⭐</div>
+            <div>
+              <div class="point-title">Meningkatkan Citra Profesional Sekolah</div>
+              <div class="point-desc">Sekolah tampil sebagai institusi berteknologi tinggi, peduli, dan bertanggung jawab.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card">
+          <div class="wa-bubble">
+            Yth. Bapak/Ibu Wali dari <strong>Ahmad Fauzan</strong> (X TJKT 1),<br><br>
+            Ananda telah tiba di sekolah pada:<br>
+            📅 <strong>Rabu, 21 Oktober 2026</strong><br>
+            ⏰ <strong>06:45:12 WIB</strong><br>
+            ✅ Status: <strong>Hadir Tepat Waktu</strong><br><br>
+            Terima kasih atas kerja samanya dalam mendisiplinkan putra/putri kita.<br>
+            <em>- SMKS PGRI 1 KEDIRI -</em>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 05 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: GENERATOR CETAK KARTU MANDIRI -->
+    <div class="slide" id="slide-6">
+      <div>
+        <div class="slide-badge">MANDIRI &amp; HEMAT BIAYA</div>
+        <h1 class="slide-title">Generator Cetak Kartu Pelajar Mandiri</h1>
+        <p class="slide-subtitle">Sekolah bisa mencetak kartu sendiri kapan saja tanpa bergantung pada vendor percetakan luar.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon">🖨️</div>
+            <div>
+              <div class="point-title">Desain Berstandar ID-1 (Depan-Belakang)</div>
+              <div class="point-desc">Ukuran standar kartu ATM/KTP (85.6 × 54 mm) siap cetak di kertas foto, PVC card, maupun kertas stiker.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon">📄</div>
+            <div>
+              <div class="point-title">Ekspor Massal PDF Siap Cetak (A4 Grid)</div>
+              <div class="point-desc">Satu lembar A4 memuat 8–10 kartu dengan garis potong presisi untuk memudahkan pemotongan.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon">🔄</div>
+            <div>
+              <div class="point-title">Siswa Baru / Kartu Hilang Langsung Jadi</div>
+              <div class="point-desc">Jika ada siswa baru atau kartu hilang, staf sekolah cukup klik cetak 1 kartu dalam hitungan detik.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card" style="text-align: center;">
+          <div style="font-size: 38px;">🎴 ➡️ 📄</div>
+          <div style="font-size: 15px; font-weight: 800; color: #f8fafc;">Bebas Biaya Percetakan Luar</div>
+          <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">
+            Sekolah menghemat jutaan rupiah biaya cetak kartu setiap tahun ajaran baru.
+          </div>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 06 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: REKAPITULASI EXCEL & PDF -->
+    <div class="slide" id="slide-7">
+      <div>
+        <div class="slide-badge">ADMINISTRASI TERTIB</div>
+        <h1 class="slide-title">Laporan Rekapitulasi Excel &amp; PDF Siap Cetak</h1>
+        <p class="slide-subtitle">Staf TU dan Kesiswaan tidak perlu lagi merekap manual setiap akhir bulan.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon emerald">📊</div>
+            <div>
+              <div class="point-title">Ekspor Native Excel (.xlsx) Formal</div>
+              <div class="point-desc">Dilengkapi kop surat resmi sekolah, judul laporan, rincian jam datang, jam pulang, dan status ibadah.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon emerald">🖨️</div>
+            <div>
+              <div class="point-title">Format Landscape A4 Rapi &amp; Siap Tanda Tangan</div>
+              <div class="point-desc">Sudah tersedia kolom pengesahan resmi Kepala Sekolah, Wakil Kesiswaan, dan Guru Pembina.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon emerald">🔍</div>
+            <div>
+              <div class="point-title">Filter Cepat: Harian, Kelas, &amp; Tanggal</div>
+              <div class="point-desc">Cari riwayat kehadiran siswa tertentu hanya dengan mengetik nama atau NIS dalam 1 detik.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card">
+          <div style="font-size: 12px; font-weight: 700; color: #34d399;">CONTOH FORMAT LAPORAN EXCEL</div>
+          <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #e2e8f0; line-height: 1.6;">
+            [KOP SEKOLAH]<br>
+            LAPORAN PRESENSI KBM &amp; SHALAT<br>
+            --------------------------------<br>
+            NO | NIS   | NAMA       | STATUS<br>
+            01 | 12401 | AHMAD F.   | TEPAT WAKTU<br>
+            02 | 12402 | SITI N.    | TEPAT WAKTU<br>
+            03 | 12403 | RIZKY P.   | TERLAMBAT (10m)
+          </div>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 07 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: PERBANDINGAN BIAYA -->
+    <div class="slide" id="slide-8">
+      <div>
+        <div class="slide-badge">EFISIENSI ANGGARAN SEKOLAH</div>
+        <h1 class="slide-title">Perbandingan Biaya &amp; Efisiensi</h1>
+        <p class="slide-subtitle">Investasi hemat dan cerdas menggunakan infrastruktur komputer yang sudah ada di sekolah.</p>
+      </div>
+
+      <div class="slide-body full-width">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Indikator Pembanding</th>
+              <th>Mesin Fingerprint / Mesin RFID Tradisional</th>
+              <th class="highlight-cell">Sistem Kartu Pintar QR Code Ini ⭐</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Biaya Pengadaan Alat</strong></td>
+              <td>Tinggi (Rp 3.500.000 – Rp 8.000.000 per gerbang)</td>
+              <td class="highlight-cell">Rp 0 (Cukup pakai laptop / tablet / HP sekolah)</td>
+            </tr>
+            <tr>
+              <td><strong>Biaya Perawatan &amp; Servis</strong></td>
+              <td>Tinggi (Sering ganti sensor optik &amp; panggil teknisi)</td>
+              <td class="highlight-cell">Sangat Rendah (Bebas perawatan perangkat keras khusus)</td>
+            </tr>
+            <tr>
+              <td><strong>Kecepatan Scan di Gerbang</strong></td>
+              <td>Lambat (3–5 detik per siswa, antrean panjang)</td>
+              <td class="highlight-cell">Sangat Cepat (&lt;1 detik, suara sambutan otomatis)</td>
+            </tr>
+            <tr>
+              <td><strong>Pemantauan Shalat Berjamaah</strong></td>
+              <td>Tidak ada fitur shalat berjamaah</td>
+              <td class="highlight-cell">Tersedia fitur khusus Dzuhur &amp; Ashar + Chart</td>
+            </tr>
+            <tr>
+              <td><strong>Keterlibatan Orang Tua</strong></td>
+              <td>Jarang ada notifikasi WA / harus bayar SMS gateway</td>
+              <td class="highlight-cell">Notifikasi WhatsApp otomatis langsung ke nomor wali</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 08 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: RENCANA IMPLEMENTASI -->
+    <div class="slide" id="slide-9">
+      <div>
+        <div class="slide-badge">KEMUDAHAN PENERAPAN</div>
+        <h1 class="slide-title">3 Langkah Mudah Penerapan di Sekolah</h1>
+        <p class="slide-subtitle">Dapat langsung dioperasikan tanpa prosedur teknis yang berbelit-belit.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon amber">1</div>
+            <div>
+              <div class="point-title">Import Data Siswa dari Excel / Dapodik (10 Menit)</div>
+              <div class="point-desc">Format data siswa di Excel, upload ke sistem. Seluruh data NIS, nama, kelas, dan nomor WhatsApp orang tua langsung siap.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon amber">2</div>
+            <div>
+              <div class="point-title">Cetak Kartu Pelajar Siswa</div>
+              <div class="point-desc">Gunakan generator kartu bawaan untuk cetak kartu siswa per kelas. Masukkan ke plastik mika / lanyard gantungan leher.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon amber">3</div>
+            <div>
+              <div class="point-title">Letakkan Tablet / Laptop di Meja Gerbang</div>
+              <div class="point-desc">Nyalakan kamera, tekan "Tes Audio Tablet", dan terminal presensi langsung beroperasi melayani ratusan siswa.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card" style="text-align: center; justify-content: center;">
+          <div style="font-size: 44px;">🚀</div>
+          <div style="font-size: 16px; font-weight: 800; color: #fbbf24;">Siap Uji Coba Cepat</div>
+          <div style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
+            Kami siap mendampingi tim IT &amp; Guru Piket sekolah dari awal setting hingga sistem berjalan lancar.
+          </div>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 09 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-primary" onclick="nextSlide()">Berikutnya ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: PENUTUP & PENAWARAN UJI COBA -->
+    <div class="slide" id="slide-10">
+      <div>
+        <div class="slide-badge">PENUTUP &amp; KEMITRAAN</div>
+        <h1 class="slide-title">Penawaran Uji Coba Gratis (Pilot Project)</h1>
+        <p class="slide-subtitle">Mari bersama mewujudkan sekolah digital yang tertib, religius, dan dipercaya masyarakat.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="points-list">
+          <div class="point-item">
+            <div class="point-icon emerald">🎁</div>
+            <div>
+              <div class="point-title">Uji Coba Gratis 1–2 Minggu</div>
+              <div class="point-desc">Kami berikan kesempatan uji coba penuh untuk 1 atau 2 kelas percontohan tanpa komitmen biaya awal.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon emerald">🤝</div>
+            <div>
+              <div class="point-title">Pendampingan Penuh Tim Pengembang</div>
+              <div class="point-desc">Membantu pelatihan singkat guru piket dan staf TU dalam mencetak kartu dan mengunduh laporan.</div>
+            </div>
+          </div>
+          <div class="point-item">
+            <div class="point-icon emerald">⭐</div>
+            <div>
+              <div class="point-title">Kustomisasi Logo &amp; Aturan Sekolah</div>
+              <div class="point-desc">Jam masuk, batas toleransi terlambat, jam pulang, dan kop surat disesuaikan 100% dengan SOP sekolah.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-card" style="text-align: center; justify-content: center; background: linear-gradient(135deg, #1e3a8a, #065f46);">
+          <div style="font-size: 13px; font-weight: 800; color: #fbbf24; text-transform: uppercase;">SESI TANYA JAWAB &amp; DEMO LANGSUNG</div>
+          <div style="font-size: 22px; font-weight: 900; color: #ffffff; margin: 10px 0;">Terima Kasih</div>
+          <div style="font-size: 13px; color: #e2e8f0; line-height: 1.5;">
+            "Waktunya beralih ke presensi modern yang membanggakan sekolah kita."
+          </div>
+          <div style="margin-top: 14px; font-size: 13px; font-weight: 700; color: #fef08a;">
+            👉 Mari kita coba demonstrasi scan langsung sekarang!
+          </div>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="slide-counter">SLIDE 10 / 10</div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="prevSlide()">◀ Sebelumnya</button>
+          <button class="btn btn-secondary" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+          <button class="btn btn-primary" onclick="goToSlide(0)">Ulangi dari Awal ↺</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    function showSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+      currentSlide = index;
+
+      slides.forEach((slide, idx) => {
+        if (idx === currentSlide) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    function goToSlide(index) {
+      showSlide(index);
+    }
+
+    // Keyboard navigation: Arrow Right/Left, Spacebar
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key === 'Home') {
+        goToSlide(0);
+      } else if (e.key === 'End') {
+        goToSlide(totalSlides - 1);
+      }
+    });
+  </script>
+</body>
+</html>

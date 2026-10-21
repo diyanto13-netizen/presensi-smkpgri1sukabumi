@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   RotateCw,
   Database,
+  Presentation,
 } from 'lucide-react';
 import { Siswa, Absensi, SchoolConfig } from './types';
 import {
@@ -372,6 +373,18 @@ export default function App() {
                 <span>{headerTime || '07:00:00'}</span>
                 <span className="text-[10px] text-slate-600 font-sans font-semibold">WIB</span>
               </div>
+
+              {/* Proposal Presentation Slide Deck Link */}
+              <a
+                href="/presentation.html"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition flex items-center gap-1.5 text-xs font-semibold shadow-2xs cursor-pointer"
+                title="Buka Slide Presentasi Penawaran untuk Pihak Sekolah (Bisa Tayang Fullscreen / Cetak PDF)"
+              >
+                <Presentation className="w-3.5 h-3.5 text-amber-700" />
+                <span className="hidden sm:inline">Slide Penawaran</span>
+              </a>
 
               {/* Settings button */}
               <button
