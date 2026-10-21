@@ -94,6 +94,23 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   const [showUrlInput, setShowUrlInput] = useState<boolean>(false);
   const photoFileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Bulk Photo Upload States
+  const [isBulkPhotoModalOpen, setIsBulkPhotoModalOpen] = useState<boolean>(false);
+  const [isBulkPhotoProcessing, setIsBulkPhotoProcessing] = useState<boolean>(false);
+  const [bulkPhotoProgress, setBulkPhotoProgress] = useState<{ current: number; total: number; currentName: string }>({
+    current: 0,
+    total: 0,
+    currentName: '',
+  });
+  const [bulkPhotoResult, setBulkPhotoResult] = useState<{
+    matched: { nis: string; nama: string; filename: string; photoUrl: string }[];
+    unmatched: string[];
+    totalFiles: number;
+  } | null>(null);
+  const bulkPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const singleQuickPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const [quickPhotoStudentId, setQuickPhotoStudentId] = useState<string | null>(null);
+
   // Bulk Selection & Deletion States
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
@@ -350,6 +367,116 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
     }
   };
 
+  const handleTriggerQuickPhoto = (studentId: string) => {
+    setQuickPhotoStudentId(studentId);
+    singleQuickPhotoInputRef.current?.click();
+  };
+
+  const handleQuickSinglePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !quickPhotoStudentId) return;
+
+    try {
+      const compressedDataUrl = await compressAndFormatStudentPhoto(file);
+      const updated = students.map(s =>
+        s.id === quickPhotoStudentId ? { ...s, foto_url: compressedDataUrl } : s
+      );
+      onUpdateStudents(updated);
+      setImportNotification('Pas foto asli siswa berhasil diperbarui!');
+      setTimeout(() => setImportNotification(null), 3500);
+    } catch (err: any) {
+      console.error('Error uploading quick student photo:', err);
+      alert('Gagal memproses foto: ' + (err.message || 'Format tidak didukung'));
+    } finally {
+      setQuickPhotoStudentId(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleBulkPhotoFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+    setIsBulkPhotoModalOpen(true);
+    setIsBulkPhotoProcessing(true);
+    setBulkPhotoProgress({ current: 0, total: fileList.length, currentName: '' });
+
+    const matchedList: { nis: string; nama: string; filename: string; photoUrl: string }[] = [];
+    const unmatchedList: string[] = [];
+    const studentPhotoUpdates = new Map<string, string>(); // studentId -> photoDataUrl
+
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      setBulkPhotoProgress({ current: i + 1, total: fileList.length, currentName: file.name });
+
+      // Clean filename: remove extension, trim, lowercase
+      const dotIndex = file.name.lastIndexOf('.');
+      const baseName = dotIndex !== -1 ? file.name.substring(0, dotIndex) : file.name;
+      const cleanBase = baseName.trim().toLowerCase();
+      const cleanDigits = baseName.replace(/\D/g, ''); // Extract just numbers (e.g., NIS)
+
+      // Try matching student
+      const matched = students.find(s => {
+        const sNis = (s.nis || '').trim().toLowerCase();
+        const sNisDigits = (s.nis || '').replace(/\D/g, '');
+        const sNisn = (s.nisn || '').trim().toLowerCase();
+        const sNisnDigits = (s.nisn || '').replace(/\D/g, '');
+        const sNama = (s.nama || '').trim().toLowerCase();
+
+        // 1. Exact NIS match
+        if (sNis && (cleanBase === sNis || (cleanDigits.length >= 3 && cleanDigits === sNisDigits))) return true;
+        // 2. Exact NISN match
+        if (sNisn && (cleanBase === sNisn || (cleanDigits.length >= 5 && cleanDigits === sNisnDigits))) return true;
+        // 3. Exact Name match
+        if (sNama && cleanBase === sNama) return true;
+        // 4. Filename contains student NIS (e.g., "124015101_ADI.jpg" or "foto_124015101.jpg")
+        if (sNis && cleanBase.includes(sNis)) return true;
+        // 5. Filename contains student Name
+        if (sNama && cleanBase.includes(sNama)) return true;
+
+        return false;
+      });
+
+      if (matched) {
+        try {
+          const compressed = await compressAndFormatStudentPhoto(file);
+          studentPhotoUpdates.set(matched.id, compressed);
+          matchedList.push({
+            nis: matched.nis,
+            nama: matched.nama,
+            filename: file.name,
+            photoUrl: compressed,
+          });
+        } catch (err: any) {
+          console.error(`Gagal memproses file ${file.name}:`, err);
+          unmatchedList.push(`${file.name} (Gagal kompresi)`);
+        }
+      } else {
+        unmatchedList.push(file.name);
+      }
+    }
+
+    if (studentPhotoUpdates.size > 0) {
+      const updated = students.map(s => {
+        const newPhoto = studentPhotoUpdates.get(s.id);
+        return newPhoto ? { ...s, foto_url: newPhoto } : s;
+      });
+      onUpdateStudents(updated);
+    }
+
+    setBulkPhotoResult({
+      matched: matchedList,
+      unmatched: unmatchedList,
+      totalFiles: fileList.length,
+    });
+    setIsBulkPhotoProcessing(false);
+
+    // Reset input
+    if (bulkPhotoInputRef.current) {
+      bulkPhotoInputRef.current.value = '';
+    }
+  };
+
   const handleResetToDefaultPhoto = () => {
     const defaultPhoto =
       formData.jenis_kelamin === 'P'
@@ -444,6 +571,23 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
 
         {/* Action Toolbar */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Hidden inputs for Bulk & Quick Photo */}
+          <input
+            ref={bulkPhotoInputRef}
+            type="file"
+            multiple
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            onChange={e => handleBulkPhotoFiles(e.target.files)}
+            className="hidden"
+          />
+          <input
+            ref={singleQuickPhotoInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            onChange={handleQuickSinglePhotoFile}
+            className="hidden"
+          />
+
           {/* Download Template Excel */}
           <button
             onClick={handleDownloadTemplate}
@@ -462,6 +606,17 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>Import Excel</span>
+          </button>
+
+          {/* Upload Pas Foto Massal */}
+          <button
+            onClick={() => bulkPhotoInputRef.current?.click()}
+            className="px-4 py-2 rounded-xl font-semibold text-xs bg-indigo-700 hover:bg-indigo-800 text-white shadow-xs flex items-center gap-1.5 transition cursor-pointer"
+            title="Upload sekaligus banyak pas foto asli siswa (otomatis dicocokkan berdasarkan nomor NIS)"
+          >
+            <Camera className="w-3.5 h-3.5 text-indigo-200" />
+            <span>Upload Foto Massal</span>
+            <span className="bg-indigo-500/60 text-[10px] px-1.5 py-0.2 rounded-md font-mono">NIS</span>
           </button>
 
           {/* Add Single Student */}
@@ -493,6 +648,44 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
             title="Reset ke siswa demo PGRI 1"
           >
             Reset
+          </button>
+        </div>
+      </div>
+
+      {/* Photo Info & Solution Banner */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0">
+            <Camera className="w-5 h-5 text-amber-700" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-bold text-slate-900">
+                Penyebab &amp; Cara Mengganti Pas Foto Asli Siswa
+              </h4>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900">
+                Panduan
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              File Excel Dapodik yang di-impor hanya berisi data teks tanpa file gambar fisik, sehingga sistem otomatis memasang avatar contoh agar kartu tidak kosong.
+              <br className="hidden sm:inline" />
+              Untuk memasang <strong>pas foto asli siswa</strong>:
+              <br />
+              1. <strong>Massal Sekaligus (Rekomendasi)</strong>: Klik tombol <span className="font-semibold text-indigo-700">"Upload Foto Massal"</span> di atas, pilih sekaligus seluruh file foto siswa (cukup beri nama file sesuai NIS siswa, misal: <code className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-amber-300 text-amber-900">124015101.jpg</code>).
+              <br />
+              2. <strong>Per Siswa</strong>: Klik foto siswa di tabel di bawah untuk unggah foto dari galeri HP/laptop atau foto langsung.
+            </p>
+          </div>
+        </div>
+        <div className="shrink-0 flex items-center gap-2 self-start md:self-center">
+          <button
+            type="button"
+            onClick={() => bulkPhotoInputRef.current?.click()}
+            className="px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer whitespace-nowrap"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>Pilih File Foto Sekaligus</span>
           </button>
         </div>
       </div>
@@ -693,22 +886,41 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
                       </td>
                       <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3.5">
-                        <div
-                          onClick={() => handleOpenEditModal(student)}
-                          className="relative group cursor-pointer shrink-0"
-                          title="Klik untuk ganti pas foto / edit data siswa"
-                        >
+                        <div className="relative group shrink-0">
                           <img
                             src={student.foto_url}
                             alt={student.nama}
-                            className="w-12 h-14 rounded-xl object-cover border-2 border-amber-300/80 shadow-xs group-hover:border-blue-600 transition"
+                            className="w-12 h-14 rounded-xl object-cover border-2 border-amber-300/80 shadow-xs group-hover:border-indigo-600 transition"
                           />
-                          <div className="absolute inset-0 bg-blue-950/50 opacity-0 group-hover:opacity-100 rounded-xl flex items-center justify-center transition">
-                            <Camera className="w-4 h-4 text-white" />
+                          {student.foto_url?.includes('images.unsplash.com') && (
+                            <span
+                              className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full shadow-xs"
+                              title="Masih avatar contoh. Klik untuk ganti pas foto asli."
+                            >
+                              Sample
+                            </span>
+                          )}
+                          <div
+                            onClick={() => handleTriggerQuickPhoto(student.id)}
+                            className="absolute inset-0 bg-indigo-950/70 opacity-0 group-hover:opacity-100 rounded-xl flex flex-col items-center justify-center transition cursor-pointer text-white"
+                            title="Klik untuk langsung ganti pas foto asli siswa ini"
+                          >
+                            <Camera className="w-4 h-4 text-amber-300" />
+                            <span className="text-[9px] font-bold mt-0.5">Ubah</span>
                           </div>
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900 text-base">{student.nama}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-900 text-base">{student.nama}</p>
+                            <button
+                              type="button"
+                              onClick={() => handleTriggerQuickPhoto(student.id)}
+                              className="text-slate-400 hover:text-indigo-600 text-xs p-1 rounded-md hover:bg-indigo-50 transition cursor-pointer"
+                              title="Unggah pas foto asli untuk siswa ini"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                            </button>
+                          </div>
                           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
                             {student.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
                             {student.nama_ortu ? ` • Ortu: ${student.nama_ortu}` : ''}
@@ -1382,6 +1594,144 @@ Jadwal kepulangan: *${student.jam_pulang} WIB*.`;
                 <span>Hubungi Orang Tua</span>
               </a>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Bulk Photo Upload Result / Progress Modal */}
+      {isBulkPhotoModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200 max-w-2xl w-full space-y-5 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-heading font-black text-lg text-slate-900">
+                    Upload Pas Foto Massal Siswa
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Pencocokan otomatis berkas pas foto sesuai NIS / Nama siswa
+                  </p>
+                </div>
+              </div>
+              {!isBulkPhotoProcessing && (
+                <button
+                  onClick={() => {
+                    setIsBulkPhotoModalOpen(false);
+                    setBulkPhotoResult(null);
+                  }}
+                  className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Processing State */}
+            {isBulkPhotoProcessing && (
+              <div className="py-8 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mx-auto text-indigo-600 animate-pulse">
+                  <RefreshCw className="w-8 h-8 animate-spin" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-base">
+                    Memproses &amp; Mengompres Pas Foto ({bulkPhotoProgress.current} dari {bulkPhotoProgress.total})
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1 font-mono">
+                    Sedang memproses: {bulkPhotoProgress.currentName}
+                  </p>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden max-w-md mx-auto">
+                  <div
+                    className="bg-indigo-600 h-2.5 rounded-full transition-all duration-200"
+                    style={{
+                      width: `${bulkPhotoProgress.total > 0 ? (bulkPhotoProgress.current / bulkPhotoProgress.total) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Completed State */}
+            {!isBulkPhotoProcessing && bulkPhotoResult && (
+              <div className="space-y-4">
+                {/* Summary stat cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <span className="text-[11px] font-bold text-slate-500 block uppercase">Total File</span>
+                    <span className="text-xl font-black text-slate-800">{bulkPhotoResult.totalFiles}</span>
+                  </div>
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
+                    <span className="text-[11px] font-bold text-emerald-600 block uppercase">Berhasil Terpasang</span>
+                    <span className="text-xl font-black text-emerald-700">{bulkPhotoResult.matched.length} Siswa</span>
+                  </div>
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center col-span-2 sm:col-span-1">
+                    <span className="text-[11px] font-bold text-amber-600 block uppercase">Tidak Cocok</span>
+                    <span className="text-xl font-black text-amber-700">{bulkPhotoResult.unmatched.length}</span>
+                  </div>
+                </div>
+
+                {/* Matched Students Grid */}
+                {bulkPhotoResult.matched.length > 0 && (
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Pas Foto Siswa Berhasil Terpasang ke Database &amp; Kartu:</span>
+                    </h5>
+                    <div className="max-h-56 overflow-y-auto space-y-1.5 p-1 bg-slate-50 rounded-xl border border-slate-200">
+                      {bulkPhotoResult.matched.map((m, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-3 p-2 bg-white rounded-lg border border-slate-200 text-xs"
+                        >
+                          <img
+                            src={m.photoUrl}
+                            alt={m.nama}
+                            className="w-8 h-10 object-cover rounded border border-amber-300 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-900 truncate">{m.nama}</p>
+                            <p className="text-[11px] text-slate-500 font-mono">NIS: {m.nis}</p>
+                          </div>
+                          <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 truncate max-w-[150px]">
+                            {m.filename}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Unmatched Files Warning */}
+                {bulkPhotoResult.unmatched.length > 0 && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs">
+                    <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>{bulkPhotoResult.unmatched.length} berkas foto tidak cocok dengan NIS siswa:</span>
+                    </p>
+                    <p className="text-amber-800 mt-1 font-mono text-[11px] max-h-20 overflow-y-auto">
+                      {bulkPhotoResult.unmatched.join(', ')}
+                    </p>
+                    <p className="text-[11px] text-amber-700 mt-1">
+                      Tip: Beri nama file sesuai NIS siswa (contoh: <code className="font-bold">124015101.jpg</code>), lalu pilih file lagi.
+                    </p>
+                  </div>
+                )}
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setIsBulkPhotoModalOpen(false);
+                      setBulkPhotoResult(null);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                  >
+                    Selesai &amp; Simpan
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
