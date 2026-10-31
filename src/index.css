@@ -27,9 +27,103 @@
   }
 
   html.dark body {
-    background-color: #0b0f19;
+    background-color: #080c1e;
     color: #f8fafc;
   }
+}
+
+/* =========================================================
+   USER IMAGE INSPIRATION THEMES (PALETTES)
+   Foto 1: Sunrise Horizon (Warm Cyan Sky & Amber Sunset)
+   Foto 2: Midnight Aurora (Deep Midnight Navy, Violet & Neon Glow)
+   ========================================================= */
+
+/* Palette 1: Midnight Aurora (Foto 2) - Dark Mode Default */
+.palette-aurora.dark body,
+html.dark.palette-aurora body,
+html.dark[data-palette="aurora"] body,
+html.dark body {
+  background-color: #080c1e;
+  background-image: 
+    radial-gradient(circle at 8% 92%, rgba(192, 38, 211, 0.18) 0%, transparent 40%),
+    radial-gradient(circle at 92% 10%, rgba(59, 130, 246, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
+    linear-gradient(145deg, #060918 0%, #0d1230 45%, #180f3a 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  color: #f8fafc;
+}
+
+/* Palette 1: Midnight Aurora in Light Mode */
+.palette-aurora.light body,
+html.light.palette-aurora body,
+html.light[data-palette="aurora"] body {
+  background-color: #f6f8fd;
+  background-image: 
+    radial-gradient(circle at 90% 10%, rgba(129, 140, 248, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 10% 90%, rgba(217, 70, 239, 0.08) 0%, transparent 40%),
+    linear-gradient(180deg, #f8faff 0%, #f1f4fb 100%);
+  background-attachment: fixed;
+  color: #0f172a;
+}
+
+/* Palette 2: Sunrise Horizon (Foto 1) */
+.palette-sunrise.light body,
+html.light.palette-sunrise body,
+html.light[data-palette="sunrise"] body,
+html.palette-sunrise:not(.dark) body {
+  background-color: #fffbf2;
+  background-image: 
+    radial-gradient(circle at 85% 0%, rgba(56, 189, 248, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 12% 95%, rgba(245, 158, 11, 0.16) 0%, transparent 45%),
+    linear-gradient(180deg, #f0fdfa 0%, #fffcf5 35%, #fff8e8 70%, #fef3c7 100%);
+  background-attachment: fixed;
+  color: #0f172a;
+}
+
+.palette-sunrise.dark body,
+html.dark.palette-sunrise body,
+html.dark[data-palette="sunrise"] body {
+  background-color: #17120a;
+  background-image: 
+    radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 10% 90%, rgba(245, 158, 11, 0.15) 0%, transparent 45%),
+    linear-gradient(145deg, #120e06 0%, #1f1608 50%, #2e1c0c 100%);
+  background-attachment: fixed;
+  color: #f8fafc;
+}
+
+/* Palette 3: Slate Minimalis (Netral) */
+.palette-slate.dark body,
+html.dark.palette-slate body {
+  background-color: #0b0f19;
+  background-image: none;
+  color: #f8fafc;
+}
+.palette-slate.light body,
+html.light.palette-slate body {
+  background-color: #f8fafc;
+  background-image: none;
+  color: #0f172a;
+}
+
+/* Glass & Card Surfaces for Aurora Dark Mode */
+.dark.palette-aurora .bg-white:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]),
+.dark .bg-white:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]) {
+  background-color: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.dark.palette-aurora header,
+.dark header {
+  background-color: rgba(11, 16, 38, 0.92) !important;
+  backdrop-filter: blur(12px);
+  border-bottom-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+.dark.palette-aurora .bg-slate-50:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .bg-slate-50:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  background-color: rgba(11, 16, 38, 0.75);
 }
 
 .font-heading {

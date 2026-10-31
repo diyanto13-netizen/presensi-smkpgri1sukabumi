@@ -20,9 +20,18 @@ import {
   Calendar,
   Sun,
   Moon,
+  Palette,
+  Sparkles,
   Coffee,
 } from 'lucide-react';
-import { applyThemeToDocument, getInitialTheme, Theme } from '../utils/theme';
+import {
+  applyThemeToDocument,
+  getInitialTheme,
+  getInitialPalette,
+  Theme,
+  ThemePalette,
+  THEME_PALETTES,
+} from '../utils/theme';
 import { SchoolConfig, HariSekolah, JamMasukHarian, JamPulangHarian } from '../types/index.ts';
 import { SchoolLogo } from './SchoolLogo';
 import {
@@ -45,6 +54,10 @@ interface SettingsModalProps {
   studentsCount?: number;
   attendanceCount?: number;
   isSyncing?: boolean;
+  currentTheme?: Theme;
+  currentPalette?: ThemePalette;
+  onThemeChange?: (theme: Theme) => void;
+  onPaletteChange?: (palette: ThemePalette) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -58,10 +71,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   studentsCount = 0,
   attendanceCount = 0,
   isSyncing = false,
+  currentTheme: propTheme,
+  currentPalette: propPalette,
+  onThemeChange,
+  onPaletteChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'sholat' | 'umum' | 'fonnte' | 'database'>('jadwal_pulang');
   const [selectedDayTab, setSelectedDayTab] = useState<HariSekolah>('senin');
-  const [currentTheme, setCurrentTheme] = useState<Theme>(getInitialTheme);
+  const [currentTheme, setCurrentTheme] = useState<Theme>(() => propTheme || getInitialTheme());
+  const [currentPalette, setCurrentPalette] = useState<ThemePalette>(() => propPalette || getInitialPalette());
+
+  React.useEffect(() => {
+    if (propTheme) setCurrentTheme(propTheme);
+  }, [propTheme]);
+
+  React.useEffect(() => {
+    if (propPalette) setCurrentPalette(propPalette);
+  }, [propPalette]);
+
+  const handleSelectTheme = (t: Theme) => {
+    setCurrentTheme(t);
+    applyThemeToDocument(t, currentPalette);
+    onThemeChange?.(t);
+  };
+
+  const handleSelectPalette = (p: ThemePalette) => {
+    setCurrentPalette(p);
+    applyThemeToDocument(currentTheme, p);
+    onPaletteChange?.(p);
+  };
   
   // Ensure jam_pulang_per_kelas, jam_masuk_harian, and jam_pulang_harian_per_kelas exist
   const [formData, setFormData] = useState<SchoolConfig>(() => ({
@@ -1007,10 +1045,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex items-center gap-1.5 p-1 bg-slate-200 dark:bg-slate-950 rounded-xl border border-slate-300 dark:border-slate-700 self-start sm:self-auto">
                       <button
                         type="button"
-                        onClick={() => {
-                          setCurrentTheme('light');
-                          applyThemeToDocument('light');
-                        }}
+                        onClick={() => handleSelectTheme('light')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                           currentTheme === 'light'
                             ? 'bg-white text-slate-900 shadow-2xs font-black'
@@ -1022,10 +1057,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          setCurrentTheme('dark');
-                          applyThemeToDocument('dark');
-                        }}
+                        onClick={() => handleSelectTheme('dark')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                           currentTheme === 'dark'
                             ? 'bg-slate-800 text-amber-300 shadow-2xs font-black'
@@ -1040,6 +1072,104 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                     Pilih antara <strong>Mode Terang (Light Mode)</strong> dan <strong>Mode Gelap (Dark Mode)</strong>. Pada Mode Gelap, seluruh teks, tabel data siswa, dan angka kehadiran tetap memiliki kontras tinggi sehingga tidak melelahkan mata dan terbaca jelas secara maksimal.
                   </p>
+                </div>
+
+                {/* Pilihan Warna Latar Belakang / Palet Dasar Aplikasi (Berdasarkan Lampiran Foto) */}
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-indigo-50/50 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 rounded-2xl border border-indigo-200/80 dark:border-indigo-900/60 space-y-3.5 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                        <Palette className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-heading font-black text-sm text-slate-900 dark:text-white">
+                          Pilihan Warna Latar Belakang / Palet Dasar Aplikasi
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Diadaptasi khusus dari 2 foto gradien yang Anda lampirkan
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 self-start sm:self-auto">
+                      Real-time Switch
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {THEME_PALETTES.map(p => {
+                      const isSelected = currentPalette === p.id;
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => handleSelectPalette(p.id)}
+                          className={`relative p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                            isSelected
+                              ? 'border-indigo-600 dark:border-indigo-400 bg-white dark:bg-slate-800 shadow-md ring-2 ring-indigo-500/20'
+                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white/60 dark:bg-slate-850/60'
+                          }`}
+                        >
+                          {/* Top Tag & Active Check */}
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                p.id === 'aurora'
+                                  ? 'bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-300'
+                                  : p.id === 'sunrise'
+                                  ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
+                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                              }`}
+                            >
+                              {p.sourceLabel}
+                            </span>
+                            {isSelected && (
+                              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px] font-bold">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Gradient Swatch Preview */}
+                          <div
+                            className="w-full h-14 rounded-lg shadow-inner border border-white/20 flex items-center justify-center overflow-hidden"
+                            style={{ background: p.previewBg }}
+                          >
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-black/40 text-white backdrop-blur-xs">
+                              {p.name}
+                            </span>
+                          </div>
+
+                          {/* Description */}
+                          <div>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                              {p.description}
+                            </p>
+                          </div>
+
+                          {/* Action Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectPalette(p.id);
+                            }}
+                            className={`w-full py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white shadow-xs'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                            }`}
+                          >
+                            {isSelected ? '✓ Sedang Diterapkan' : 'Pilih Warna Ini'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-900/60 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                    <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <p className="leading-relaxed">
+                      <strong>Rekomendasi Terbaik:</strong> Gunakan <strong>Midnight Aurora (Foto 2)</strong> untuk tampilan modern, futuristik, dan kontras tertinggi saat scan QR di dalam ruangan. Gunakan <strong>Sunrise Horizon (Foto 1)</strong> jika menyukai nuansa cerah, hangat, dan ramah seperti suasana pagi sekolah.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Jam Masuk Batas */}

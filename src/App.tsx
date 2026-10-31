@@ -21,8 +21,15 @@ import {
   Presentation,
   Sun,
   Moon,
+  Palette,
 } from 'lucide-react';
-import { Theme, getInitialTheme, applyThemeToDocument } from './utils/theme';
+import {
+  Theme,
+  ThemePalette,
+  getInitialTheme,
+  getInitialPalette,
+  applyThemeToDocument,
+} from './utils/theme';
 import { Siswa, Absensi, SchoolConfig } from './types';
 import {
   getStoredStudents,
@@ -74,15 +81,20 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState<boolean>(true);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
-  // Dark / Light Mode Theme State
+  // Dark / Light Mode & Color Palette (Foto 1: Sunrise / Foto 2: Aurora)
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [palette, setPalette] = useState<ThemePalette>(getInitialPalette);
 
   useEffect(() => {
-    applyThemeToDocument(theme);
-  }, [theme]);
+    applyThemeToDocument(theme, palette);
+  }, [theme, palette]);
 
   const handleToggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const handleCyclePalette = () => {
+    setPalette(prev => (prev === 'aurora' ? 'sunrise' : prev === 'sunrise' ? 'slate' : 'aurora'));
   };
 
   // Live ticking clock in header
@@ -295,7 +307,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-transparent text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300">
       {/* Global Navigation Header (Hidden on print) */}
       <header className="no-print sticky top-0 z-40 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -389,6 +401,36 @@ export default function App() {
 
             {/* Header Right Actions & Live Clock */}
             <div className="flex items-center gap-2">
+              {/* Color Palette Switcher (Foto 2 Aurora vs Foto 1 Sunrise) */}
+              <button
+                type="button"
+                onClick={handleCyclePalette}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer select-none ${
+                  palette === 'aurora'
+                    ? 'bg-purple-900/40 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60'
+                    : palette === 'sunrise'
+                    ? 'bg-amber-100/80 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-200'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                }`}
+                title={`Warna Latar Belakang: ${
+                  palette === 'aurora'
+                    ? 'Midnight Aurora (Foto 2) - Klik untuk ganti ke Sunrise Horizon (Foto 1)'
+                    : palette === 'sunrise'
+                    ? 'Sunrise Horizon (Foto 1) - Klik untuk ganti ke Slate Netral'
+                    : 'Slate Netral - Klik untuk ganti ke Midnight Aurora (Foto 2)'
+                }`}
+                aria-label="Ganti Warna Latar Belakang"
+              >
+                <Palette className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">
+                  {palette === 'aurora'
+                    ? 'Aurora (Foto 2)'
+                    : palette === 'sunrise'
+                    ? 'Sunrise (Foto 1)'
+                    : 'Slate'}
+                </span>
+              </button>
+
               {/* Dark / Light Mode Switcher Button */}
               <button
                 type="button"
@@ -595,6 +637,10 @@ export default function App() {
         studentsCount={students.length}
         attendanceCount={attendanceRecords.length}
         isSyncing={isSyncing}
+        currentTheme={theme}
+        currentPalette={palette}
+        onThemeChange={setTheme}
+        onPaletteChange={setPalette}
       />
     </div>
   );
