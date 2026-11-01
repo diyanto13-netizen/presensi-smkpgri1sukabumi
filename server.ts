@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { getAllStudents, upsertStudent, bulkUpsertStudents, deleteStudentById, bulkDeleteStudentsByIds, syncAllStudents } from './src/db/students.ts';
-import { getAttendanceByDate, getAllAttendanceLogs, recordAttendanceLog, bulkUpdateAttendanceLogs, getAttendanceRecapStats } from './src/db/attendance.ts';
+import { getAttendanceByDate, getAllAttendanceLogs, recordAttendanceLog, bulkUpdateAttendanceLogs, getAttendanceRecapStats, clearAttendanceLogs } from './src/db/attendance.ts';
 import { getDbSchoolConfig, saveDbSchoolConfig } from './src/db/config.ts';
 import { getOrCreateUser } from './src/db/users.ts';
 import { Absensi } from './src/types';
@@ -161,6 +161,28 @@ async function startServer() {
       res.json({ success: true, data: stats });
     } catch (error: any) {
       console.error('Error calculating attendance stats in PostgreSQL:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.post('/api/attendance/reset', async (req, res) => {
+    try {
+      const tanggal = (req.body && req.body.tanggal) || (req.query.tanggal as string) || undefined;
+      const deletedCount = await clearAttendanceLogs(tanggal);
+      res.json({ success: true, deletedCount });
+    } catch (error: any) {
+      console.error('Error resetting attendance logs in PostgreSQL:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.delete('/api/attendance', async (req, res) => {
+    try {
+      const tanggal = (req.query.tanggal as string) || undefined;
+      const deletedCount = await clearAttendanceLogs(tanggal);
+      res.json({ success: true, deletedCount });
+    } catch (error: any) {
+      console.error('Error deleting attendance logs in PostgreSQL:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   });

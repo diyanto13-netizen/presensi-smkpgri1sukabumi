@@ -218,3 +218,29 @@ export async function getAttendanceRecapStats(tanggal: string) {
     throw new Error('Gagal mengagregasi data absensi.', { cause: error });
   }
 }
+
+/**
+ * Reset / Clear attendance logs from PostgreSQL database.
+ * If tanggal is provided (and not 'all'), only deletes logs for that date.
+ * Otherwise deletes all attendance logs so the table returns to 0 records.
+ */
+export async function clearAttendanceLogs(tanggal?: string): Promise<number> {
+  try {
+    if (tanggal && tanggal !== 'all') {
+      const deleted = await db
+        .delete(attendance)
+        .where(eq(attendance.tanggal, tanggal))
+        .returning({ id: attendance.id });
+      return deleted.length;
+    } else {
+      const deleted = await db
+        .delete(attendance)
+        .returning({ id: attendance.id });
+      return deleted.length;
+    }
+  } catch (error) {
+    console.error('Database clearAttendanceLogs failed:', error);
+    throw new Error('Gagal mereset data log presensi di database.', { cause: error });
+  }
+}
+

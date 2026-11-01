@@ -151,3 +151,18 @@ export async function bulkSaveAttendanceApi(records: Absensi[]): Promise<boolean
     return false;
   }
 }
+
+export async function resetAttendanceApi(tanggal?: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/attendance/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tanggal: tanggal || 'all' }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('API resetAttendance failed:', err);
+    return false;
+  }
+}
+

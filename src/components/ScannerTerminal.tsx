@@ -31,6 +31,8 @@ import {
   Contrast,
   Lightbulb,
   Check,
+  Trash2,
+  RotateCcw,
 } from 'lucide-react';
 import { Siswa, Absensi, ScanResult, SchoolConfig } from '../types';
 import { processAttendanceRules, formatWhatsAppMessage } from '../utils/attendanceRules';
@@ -50,6 +52,7 @@ interface ScannerTerminalProps {
   attendanceRecords: Absensi[];
   config: SchoolConfig;
   onRecordAttendance: (record: Absensi) => void;
+  onResetAttendance?: (tanggal?: string) => Promise<void>;
 }
 
 export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
@@ -57,7 +60,10 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   attendanceRecords,
   config,
   onRecordAttendance,
+  onResetAttendance,
 }) => {
+  const [confirmResetScannerLog, setConfirmResetScannerLog] = useState<boolean>(false);
+  const [isResettingLog, setIsResettingLog] = useState<boolean>(false);
   // Scanner state
   const [isScannerRunning, setIsScannerRunning] = useState<boolean>(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
@@ -1810,12 +1816,71 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
 
           {/* Running list of today's recent scans */}
           <div className="premium-card p-5 sm:p-6">
-            <h4 className="text-sm sm:text-base font-heading font-black text-slate-900 uppercase tracking-wide mb-3.5 flex items-center justify-between">
-              <span>Aktivitas Presensi Hari Ini</span>
-              <span className="text-xs sm:text-sm font-bold text-blue-950 bg-blue-100 px-3.5 py-1 rounded-full">
-                {attendanceRecords.length} Catatan
-              </span>
-            </h4>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3.5">
+              <h4 className="text-sm sm:text-base font-heading font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <span>Aktivitas Presensi Hari Ini</span>
+                <span className="text-xs sm:text-sm font-bold text-blue-950 bg-blue-100 px-3 py-0.5 rounded-full">
+                  {attendanceRecords.length} Catatan
+                </span>
+              </h4>
+
+              {onResetAttendance && attendanceRecords.length > 0 && !confirmResetScannerLog && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmResetScannerLog(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Reset data log presensi percobaan kembali 0 pada database"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Log Percobaan</span>
+                </button>
+              )}
+            </div>
+
+            {confirmResetScannerLog && onResetAttendance && (
+              <div className="mb-4 p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-3 animate-in fade-in duration-150">
+                <div className="flex items-start gap-2.5">
+                  <Trash2 className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="text-xs text-rose-950 space-y-1">
+                    <p className="font-bold">
+                      Kosongkan seluruh {attendanceRecords.length} log presensi hasil percobaan?
+                    </p>
+                    <p className="text-rose-800 leading-relaxed">
+                      Data log presensi akan kembali <strong>0 pada Database Cloud (PostgreSQL &amp; Firestore)</strong>. Data siswa tetap aman.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    disabled={isResettingLog}
+                    onClick={() => setConfirmResetScannerLog(false)}
+                    className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isResettingLog}
+                    onClick={async () => {
+                      setIsResettingLog(true);
+                      try {
+                        await onResetAttendance('all');
+                        setLastScanResult(null);
+                        lastScannedCodeRef.current = '';
+                        setConfirmResetScannerLog(false);
+                      } finally {
+                        setIsResettingLog(false);
+                      }
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{isResettingLog ? 'Mereset...' : 'Ya, Reset Log ke 0'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {attendanceRecords.length === 0 ? (
               <p className="text-sm sm:text-base text-slate-400 text-center py-6">Belum ada data absensi hari ini.</p>

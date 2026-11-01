@@ -23,6 +23,8 @@ import {
   Palette,
   Sparkles,
   Coffee,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   applyThemeToDocument,
@@ -51,6 +53,7 @@ interface SettingsModalProps {
   onApplyScheduleToStudents?: (scheduleMap: Record<string, string>) => void;
   onManualSync?: () => Promise<void>;
   onPushLocalToCloud?: () => Promise<void>;
+  onResetAttendance?: (tanggal?: string) => Promise<void>;
   studentsCount?: number;
   attendanceCount?: number;
   isSyncing?: boolean;
@@ -68,6 +71,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onApplyScheduleToStudents,
   onManualSync,
   onPushLocalToCloud,
+  onResetAttendance,
   studentsCount = 0,
   attendanceCount = 0,
   isSyncing = false,
@@ -80,6 +84,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [selectedDayTab, setSelectedDayTab] = useState<HariSekolah>('senin');
   const [currentTheme, setCurrentTheme] = useState<Theme>(() => propTheme || getInitialTheme());
   const [currentPalette, setCurrentPalette] = useState<ThemePalette>(() => propPalette || getInitialPalette());
+  const [confirmResetDbLog, setConfirmResetDbLog] = useState<boolean>(false);
 
   React.useEffect(() => {
     if (propTheme) setCurrentTheme(propTheme);
@@ -1463,6 +1468,73 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Reset Data Log Presensi (Kembalikan 0 di Database) */}
+                {onResetAttendance && (
+                  <div className="p-5 bg-rose-50/70 border border-rose-200 rounded-2xl space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                          <RotateCcw className="w-4.5 h-4.5" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-rose-950 text-sm">
+                            Reset Data Log Presensi (Kembali 0 pada Database)
+                          </h4>
+                          <p className="text-xs text-rose-800 mt-0.5 leading-relaxed">
+                            Gunakan fitur ini setelah selesai melakukan uji coba / absen percobaan. Seluruh rekaman log presensi ({attendanceCount} rekaman) akan dikosongkan menjadi 0 di PostgreSQL, Firebase Firestore, dan penyimpanan lokal tanpa menghapus data siswa.
+                          </p>
+                        </div>
+                      </div>
+
+                      {!confirmResetDbLog && (
+                        <button
+                          type="button"
+                          disabled={isSyncing || attendanceCount === 0}
+                          onClick={() => setConfirmResetDbLog(true)}
+                          className="px-4 py-2.5 rounded-xl font-bold text-xs bg-rose-600 hover:bg-rose-700 text-white shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition disabled:opacity-40 shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Reset Log Presensi ({attendanceCount})</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {confirmResetDbLog && (
+                      <div className="p-4 bg-white rounded-xl border border-rose-300 space-y-3 animate-in fade-in duration-150">
+                        <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>
+                            Konfirmasi: Yakin ingin mengosongkan seluruh {attendanceCount} log presensi agar kembali 0 di database?
+                          </span>
+                        </p>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setConfirmResetDbLog(false)}
+                            className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                          >
+                            Batal
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isSyncing}
+                            onClick={async () => {
+                              await onResetAttendance('all');
+                              setConfirmResetDbLog(false);
+                              setActionNotice('Berhasil! Seluruh log presensi telah direset kembali menjadi 0 pada Database Cloud.');
+                              setTimeout(() => setActionNotice(null), 5000);
+                            }}
+                            className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>{isSyncing ? 'Mereset...' : 'Ya, Kosongkan Log ke 0'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

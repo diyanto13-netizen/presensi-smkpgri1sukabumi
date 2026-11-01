@@ -50,11 +50,13 @@ import {
   fetchAttendanceApi,
   recordAttendanceApi,
   bulkSaveAttendanceApi,
+  resetAttendanceApi,
 } from './services/api';
 import {
   syncStudentsToFirestore,
   saveAttendanceToFirestore,
   bulkSaveAttendanceToFirestore,
+  clearAttendanceFromFirestore,
   saveSchoolConfigToFirestore,
   getStudentsFromFirestore,
   getAttendanceFromFirestore,
@@ -292,6 +294,44 @@ export default function App() {
     saveAttendance(records);
     bulkSaveAttendanceApi(records);
     records.forEach(r => saveAttendanceToFirestore(r).catch(() => {}));
+  };
+
+  // Reset / Clear attendance logs (persisted locally, PostgreSQL, and Firestore)
+  const handleResetAttendance = async (tanggal?: string) => {
+    setIsSyncing(true);
+    try {
+      let nextRecords: Absensi[] = [];
+      if (tanggal && tanggal !== 'all') {
+        nextRecords = attendanceRecords.filter(r => r.tanggal !== tanggal);
+      } else {
+        nextRecords = [];
+      }
+
+      // 1. Clear local state and localStorage immediately
+      setAttendanceRecords(nextRecords);
+      saveAttendance(nextRecords);
+
+      // 2. Clear Cloud SQL PostgreSQL & Firebase Firestore
+      await Promise.allSettled([
+        resetAttendanceApi(tanggal || 'all'),
+        clearAttendanceFromFirestore(tanggal || 'all'),
+      ]);
+
+      if (tanggal && tanggal !== 'all') {
+        setSyncNotice(
+          `Berhasil mereset data log presensi tanggal ${tanggal}! Log kehadiran tanggal tersebut telah dikosongkan dari Database.`
+        );
+      } else {
+        setSyncNotice(
+          'Berhasil mereset seluruh data log presensi! Log presensi kini kembali 0 pada Database Cloud (PostgreSQL & Firestore).'
+        );
+      }
+      setTimeout(() => setSyncNotice(null), 5000);
+    } catch (err) {
+      console.error('Failed to reset attendance logs:', err);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Save config (persisted locally, PostgreSQL, and Firestore)
@@ -577,6 +617,7 @@ export default function App() {
             attendanceRecords={attendanceRecords}
             config={schoolConfig}
             onRecordAttendance={handleRecordAttendance}
+            onResetAttendance={handleResetAttendance}
           />
         )}
 
@@ -604,6 +645,7 @@ export default function App() {
             attendanceRecords={attendanceRecords}
             config={schoolConfig}
             onUpdateAttendance={handleBulkUpdateAttendance}
+            onResetAttendance={handleResetAttendance}
           />
         )}
 
@@ -634,6 +676,7 @@ export default function App() {
         }}
         onManualSync={handleManualSync}
         onPushLocalToCloud={handlePushLocalToCloud}
+        onResetAttendance={handleResetAttendance}
         studentsCount={students.length}
         attendanceCount={attendanceRecords.length}
         isSyncing={isSyncing}

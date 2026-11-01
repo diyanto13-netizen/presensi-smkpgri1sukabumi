@@ -14,6 +14,9 @@ import {
   FileText,
   ChevronDown,
   Coffee,
+  Trash2,
+  RotateCcw,
+  X,
 } from 'lucide-react';
 import { Siswa, Absensi, StatusAbsensi, SchoolConfig } from '../types';
 import { getTodayDateString, formatIndonesianDate } from '../utils/storage';
@@ -32,6 +35,7 @@ interface AttendanceRecapProps {
   attendanceRecords: Absensi[];
   config: SchoolConfig;
   onUpdateAttendance: (records: Absensi[]) => void;
+  onResetAttendance?: (tanggal?: string) => Promise<void>;
 }
 
 export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
@@ -39,12 +43,15 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
   attendanceRecords,
   config,
   onUpdateAttendance,
+  onResetAttendance,
 }) => {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
   const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
   const [isExportingSholatExcel, setIsExportingSholatExcel] = useState<boolean>(false);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
 
   // Unique classes list
   const classes = useMemo(() => {
@@ -364,6 +371,20 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
           >
             CSV
           </button>
+
+          {/* Reset Log Presensi Button */}
+          {onResetAttendance && (
+            <button
+              type="button"
+              onClick={() => setIsResetModalOpen(true)}
+              disabled={attendanceRecords.length === 0}
+              className="px-3.5 py-2 rounded-xl font-semibold text-xs bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 transition flex items-center gap-1.5 shadow-2xs disabled:opacity-40 cursor-pointer"
+              title="Reset / Kosongkan data log presensi hasil percobaan kembali menjadi 0 di database"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Log Presensi ({attendanceRecords.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -869,6 +890,114 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Reset Attendance Confirmation Modal */}
+      {isResetModalOpen && onResetAttendance && (
+        <div className="no-print fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200 max-w-lg w-full space-y-5 animate-in fade-in duration-150">
+            <div className="flex items-start justify-between gap-3 pb-3.5 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-heading font-black text-lg text-slate-900">
+                    Reset Data Log Presensi
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Kosongkan hasil absen percobaan agar kembali 0 pada Database
+                  </p>
+                </div>
+              </div>
+              {!isResetting && (
+                <button
+                  type="button"
+                  onClick={() => setIsResetModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p>
+                Saat ini terdapat <strong className="text-slate-900">{attendanceRecords.length} total rekaman log presensi</strong> yang tersimpan di Database Cloud (PostgreSQL &amp; Firebase Firestore).
+              </p>
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 text-xs space-y-1">
+                <p className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Aman untuk Data Master Siswa:</span>
+                </p>
+                <p>
+                  Tindakan ini <strong>hanya mengosongkan log riwayat scan kehadiran</strong> kembali menjadi 0. Data 23 siswa, foto, NIS, dan pengaturan jadwal kelas <strong>tidak akan terhapus</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 pt-1">
+              {/* Option 1: Reset All Logs to 0 */}
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={async () => {
+                  setIsResetting(true);
+                  try {
+                    await onResetAttendance('all');
+                    setExportNotice('Seluruh data log presensi berhasil direset kembali menjadi 0 di Database!');
+                    setTimeout(() => setExportNotice(null), 5000);
+                    setIsResetModalOpen(false);
+                  } finally {
+                    setIsResetting(false);
+                  }
+                }}
+                className="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>
+                  {isResetting
+                    ? 'Mereset Database...'
+                    : `Reset Seluruh Log Presensi Database Kembali 0 (${attendanceRecords.length} Log)`}
+                </span>
+              </button>
+
+              {/* Option 2: Reset Only Selected Date */}
+              {attendanceRecords.some(r => r.tanggal === selectedDate) && (
+                <button
+                  type="button"
+                  disabled={isResetting}
+                  onClick={async () => {
+                    setIsResetting(true);
+                    try {
+                      await onResetAttendance(selectedDate);
+                      setExportNotice(`Log presensi tanggal ${selectedDate} berhasil direset dari Database!`);
+                      setTimeout(() => setExportNotice(null), 5000);
+                      setIsResetModalOpen(false);
+                    } finally {
+                      setIsResetting(false);
+                    }
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-xs flex items-center justify-center gap-2 border border-amber-300 transition cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-800" />
+                  <span>
+                    Hanya Reset Log Tanggal {selectedDate} ({attendanceRecords.filter(r => r.tanggal === selectedDate).length} Log)
+                  </span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={() => setIsResetModalOpen(false)}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

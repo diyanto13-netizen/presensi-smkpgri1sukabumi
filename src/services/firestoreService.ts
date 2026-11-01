@@ -361,6 +361,43 @@ export async function bulkSaveAttendanceToFirestore(records: Absensi[]): Promise
 }
 
 /**
+ * Reset / Clear attendance logs from Firestore database.
+ * If tanggal is provided (and not 'all'), only deletes logs for that date.
+ * Otherwise deletes all attendance documents so the collection returns to 0 records.
+ */
+export async function clearAttendanceFromFirestore(tanggal?: string): Promise<boolean> {
+  try {
+    const colRef = collection(db, ATTENDANCE_COLLECTION);
+    const snap = await getDocs(colRef);
+    if (snap.empty) return true;
+
+    const toDelete = snap.docs.filter(d => {
+      if (!tanggal || tanggal === 'all') return true;
+      const data = d.data();
+      return data.tanggal === tanggal;
+    });
+
+    if (toDelete.length > 0) {
+      const BATCH_SIZE = 450;
+      for (let i = 0; i < toDelete.length; i += BATCH_SIZE) {
+        const chunk = toDelete.slice(i, i + BATCH_SIZE);
+        const batch = writeBatch(db);
+        chunk.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+    return true;
+  } catch (error) {
+    console.warn('Firestore clearAttendance warning:', error);
+    if (error instanceof Error && error.message.includes('Missing or insufficient permissions')) {
+      handleFirestoreError(error, OperationType.DELETE, ATTENDANCE_COLLECTION);
+    }
+    return false;
+  }
+}
+
+
+/**
  * Fetch SchoolConfig from Firestore
  */
 export async function getSchoolConfigFromFirestore(): Promise<SchoolConfig | null> {
