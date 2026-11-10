@@ -25,6 +25,7 @@ import {
   Coffee,
   Trash2,
   AlertTriangle,
+  Presentation,
 } from 'lucide-react';
 import {
   applyThemeToDocument,
@@ -33,6 +34,7 @@ import {
   Theme,
   ThemePalette,
   THEME_PALETTES,
+  PGRI_LOGO_PHILOSOPHY,
 } from '../utils/theme';
 import { SchoolConfig, HariSekolah, JamMasukHarian, JamPulangHarian } from '../types/index.ts';
 import { SchoolLogo } from './SchoolLogo';
@@ -354,6 +356,92 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
+        {/* Panel Akses Cepat: Tema Warna, Mode Terang/Gelap, Cloud Sync & Slide Penawaran */}
+        <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+          {/* Left: Mode Terang/Gelap & Tema Warna PGRI */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Mode Terang / Gelap Switcher */}
+            <button
+              type="button"
+              onClick={() => handleSelectTheme(currentTheme === 'dark' ? 'light' : 'dark')}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
+                currentTheme === 'dark'
+                  ? 'bg-slate-900 text-amber-300 border-slate-700 hover:bg-slate-800'
+                  : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-100'
+              }`}
+              title="Ganti Mode Terang / Mode Gelap"
+            >
+              {currentTheme === 'dark' ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Mode Terang</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                  <span>Mode Gelap</span>
+                </>
+              )}
+            </button>
+
+            {/* Tema Warna Filosofi Logo PGRI Selector */}
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-300 dark:border-slate-700">
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 px-1.5 flex items-center gap-1 whitespace-nowrap">
+                <Palette className="w-3.5 h-3.5 text-blue-700 dark:text-amber-400 shrink-0" />
+                <span className="hidden sm:inline">Tema:</span>
+              </span>
+              {THEME_PALETTES.map(p => {
+                const active = currentPalette === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSelectPalette(p.id)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer whitespace-nowrap ${
+                      active
+                        ? 'bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 shadow-2xs'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                    title={p.name}
+                  >
+                    {p.shortName.replace(' PGRI', '')}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right: Cloud Sync & Slide Penawaran */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Cloud Sync Button */}
+            {onManualSync && (
+              <button
+                type="button"
+                onClick={onManualSync}
+                disabled={isSyncing}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-800 transition flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-60 whitespace-nowrap"
+                title="Sinkronisasi Cloud Database (PostgreSQL & Firebase Firestore)"
+              >
+                <Database className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400 shrink-0" />
+                <span>{isSyncing ? 'Sinkron...' : 'Cloud Sync'}</span>
+                <RefreshCw className={`w-3 h-3 text-slate-500 ${isSyncing ? 'animate-spin text-blue-600 dark:text-blue-400' : ''}`} />
+              </button>
+            )}
+
+            {/* Slide Penawaran Button */}
+            <a
+              href="/presentation.html"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 text-amber-950 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/70 hover:bg-amber-200 dark:hover:bg-amber-900/70 border border-amber-300 dark:border-amber-700 rounded-lg transition flex items-center gap-1.5 text-xs font-bold shadow-2xs cursor-pointer whitespace-nowrap"
+              title="Buka Slide Presentasi Penawaran untuk Pihak Sekolah (10 Slide Fullscreen / Cetak PDF)"
+            >
+              <Presentation className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+              <span>Slide Penawaran</span>
+            </a>
+          </div>
+        </div>
+
         {/* Tab Buttons */}
         <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700 my-3 shrink-0 overflow-x-auto text-xs font-semibold">
           <button
@@ -444,30 +532,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeTab === 'jadwal_pulang' && (
               <div className="space-y-5">
                 {/* 1. Aturan 5 Hari Sekolah & Libur Akhir Pekan */}
-                <div className="p-4 sm:p-5 bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-slate-50 border border-blue-200 rounded-2xl space-y-3.5 shadow-2xs">
+                <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/95 border border-blue-200 dark:border-slate-700 rounded-2xl space-y-3.5 shadow-2xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-blue-950 text-amber-300 rounded-xl shadow-xs">
+                      <div className="p-2.5 bg-blue-950 text-amber-300 rounded-xl shadow-xs border border-amber-400/30">
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="font-heading font-black text-sm sm:text-base text-blue-950">
+                        <h4 className="font-heading font-black text-sm sm:text-base text-slate-900 dark:text-white">
                           Aturan Hari Sekolah: 5 Hari Kerja (Senin–Jum'at Aktif, Sabtu &amp; Minggu Libur)
                         </h4>
-                        <p className="text-xs text-slate-600 font-medium mt-0.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
                           Sesuai kalender akademik SMKS PGRI 1 Sukabumi, kegiatan belajar mengajar aktif pada hari Senin s.d. Jum'at.
                         </p>
                       </div>
                     </div>
 
-                    <label className="inline-flex items-center gap-2.5 cursor-pointer bg-white px-3.5 py-2 rounded-xl border border-slate-300 shadow-2xs shrink-0 self-start sm:self-auto">
+                    <label className="inline-flex items-center gap-2.5 cursor-pointer bg-white dark:bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs shrink-0 self-start sm:self-auto">
                       <input
                         type="checkbox"
                         checked={formData.sabtu_minggu_libur !== false}
                         onChange={e => handleToggleSabtuMingguLibur(e.target.checked)}
                         className="rounded text-blue-600 focus:ring-blue-500 w-4.5 h-4.5 cursor-pointer"
                       />
-                      <span className="text-xs font-bold text-slate-800">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
                         {formData.sabtu_minggu_libur !== false ? 'Sabtu & Minggu LIBUR ✅' : 'Sabtu Masuk Sekolah'}
                       </span>
                     </label>
@@ -483,25 +571,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       return (
                         <div
                           key={h.key}
-                          className={`p-2 rounded-xl border text-center transition ${
+                          className={`p-2.5 rounded-xl border text-center transition shadow-2xs ${
                             isHoliday
-                              ? 'bg-rose-50/80 border-rose-200 text-rose-950'
-                              : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                              ? 'bg-rose-50 dark:bg-slate-900 border-rose-300 dark:border-rose-700/80 text-slate-900 dark:text-white'
+                              : 'bg-white dark:bg-slate-900 border-emerald-300 dark:border-emerald-700/80 text-slate-900 dark:text-white'
                           }`}
                         >
-                          <span className="text-xs font-black block">{h.short}</span>
+                          <span className="text-xs font-black text-slate-900 dark:text-white block">{h.short}</span>
                           <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-1 inline-block ${
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md mt-1 inline-block tracking-wide ${
                               isHoliday
-                                ? 'bg-rose-200/80 text-rose-900'
-                                : 'bg-emerald-200/80 text-emerald-900'
+                                ? 'bg-rose-600 text-white'
+                                : 'bg-emerald-600 text-white'
                             }`}
                           >
                             {isHoliday ? 'LIBUR' : 'AKTIF'}
                           </span>
-                          {!isHoliday && (
-                            <span className="block text-[10px] font-mono font-bold text-slate-600 mt-0.5">
+                          {!isHoliday ? (
+                            <span className="block text-[11px] font-mono font-black text-slate-800 dark:text-amber-300 mt-1">
                               {checkInTime}
+                            </span>
+                          ) : (
+                            <span className="block text-[10px] font-semibold text-rose-700 dark:text-rose-300 mt-1">
+                              Akhir Pekan
                             </span>
                           )}
                         </div>
@@ -511,15 +603,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {/* 2. Pengaturan Batas Jam Masuk Pagi Harian (Senin - Jum'at) */}
-                <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl space-y-3.5 shadow-2xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3.5 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div className="flex items-center gap-2.5">
-                      <Clock className="w-5 h-5 text-amber-600" />
+                      <Clock className="w-5 h-5 text-amber-500 shrink-0" />
                       <div>
-                        <h4 className="font-heading font-black text-sm text-slate-900">
+                        <h4 className="font-heading font-black text-sm text-slate-900 dark:text-white">
                           Batas Jam Masuk Pagi Harian (Senin s.d. Jum'at)
                         </h4>
-                        <p className="text-xs text-slate-500 font-medium">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                           Siswa yang scan pada atau sebelum batas jam ini = Tepat Waktu. Lewat dari jam ini = Terlambat.
                         </p>
                       </div>
@@ -529,9 +621,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleApplySameCheckInAllDays('07:00')}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-950 hover:bg-amber-200 border border-amber-300 transition cursor-pointer flex items-center gap-1.5"
+                        className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-400 hover:bg-amber-500 text-slate-950 border border-amber-500 shadow-xs transition cursor-pointer flex items-center gap-1.5 preserve-theme"
                       >
-                        <Clock className="w-3.5 h-3.5 text-amber-700" />
+                        <Clock className="w-3.5 h-3.5 text-slate-950 shrink-0" />
                         <span>Setel Seragam Semua Hari (07:00 WIB)</span>
                       </button>
                     </div>
@@ -546,27 +638,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       return (
                         <div
                           key={dayKey}
-                          className="p-3 bg-slate-50/90 rounded-xl border border-slate-200 hover:border-blue-300 transition space-y-1.5"
+                          className="p-3 bg-slate-50 dark:bg-slate-800/95 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-amber-400/60 transition space-y-2"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-heading font-black text-xs text-blue-950">
+                            <span className="font-heading font-black text-xs text-slate-900 dark:text-white">
                               {dayLabel}
                             </span>
-                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">
+                            <span className="text-[10px] font-extrabold text-white bg-emerald-600 px-2 py-0.5 rounded-md">
                               Aktif
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-lg px-2 py-1 shadow-2xs">
+                          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 shadow-2xs">
                             <input
                               type="time"
                               required
                               value={currentVal}
                               onChange={e => handleDailyCheckInChange(dayKey, e.target.value)}
-                              className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-full"
+                              className="font-mono font-bold text-sm text-slate-900 dark:text-white bg-transparent focus:outline-none w-full"
                             />
-                            <span className="text-[10px] font-bold text-slate-500">WIB</span>
+                            <span className="text-[10px] font-bold text-slate-600 dark:text-amber-300">WIB</span>
                           </div>
-                          <span className="text-[10px] text-slate-500 font-medium block truncate" title={dayNote}>
+                          <span className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold block truncate" title={dayNote}>
                             {dayNote}
                           </span>
                         </div>
@@ -576,14 +668,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {/* 3. Pengaturan Jam Pulang Harian Per Kelas (21 Rombel) */}
-                <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-2xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-4 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div>
-                      <h4 className="font-heading font-black text-sm text-slate-900 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-blue-900" />
+                      <h4 className="font-heading font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-blue-700 dark:text-amber-400" />
                         <span>Jadwal Jam Pulang Harian Per Kelas (21 Rombel)</span>
                       </h4>
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
                         Pilih hari di bawah ini untuk melihat dan menyesuaikan jam pulang setiap rombel belajar.
                       </p>
                     </div>
@@ -592,17 +684,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <button
                         type="button"
                         onClick={handleApplyJumatSpecialSchedule}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-100 text-blue-950 hover:bg-blue-200 border border-blue-300 transition cursor-pointer flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white border border-blue-600 transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
                         title="Terapkan jadwal kepulangan awal di hari Jum'at"
                       >
-                        <Sun className="w-3.5 h-3.5 text-blue-700" />
+                        <Sun className="w-3.5 h-3.5 text-amber-300" />
                         <span>Atur Standar Jum'at (Pulang Awal)</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={handleResetToDefault}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 transition cursor-pointer flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-600 border border-slate-300 dark:border-slate-600 transition cursor-pointer flex items-center gap-1"
                       >
                         <RefreshCw className="w-3 h-3" />
                         <span>Reset Default</span>
@@ -624,19 +716,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           onClick={() => setSelectedDayTab(h.key)}
                           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
                             isSelected
-                              ? 'bg-blue-950 text-amber-300 shadow-sm ring-1 ring-amber-400/40'
+                              ? 'bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 shadow-sm ring-1 ring-amber-400/50 font-black preserve-theme'
                               : isHoliday
-                              ? 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                              ? 'bg-rose-50 dark:bg-rose-950/70 text-rose-900 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-900/80 border border-rose-200 dark:border-rose-800'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700'
                           }`}
                         >
                           <span>{h.label}</span>
                           {isHoliday ? (
-                            <span className="text-[10px] bg-rose-200 text-rose-900 px-1 rounded font-bold">
+                            <span className="text-[10px] bg-rose-600 text-white px-1.5 py-0.2 rounded font-extrabold">
                               Libur
                             </span>
                           ) : (
-                            <span className="text-[10px] opacity-75 font-mono">
+                            <span className="text-[10px] opacity-90 font-mono font-bold">
                               ({formData.jam_masuk_harian?.[h.key as keyof JamMasukHarian] || formData.jam_masuk_batas || '07:00'})
                             </span>
                           )}
@@ -647,21 +739,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                   {/* Content for the Selected Day */}
                   {selectedDayTab === 'sabtu' || selectedDayTab === 'minggu' ? (
-                    <div className="p-6 bg-rose-50/70 border border-rose-200 rounded-2xl text-center space-y-2">
-                      <div className="inline-flex p-3 bg-rose-100 text-rose-700 rounded-2xl mb-1">
+                    <div className="p-6 bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 rounded-2xl text-center space-y-2">
+                      <div className="inline-flex p-3 bg-rose-600 text-white rounded-2xl mb-1 shadow-xs">
                         <Coffee className="w-7 h-7" />
                       </div>
-                      <h4 className="font-heading font-black text-base text-rose-950">
+                      <h4 className="font-heading font-black text-base text-rose-950 dark:text-rose-200">
                         Hari {DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label} adalah Hari Libur Akhir Pekan
                       </h4>
-                      <p className="text-xs sm:text-sm text-rose-800 max-w-lg mx-auto font-medium leading-relaxed">
+                      <p className="text-xs sm:text-sm text-rose-800 dark:text-rose-200/90 max-w-lg mx-auto font-medium leading-relaxed">
                         Tidak ada aktivitas pembelajaran dan jam pulang pada hari akhir pekan. Siswa yang melakukan scan presensi akan menerima notifikasi ramah bahwa sekolah sedang libur dan kembali aktif pada hari Senin.
                       </p>
                       <div className="pt-2">
                         <button
                           type="button"
                           onClick={() => setSelectedDayTab('senin')}
-                          className="px-4 py-2 bg-blue-950 text-amber-300 font-bold rounded-xl text-xs hover:bg-black transition cursor-pointer"
+                          className="px-4 py-2 bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 font-black rounded-xl text-xs hover:opacity-95 transition cursor-pointer preserve-theme"
                         >
                           Beralih ke Jadwal Hari Senin–Jum'at
                         </button>
@@ -670,16 +762,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   ) : (
                     <>
                       {/* Active Day Banner & Fast Copy */}
-                      <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      <div className="p-3.5 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                             Hari Aktif Terpilih:
                           </span>
-                          <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-blue-950 text-amber-300">
+                          <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 preserve-theme">
                             {DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}
                           </span>
-                          <span className="text-xs text-slate-500 font-medium">
-                            • Batas Masuk: {formData.jam_masuk_harian?.[selectedDayTab as keyof JamMasukHarian] || formData.jam_masuk_batas || '07:00'} WIB
+                          <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold">
+                            • Batas Masuk: <strong className="font-mono text-slate-900 dark:text-amber-300">{formData.jam_masuk_harian?.[selectedDayTab as keyof JamMasukHarian] || formData.jam_masuk_batas || '07:00'} WIB</strong>
                           </span>
                         </div>
 
@@ -693,9 +785,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               ) as HariSekolah[];
                               handleCopyScheduleToDays(selectedDayTab, targets);
                             }}
-                            className="px-3 py-1 rounded-lg text-xs font-bold bg-white text-blue-900 border border-slate-300 hover:bg-blue-50 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700 transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
                           >
-                            <CalendarCheck className="w-3.5 h-3.5 text-blue-700" />
+                            <CalendarCheck className="w-3.5 h-3.5 text-blue-700 dark:text-amber-400" />
                             <span>Salin Jadwal {DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label} ke Hari Senin–Kamis</span>
                           </button>
                         )}
@@ -704,22 +796,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {/* Bulk Set Per Grade for Currently Selected Day */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {/* Bulk XII */}
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-2xs">
                           <div>
-                            <span className="text-xs font-bold text-blue-950 block">Kelas XII (7 Kelas)</span>
-                            <span className="text-[11px] text-slate-500">TKJ, AKL, MP, BR</span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white block">Kelas XII (7 Kelas)</span>
+                            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">TKJ, AKL, MP, BR</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <input
                               type="time"
                               value={bulkTimeXII}
                               onChange={e => setBulkTimeXII(e.target.value)}
-                              className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-white w-20"
+                              className="py-1 px-2 border border-slate-300 dark:border-slate-600 rounded-lg font-mono text-xs font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 w-20"
                             />
                             <button
                               type="button"
                               onClick={() => handleApplyBulkGrade('XII', bulkTimeXII)}
-                              className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
+                              className="px-2.5 py-1 text-xs font-black bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 rounded-lg hover:opacity-90 transition cursor-pointer preserve-theme"
                               title={`Terapkan ke kelas XII hari ${DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}`}
                             >
                               Setel
@@ -728,22 +820,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
 
                         {/* Bulk XI */}
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-2xs">
                           <div>
-                            <span className="text-xs font-bold text-blue-950 block">Kelas XI (7 Kelas)</span>
-                            <span className="text-[11px] text-slate-500">TKJ, AKL, MP, BR</span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white block">Kelas XI (7 Kelas)</span>
+                            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">TKJ, AKL, MP, BR</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <input
                               type="time"
                               value={bulkTimeXI}
                               onChange={e => setBulkTimeXI(e.target.value)}
-                              className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-white w-20"
+                              className="py-1 px-2 border border-slate-300 dark:border-slate-600 rounded-lg font-mono text-xs font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 w-20"
                             />
                             <button
                               type="button"
                               onClick={() => handleApplyBulkGrade('XI', bulkTimeXI)}
-                              className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
+                              className="px-2.5 py-1 text-xs font-black bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 rounded-lg hover:opacity-90 transition cursor-pointer preserve-theme"
                               title={`Terapkan ke kelas XI hari ${DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}`}
                             >
                               Setel
@@ -752,22 +844,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
 
                         {/* Bulk X */}
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-2xs">
                           <div>
-                            <span className="text-xs font-bold text-blue-950 block">Kelas X (7 Kelas)</span>
-                            <span className="text-[11px] text-slate-500">TKJT, AKL, MPLB, PM</span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white block">Kelas X (7 Kelas)</span>
+                            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">TKJT, AKL, MPLB, PM</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <input
                               type="time"
                               value={bulkTimeX}
                               onChange={e => setBulkTimeX(e.target.value)}
-                              className="py-1 px-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-900 bg-white w-20"
+                              className="py-1 px-2 border border-slate-300 dark:border-slate-600 rounded-lg font-mono text-xs font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 w-20"
                             />
                             <button
                               type="button"
                               onClick={() => handleApplyBulkGrade('X', bulkTimeX)}
-                              className="px-2.5 py-1 text-xs font-bold bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition cursor-pointer"
+                              className="px-2.5 py-1 text-xs font-black bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 rounded-lg hover:opacity-90 transition cursor-pointer preserve-theme"
                               title={`Terapkan ke kelas X hari ${DAFTAR_HARI.find(d => d.key === selectedDayTab)?.label}`}
                             >
                               Setel
@@ -779,7 +871,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {/* Filters */}
                       <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-bold text-slate-600 mr-1">Tingkat:</span>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-200 mr-1">Tingkat:</span>
                           {(['ALL', 'XII', 'XI', 'X'] as const).map(tingkat => (
                             <button
                               key={tingkat}
@@ -787,8 +879,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               onClick={() => setFilterTingkat(tingkat)}
                               className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                                 filterTingkat === tingkat
-                                  ? 'bg-blue-950 text-amber-300 shadow-2xs'
-                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                  ? 'bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 font-black shadow-2xs preserve-theme'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                               }`}
                             >
                               {tingkat === 'ALL' ? 'Semua (21)' : `Kelas ${tingkat} (7)`}
@@ -797,11 +889,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <label className="text-xs font-bold text-slate-600">Jurusan:</label>
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Jurusan:</label>
                           <select
                             value={filterJurusan}
                             onChange={e => setFilterJurusan(e.target.value)}
-                            className="py-1 px-2.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
+                            className="py-1.5 px-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white"
                           >
                             <option value="ALL">Semua Jurusan (4)</option>
                             {DAFTAR_JURUSAN.map(j => (
@@ -814,8 +906,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
 
                       {/* Class List Table for Selected Day */}
-                      <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-                        <div className="bg-slate-100/90 px-4 py-2.5 border-b border-slate-200 grid grid-cols-12 gap-2 text-xs font-bold text-slate-700">
+                      <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-2xs">
+                        <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 grid grid-cols-12 gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
                           <span className="col-span-3 sm:col-span-2">Rombel</span>
                           <span className="col-span-4 sm:col-span-5">Jurusan / Kompetensi</span>
                           <span className="col-span-5 sm:col-span-5 text-right sm:text-center">
@@ -823,7 +915,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           </span>
                         </div>
 
-                        <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[300px] overflow-y-auto bg-white dark:bg-slate-900">
                           {displayedClasses.map(item => {
                             const currentClassDaily = formData.jam_pulang_harian_per_kelas?.[item.kelas] || {};
                             const timeValue =
@@ -833,18 +925,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                             // Find badge colors
                             const jur = DAFTAR_JURUSAN.find(j => j.key === item.jurusanKey);
-                            const badgeBg = jur?.badgeBg || 'bg-slate-100';
-                            const badgeText = jur?.badgeText || 'text-slate-800';
-                            const badgeBorder = jur?.badgeBorder || 'border-slate-200';
+                            const badgeBg = jur?.badgeBg || 'bg-slate-100 dark:bg-slate-800';
+                            const badgeText = jur?.badgeText || 'text-slate-800 dark:text-slate-200';
+                            const badgeBorder = jur?.badgeBorder || 'border-slate-200 dark:border-slate-700';
 
                             return (
                               <div
                                 key={item.kelas}
-                                className="px-4 py-2.5 grid grid-cols-12 gap-2 items-center hover:bg-blue-50/40 transition"
+                                className="px-4 py-2.5 grid grid-cols-12 gap-2 items-center hover:bg-blue-50/40 dark:hover:bg-slate-800/70 transition"
                               >
                                 {/* Nama Rombel */}
                                 <div className="col-span-3 sm:col-span-2">
-                                  <span className="font-heading font-black text-sm text-blue-950">
+                                  <span className="font-heading font-black text-sm text-slate-900 dark:text-white">
                                     {item.kelas}
                                   </span>
                                 </div>
@@ -860,16 +952,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                                 {/* Jam Pulang Input */}
                                 <div className="col-span-5 sm:col-span-5 flex items-center justify-end sm:justify-center gap-2">
-                                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1">
-                                    <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                  <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-2.5 py-1">
+                                    <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                     <input
                                       type="time"
                                       required
                                       value={timeValue}
                                       onChange={e => handleClassTimeChange(item.kelas, e.target.value)}
-                                      className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
+                                      className="font-mono font-bold text-sm text-slate-900 dark:text-white bg-transparent focus:outline-none w-20"
                                     />
-                                    <span className="text-[11px] font-bold text-slate-500">WIB</span>
+                                    <span className="text-[11px] font-bold text-slate-600 dark:text-amber-300">WIB</span>
                                   </div>
                                 </div>
                               </div>
@@ -881,7 +973,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   )}
 
                   {/* Option to sync to students */}
-                  <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-200 flex items-center justify-between gap-3">
+                  <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800/80 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <input
                         type="checkbox"
@@ -890,11 +982,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         onChange={e => setSyncToStudents(e.target.checked)}
                         className="rounded text-blue-600 focus:ring-blue-500 w-4.5 h-4.5 cursor-pointer"
                       />
-                      <label htmlFor="sync-students" className="text-xs sm:text-sm font-bold text-blue-950 cursor-pointer">
+                      <label htmlFor="sync-students" className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white cursor-pointer">
                         Sinkronkan jadwal jam pulang ini ke seluruh data siswa di kelas masing-masing
                       </label>
                     </div>
-                    <span className="text-[11px] text-blue-800 font-semibold hidden sm:inline">
+                    <span className="text-[11px] text-blue-800 dark:text-amber-300 font-bold hidden sm:inline">
                       Disarankan
                     </span>
                   </div>
@@ -906,17 +998,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeTab === 'sholat' && (
               <div className="space-y-4">
                 {/* Master Toggle */}
-                <div className="p-4 sm:p-5 bg-gradient-to-r from-teal-50/80 via-emerald-50/50 to-blue-50/60 rounded-2xl border border-teal-200 space-y-3">
+                <div className="p-4 sm:p-5 bg-teal-50/70 dark:bg-slate-800/95 rounded-2xl border border-teal-200 dark:border-teal-800/80 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-teal-100 text-teal-900 rounded-xl border border-teal-300">
+                      <div className="p-2.5 bg-teal-600 text-white rounded-xl border border-teal-500 shadow-xs">
                         <span className="text-xl">🕌</span>
                       </div>
                       <div>
-                        <h4 className="font-heading font-black text-sm sm:text-base text-teal-950">
+                        <h4 className="font-heading font-black text-sm sm:text-base text-slate-900 dark:text-white">
                           Presensi Sholat Berjamaah di Masjid Sekolah
                         </h4>
-                        <p className="text-xs text-teal-800 font-medium mt-0.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
                           Mencatat kedisiplinan ibadah Sholat Dzuhur dan Sholat Ashar berjamaah siswa SMKS PGRI 1 Sukabumi
                         </p>
                       </div>
@@ -931,7 +1023,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         }
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                      <div className="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
                     </label>
                   </div>
                 </div>
@@ -1079,28 +1171,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </p>
                 </div>
 
-                {/* Pilihan Warna Latar Belakang / Palet Dasar Aplikasi (Berdasarkan Lampiran Foto) */}
-                <div className="p-4 sm:p-5 bg-gradient-to-br from-indigo-50/50 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 rounded-2xl border border-indigo-200/80 dark:border-indigo-900/60 space-y-3.5 shadow-2xs">
+                {/* Filosofi Warna Dasar Aplikasi Berdasarkan Logo SMKS PGRI 1 Kota Sukabumi */}
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-blue-50/60 via-white to-amber-50/50 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 rounded-2xl border border-blue-200/90 dark:border-blue-900/60 space-y-4 shadow-2xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
-                        <Palette className="w-4 h-4" />
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-950 text-amber-300 flex items-center justify-center shrink-0 shadow-xs border border-amber-400/40">
+                        <Palette className="w-4.5 h-4.5" />
                       </div>
                       <div>
                         <h4 className="font-heading font-black text-sm text-slate-900 dark:text-white">
-                          Pilihan Warna Latar Belakang / Palet Dasar Aplikasi
+                          Tema Filosofi Warna Logo SMKS PGRI 1 Kota Sukabumi
                         </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Diadaptasi khusus dari 2 foto gradien yang Anda lampirkan
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                          Warna dasar elegan &amp; modern dengan jaminan kontras huruf serta angka yang tajam di setiap perubahan tema
                         </p>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 self-start sm:self-auto">
-                      Real-time Switch
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-amber-300 border border-blue-300 dark:border-blue-800 self-start sm:self-auto">
+                      Filosofi Resmi PGRI
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* 5 Elemen Warna Logo SMKS PGRI 1 Sukabumi */}
+                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                    {PGRI_LOGO_PHILOSOPHY.map(item => (
+                      <div
+                        key={item.colorName}
+                        className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 flex flex-col gap-1.5 shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-4 h-4 rounded-md shrink-0 border border-black/15 shadow-2xs"
+                            style={{ backgroundColor: item.hex }}
+                          />
+                          <span className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight">
+                            {item.colorName}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-blue-800 dark:text-amber-300">
+                          {item.element}
+                        </span>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-snug">
+                          {item.meaning}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 3 Pilihan Tema Filosofi Aplikasi */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                     {THEME_PALETTES.map(p => {
                       const isSelected = currentPalette === p.id;
                       return (
@@ -1109,8 +1228,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           onClick={() => handleSelectPalette(p.id)}
                           className={`relative p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
                             isSelected
-                              ? 'border-indigo-600 dark:border-indigo-400 bg-white dark:bg-slate-800 shadow-md ring-2 ring-indigo-500/20'
-                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white/60 dark:bg-slate-850/60'
+                              ? 'border-blue-700 dark:border-amber-400 bg-white dark:bg-slate-800 shadow-md ring-2 ring-blue-500/20'
+                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white/80 dark:bg-slate-850/70'
                           }`}
                         >
                           {/* Top Tag & Active Check */}
@@ -1118,61 +1237,73 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                                 p.id === 'aurora'
-                                  ? 'bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-300'
+                                  ? 'bg-blue-100 text-blue-950 dark:bg-blue-950 dark:text-amber-300'
                                   : p.id === 'sunrise'
-                                  ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
-                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                  ? 'bg-amber-100 text-amber-950 dark:bg-amber-950 dark:text-amber-300'
+                                  : 'bg-emerald-100 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-300'
                               }`}
                             >
                               {p.sourceLabel}
                             </span>
                             {isSelected && (
-                              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px] font-bold">
+                              <span className="w-5 h-5 rounded-full bg-blue-900 dark:bg-amber-400 text-white dark:text-slate-950 flex items-center justify-center text-[11px] font-bold">
                                 ✓
                               </span>
                             )}
                           </div>
 
-                          {/* Gradient Swatch Preview */}
+                          {/* Gradient Swatch Preview + Heraldic Color Dots */}
                           <div
-                            className="w-full h-14 rounded-lg shadow-inner border border-white/20 flex items-center justify-center overflow-hidden"
+                            className="w-full h-14 rounded-lg shadow-inner border border-white/20 flex flex-col items-center justify-center gap-1 overflow-hidden px-2"
                             style={{ background: p.previewBg }}
                           >
-                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-black/40 text-white backdrop-blur-xs">
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-black/55 text-white backdrop-blur-xs text-center truncate max-w-full">
                               {p.name}
                             </span>
+                            <div className="flex items-center gap-1">
+                              {p.swatches.map(hex => (
+                                <span
+                                  key={hex}
+                                  className="w-2.5 h-2.5 rounded-full border border-white/70 shadow-2xs"
+                                  style={{ backgroundColor: hex }}
+                                />
+                              ))}
+                            </div>
                           </div>
 
-                          {/* Description */}
-                          <div>
-                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                          {/* Description & Philosophy */}
+                          <div className="space-y-1.5">
+                            <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-semibold">
                               {p.description}
+                            </p>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug italic">
+                              &ldquo;{p.philosophy}&rdquo;
                             </p>
                           </div>
 
                           {/* Action Button */}
                           <button
                             type="button"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               handleSelectPalette(p.id);
                             }}
                             className={`w-full py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                               isSelected
-                                ? 'bg-indigo-600 text-white shadow-xs'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                                ? 'bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 shadow-xs'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-200'
                             }`}
                           >
-                            {isSelected ? '✓ Sedang Diterapkan' : 'Pilih Warna Ini'}
+                            {isSelected ? '✓ Tema Aktif Diterapkan' : 'Terapkan Tema Ini'}
                           </button>
                         </div>
                       );
                     })}
                   </div>
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-900/60 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-900/60 flex items-start gap-2.5 text-xs text-amber-950 dark:text-amber-200">
                     <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <p className="leading-relaxed">
-                      <strong>Rekomendasi Terbaik:</strong> Gunakan <strong>Midnight Aurora (Foto 2)</strong> untuk tampilan modern, futuristik, dan kontras tertinggi saat scan QR di dalam ruangan. Gunakan <strong>Sunrise Horizon (Foto 1)</strong> jika menyukai nuansa cerah, hangat, dan ramah seperti suasana pagi sekolah.
+                      <strong>Kejelasan Huruf &amp; Angka Terjamin (WCAG AAA):</strong> Seluruh tema di atas dirancang dengan proporsi arsitektur modern 60-30-10 sehingga huruf, nama siswa, NIS, dan angka statistik tetap terlihat tajam, bersih, dan profesional baik pada <strong>Mode Terang</strong> maupun <strong>Mode Gelap</strong>.
                     </p>
                   </div>
                 </div>
@@ -1201,20 +1332,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {/* Logo Utama SMKS PGRI 1 Sukabumi */}
-                <div className="p-4 bg-gradient-to-r from-amber-50/80 via-white to-blue-50/60 rounded-2xl border border-amber-200/80 space-y-3">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/95 rounded-2xl border border-amber-200 dark:border-slate-700 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-800 uppercase tracking-wider text-xs flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-amber-600" />
+                    <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-amber-500" />
                       Logo Utama Aplikasi &amp; Kartu Absensi
                     </h4>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-900 border-amber-300">
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-amber-400 text-slate-950 border-amber-500 preserve-theme">
                       {formData.logo_url ? 'Logo Kustom Aktif' : 'Logo Resmi SMKS PGRI 1'}
                     </span>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3.5 rounded-xl border border-slate-200">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div className="w-18 h-20 p-1 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-500 shadow-sm flex items-center justify-center border border-amber-300 shrink-0">
-                      <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center p-1 overflow-hidden">
+                      <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center p-1 overflow-hidden" data-preserve-bg="true">
                         <SchoolLogo
                           src={formData.logo_url}
                           className="w-full h-full object-contain drop-shadow-xs"
@@ -1224,15 +1355,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
 
                     <div className="flex-1 text-center sm:text-left space-y-2">
-                      <p className="text-xs sm:text-sm font-bold text-slate-900">
+                      <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                         {formData.nama_sekolah}
                       </p>
-                      <p className="text-xs text-slate-600 leading-relaxed">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                         Logo ini otomatis diterapkan pada header dashboard presensi resmi, kartu absensi siswa (portrait &amp; landscape), serta dokumen cetak.
                       </p>
 
                       <div className="flex items-center justify-center sm:justify-start gap-2 pt-1 flex-wrap">
-                        <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-950 text-amber-300 hover:bg-black transition shadow-xs">
+                        <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 hover:opacity-90 transition shadow-xs preserve-theme">
                           <Upload className="w-3.5 h-3.5" />
                           <span>Ganti / Unggah Logo</span>
                           <input
@@ -1247,9 +1378,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <button
                             type="button"
                             onClick={handleResetLogo}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition border border-slate-300 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-300 dark:border-slate-600 cursor-pointer"
                           >
-                            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                            <RotateCcw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-300" />
                             <span>Reset ke Logo Resmi</span>
                           </button>
                         )}
@@ -1259,81 +1390,81 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {/* School Identity */}
-                <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3.5">
-                  <h4 className="font-bold text-slate-800 uppercase tracking-wider text-xs flex items-center gap-2">
-                    <School className="w-4 h-4 text-blue-900" />
+                <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3.5">
+                  <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-2">
+                    <School className="w-4 h-4 text-blue-700 dark:text-amber-400" />
                     Identitas Resmi Sekolah &amp; Kartu Absensi
                   </h4>
 
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Nama Sekolah:</label>
+                    <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Nama Sekolah:</label>
                     <input
                       type="text"
                       value={formData.nama_sekolah}
                       onChange={e => setFormData({ ...formData, nama_sekolah: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-bold text-slate-900 text-sm"
+                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-bold text-slate-900 dark:text-white text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Nama Yayasan / Badan Pengelola:</label>
+                    <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Nama Yayasan / Badan Pengelola:</label>
                     <input
                       type="text"
                       value={formData.yayasan}
                       onChange={e => setFormData({ ...formData, yayasan: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-medium text-xs text-slate-800"
+                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-medium text-xs text-slate-800 dark:text-slate-100"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Kepala Sekolah:</label>
+                      <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Kepala Sekolah:</label>
                       <input
                         type="text"
                         value={formData.kepala_sekolah}
                         onChange={e => setFormData({ ...formData, kepala_sekolah: e.target.value })}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-medium"
+                        className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-medium text-slate-900 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">NIP Kepala Sekolah:</label>
+                      <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">NIP Kepala Sekolah:</label>
                       <input
                         type="text"
                         value={formData.nip_kepsek}
                         onChange={e => setFormData({ ...formData, nip_kepsek: e.target.value })}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                        className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">NPSN:</label>
+                      <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">NPSN:</label>
                       <input
                         type="text"
                         value={formData.npsn}
                         onChange={e => setFormData({ ...formData, npsn: e.target.value })}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                        className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-900 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Status Akreditasi:</label>
+                      <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Status Akreditasi:</label>
                       <input
                         type="text"
                         value={formData.akreditasi}
                         onChange={e => setFormData({ ...formData, akreditasi: e.target.value })}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-semibold text-emerald-800"
+                        className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-semibold text-emerald-800 dark:text-emerald-300"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Alamat Sekolah:</label>
+                    <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Alamat Sekolah:</label>
                     <input
                       type="text"
                       value={formData.alamat}
                       onChange={e => setFormData({ ...formData, alamat: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-medium text-slate-900"
+                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none font-medium text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -1343,13 +1474,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* ================= TAB 3: WHATSAPP GATEWAY (FONNTE) ================= */}
             {activeTab === 'fonnte' && (
               <div className="space-y-4">
-                <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-3.5">
-                  <div className="flex items-center justify-between">
-                    <label className="font-bold text-emerald-950 flex items-center gap-2">
-                      <Key className="w-4.5 h-4.5 text-emerald-700" />
+                <div className="p-4 bg-emerald-50/70 dark:bg-slate-800/95 rounded-2xl border border-emerald-200 dark:border-emerald-800/80 space-y-3.5">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <label className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Key className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
                       <span>Token Fonnte WhatsApp API:</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-emerald-900 font-semibold">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-emerald-900 dark:text-emerald-300 font-semibold">
                       <input
                         type="checkbox"
                         checked={formData.fonnte_test_mode}
@@ -1367,10 +1498,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     value={formData.fonnte_token}
                     onChange={e => setFormData({ ...formData, fonnte_token: e.target.value })}
                     placeholder="Masukkan Token Fonnte (e.g. 9abK1...)"
-                    className="w-full p-3 bg-white border border-emerald-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none text-slate-900"
+                    className="w-full p-3 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-slate-600 rounded-xl font-mono text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none text-slate-900 dark:text-white"
                   />
-                  <p className="text-xs sm:text-sm text-emerald-800 leading-relaxed font-medium">
-                    * Dapatkan token di <a href="https://fonnte.com" target="_blank" rel="noreferrer" className="underline font-bold">fonnte.com</a>. Notifikasi otomatis dikirimkan ke nomor WhatsApp orang tua saat siswa berhasil scan Masuk atau Pulang. Jika mode simulasi aktif, aplikasi menyediakan tautan direct-chat WhatsApp Web.
+                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                    * Dapatkan token di <a href="https://fonnte.com" target="_blank" rel="noreferrer" className="underline font-bold text-emerald-700 dark:text-emerald-400">fonnte.com</a>. Notifikasi otomatis dikirimkan ke nomor WhatsApp orang tua saat siswa berhasil scan Masuk atau Pulang. Jika mode simulasi aktif, aplikasi menyediakan tautan direct-chat WhatsApp Web.
                   </p>
                 </div>
               </div>
@@ -1380,13 +1511,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeTab === 'database' && (
               <div className="space-y-4">
                 {/* Intro banner */}
-                <div className="p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-slate-50 border border-blue-200 rounded-2xl flex items-start gap-3">
-                  <Database className="w-5 h-5 text-blue-800 shrink-0 mt-0.5" />
-                  <div className="text-xs sm:text-sm text-slate-800 space-y-1">
-                    <p className="font-bold text-blue-950">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/95 border border-blue-200 dark:border-slate-700 rounded-2xl flex items-start gap-3">
+                  <Database className="w-5 h-5 text-blue-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 space-y-1">
+                    <p className="font-bold text-slate-900 dark:text-white">
                       Koneksi Basis Data Cloud (Cloud SQL PostgreSQL &amp; Firebase Firestore)
                     </p>
-                    <p className="text-slate-600 leading-relaxed font-medium">
+                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                       Aplikasi ini terhubung langsung ke basis data relasional PostgreSQL dan Firebase Firestore. Seluruh perubahan data siswa, konfigurasi sekolah, jam kepulangan per kelas, dan rekaman presensi tersimpan otomatis dan persisten di cloud server.
                     </p>
                   </div>
@@ -1394,42 +1525,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Cloud Status Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                  <div className="p-4 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/80 rounded-xl space-y-1 shadow-2xs">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                       Cloud SQL
                     </span>
-                    <div className="text-base font-bold text-emerald-950">Online &amp; Terhubung</div>
-                    <p className="text-[11px] text-emerald-700">PostgreSQL Relational DB</p>
+                    <div className="text-base font-black text-slate-900 dark:text-white">Online &amp; Terhubung</div>
+                    <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300">PostgreSQL Relational DB</p>
                   </div>
 
-                  <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                  <div className="p-4 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/80 rounded-xl space-y-1 shadow-2xs">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
                       Firebase
                     </span>
-                    <div className="text-base font-bold text-amber-950">Aktif &amp; Terkoneksi</div>
-                    <p className="text-[11px] text-amber-700">Firestore Cloud Database</p>
+                    <div className="text-base font-black text-slate-900 dark:text-white">Aktif &amp; Terkoneksi</div>
+                    <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Firestore Cloud Database</p>
                   </div>
 
-                  <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-800">
+                  <div className="p-4 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800/80 rounded-xl space-y-1 shadow-2xs">
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
                       Data Siswa
                     </span>
-                    <div className="text-xl font-heading font-black text-blue-950">
-                      {studentsCount} <span className="text-xs font-normal text-slate-600">siswa</span>
+                    <div className="text-xl font-heading font-black text-slate-900 dark:text-white">
+                      {studentsCount} <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">siswa</span>
                     </div>
-                    <p className="text-[11px] text-blue-700">Tersimpan di Cloud Database</p>
+                    <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Tersimpan di Cloud Database</p>
                   </div>
 
-                  <div className="p-4 bg-indigo-50/80 border border-indigo-200 rounded-xl space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-800">
+                  <div className="p-4 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/80 rounded-xl space-y-1 shadow-2xs">
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300">
                       Log Presensi
                     </span>
-                    <div className="text-xl font-heading font-black text-indigo-950">
-                      {attendanceCount} <span className="text-xs font-normal text-slate-600">rekaman</span>
+                    <div className="text-xl font-heading font-black text-slate-900 dark:text-white">
+                      {attendanceCount} <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">rekaman</span>
                     </div>
-                    <p className="text-[11px] text-indigo-700">Histori kehadiran lengkap</p>
+                    <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Histori kehadiran lengkap</p>
                   </div>
                 </div>
 

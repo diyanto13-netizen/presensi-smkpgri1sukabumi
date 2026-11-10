@@ -4,12 +4,22 @@
 
 @layer base {
   :root {
-    --font-heading: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    /* Official SMKS PGRI 1 Kota Sukabumi Heraldic Tokens */
+    --pgri-blue: #2b75dc;
+    --pgri-navy: #1e3a8a;
+    --pgri-gold: #f5ce0b;
+    --pgri-amber: #d97706;
+    --pgri-green: #009a3e;
+    --pgri-red: #dc2626;
+    --pgri-white: #ffffff;
+    --pgri-ink: #0f172a;
   }
 
   html {
-    font-size: 15px; /* Comfortable legible base font size */
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
   }
 
   html.dark {
@@ -18,7 +28,7 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #f8fafc;
+    background-color: #f4f7fb;
     color: #0f172a;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -27,56 +37,63 @@
   }
 
   html.dark body {
-    background-color: #080c1e;
+    background-color: #070e20;
     color: #f8fafc;
   }
 }
 
 /* =========================================================
-   USER IMAGE INSPIRATION THEMES (PALETTES)
-   Foto 1: Sunrise Horizon (Warm Cyan Sky & Amber Sunset)
-   Foto 2: Midnight Aurora (Deep Midnight Navy, Violet & Neon Glow)
+   TEMA FILOSOFI LOGO SMKS PGRI 1 KOTA SUKABUMI
+   1. Perisai Royal PGRI (palette-aurora): Biru Samudra (#2b75dc) & Kuning Emas (#f5ce0b)
+   2. Suluh Fajar PGRI (palette-sunrise): Biru Langit (#2b75dc), Emas (#f5ce0b) & Merah Obor (#dc2626)
+   3. Harmoni Lencana PGRI (palette-slate): Hijau Subur (#009a3e), Putih Tugu & Navy Disiplin (#0f172a)
    ========================================================= */
 
-/* Palette 1: Midnight Aurora (Foto 2) - Dark Mode Default */
+/* ---------------------------------------------------------
+   TEMA 1: PERISAI ROYAL PGRI (Biru Samudra & Kuning Emas)
+   --------------------------------------------------------- */
+.palette-aurora.light body,
+html.light.palette-aurora body,
+html.light[data-palette="aurora"] body,
+html:not(.dark).palette-aurora body {
+  background-color: #f3f6fc;
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(43, 117, 220, 0.13) 0%, transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(245, 206, 11, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(0, 154, 62, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #f4f8ff 0%, #f8fafc 45%, #fefdf8 100%);
+  background-attachment: fixed;
+  color: #0f172a;
+}
+
 .palette-aurora.dark body,
 html.dark.palette-aurora body,
 html.dark[data-palette="aurora"] body,
 html.dark body {
-  background-color: #080c1e;
-  background-image: 
-    radial-gradient(circle at 8% 92%, rgba(192, 38, 211, 0.18) 0%, transparent 40%),
-    radial-gradient(circle at 92% 10%, rgba(59, 130, 246, 0.16) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
-    linear-gradient(145deg, #060918 0%, #0d1230 45%, #180f3a 100%);
+  background-color: #070e20;
+  background-image:
+    radial-gradient(circle at 6% 8%, rgba(43, 117, 220, 0.22) 0%, transparent 42%),
+    radial-gradient(circle at 94% 12%, rgba(245, 206, 11, 0.14) 0%, transparent 40%),
+    radial-gradient(circle at 50% 92%, rgba(0, 154, 62, 0.10) 0%, transparent 48%),
+    linear-gradient(145deg, #050b18 0%, #0a1632 52%, #0f1e42 100%);
   background-attachment: fixed;
   background-size: cover;
   color: #f8fafc;
 }
 
-/* Palette 1: Midnight Aurora in Light Mode */
-.palette-aurora.light body,
-html.light.palette-aurora body,
-html.light[data-palette="aurora"] body {
-  background-color: #f6f8fd;
-  background-image: 
-    radial-gradient(circle at 90% 10%, rgba(129, 140, 248, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 10% 90%, rgba(217, 70, 239, 0.08) 0%, transparent 40%),
-    linear-gradient(180deg, #f8faff 0%, #f1f4fb 100%);
-  background-attachment: fixed;
-  color: #0f172a;
-}
-
-/* Palette 2: Sunrise Horizon (Foto 1) */
+/* ---------------------------------------------------------
+   TEMA 2: SULUH FAJAR PGRI (Biru Langit, Emas Kejayaan & Merah Obor)
+   --------------------------------------------------------- */
 .palette-sunrise.light body,
 html.light.palette-sunrise body,
 html.light[data-palette="sunrise"] body,
-html.palette-sunrise:not(.dark) body {
-  background-color: #fffbf2;
-  background-image: 
-    radial-gradient(circle at 85% 0%, rgba(56, 189, 248, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 12% 95%, rgba(245, 158, 11, 0.16) 0%, transparent 45%),
-    linear-gradient(180deg, #f0fdfa 0%, #fffcf5 35%, #fff8e8 70%, #fef3c7 100%);
+html:not(.dark).palette-sunrise body {
+  background-color: #fcfaf5;
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(43, 117, 220, 0.12) 0%, transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(245, 206, 11, 0.20) 0%, transparent 45%),
+    radial-gradient(circle at 90% 95%, rgba(220, 38, 38, 0.07) 0%, transparent 42%),
+    linear-gradient(180deg, #f2f8ff 0%, #fffdf7 45%, #fef9ec 100%);
   background-attachment: fixed;
   color: #0f172a;
 }
@@ -84,76 +101,125 @@ html.palette-sunrise:not(.dark) body {
 .palette-sunrise.dark body,
 html.dark.palette-sunrise body,
 html.dark[data-palette="sunrise"] body {
-  background-color: #17120a;
-  background-image: 
-    radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.15) 0%, transparent 45%),
-    radial-gradient(circle at 10% 90%, rgba(245, 158, 11, 0.15) 0%, transparent 45%),
-    linear-gradient(145deg, #120e06 0%, #1f1608 50%, #2e1c0c 100%);
+  background-color: #0b1120;
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(43, 117, 220, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 90% 12%, rgba(245, 206, 11, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(220, 38, 38, 0.12) 0%, transparent 45%),
+    linear-gradient(145deg, #090e1a 0%, #11182c 55%, #1c1624 100%);
   background-attachment: fixed;
   color: #f8fafc;
 }
 
-/* Palette 3: Slate Minimalis (Netral) */
-.palette-slate.dark body,
-html.dark.palette-slate body {
-  background-color: #0b0f19;
-  background-image: none;
-  color: #f8fafc;
-}
+/* ---------------------------------------------------------
+   TEMA 3: HARMONI LENCANA PGRI (Hijau Subur, Putih Tugu & Biru Disiplin)
+   --------------------------------------------------------- */
 .palette-slate.light body,
-html.light.palette-slate body {
-  background-color: #f8fafc;
-  background-image: none;
+html.light.palette-slate body,
+html.light[data-palette="slate"] body,
+html:not(.dark).palette-slate body {
+  background-color: #f3f8f6;
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(0, 154, 62, 0.11) 0%, transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(43, 117, 220, 0.10) 0%, transparent 42%),
+    radial-gradient(circle at 50% 100%, rgba(245, 206, 11, 0.08) 0%, transparent 45%),
+    linear-gradient(180deg, #f2f9f5 0%, #f8fafc 50%, #f1f5f9 100%);
+  background-attachment: fixed;
   color: #0f172a;
 }
 
-/* Glass & Card Surfaces for Aurora Dark Mode */
-.dark.palette-aurora .bg-white:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]),
-.dark .bg-white:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]) {
-  background-color: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(8px);
+.palette-slate.dark body,
+html.dark.palette-slate body,
+html.dark[data-palette="slate"] body {
+  background-color: #06121c;
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(0, 154, 62, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(43, 117, 220, 0.16) 0%, transparent 45%),
+    linear-gradient(145deg, #050f17 0%, #091926 55%, #0c1930 100%);
+  background-attachment: fixed;
+  color: #f8fafc;
 }
 
-.dark.palette-aurora header,
-.dark header {
-  background-color: rgba(11, 16, 38, 0.92) !important;
-  backdrop-filter: blur(12px);
-  border-bottom-color: rgba(99, 102, 241, 0.2) !important;
-}
-
-.dark.palette-aurora .bg-slate-50:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
-.dark .bg-slate-50:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
-  background-color: rgba(11, 16, 38, 0.75);
-}
-
+/* =========================================================
+   TYPOGRAPHY & NUMBER LEGIBILITY (LIGHT & DARK MODE)
+   Menjamin huruf & angka selalu tajam, kontras tinggi (WCAG AAA)
+   ========================================================= */
 .font-heading {
   font-family: var(--font-heading);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
 }
 
 .font-sans {
   font-family: var(--font-sans);
 }
 
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Light Mode Contrast Reinforcement — Ensures no washed-out gray text on tinted PGRI backgrounds */
+html:not(.dark) .text-slate-500:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #475569;
+}
+
+html:not(.dark) .text-slate-600:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #334155;
+}
+
+html:not(.dark) .text-slate-700:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #1e293b;
+}
+
+html:not(.dark) .text-slate-800:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #0f172a;
+}
+
+html:not(.dark) .text-slate-900:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  color: #090d16;
+}
+
+/* Light Mode Card & Header Surfaces with subtle PGRI Royal Border Accent */
+html:not(.dark) header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(14px);
+  border-bottom-color: rgba(43, 117, 220, 0.22) !important;
+}
+
 /* =========================================================
    DARK MODE TEXT & COLOR CONTRAST GUARANTEE
-   Ensures all text remains crisp, legible, and never dark-on-dark
+   Ensures all text and numbers remain crisp, bright, and legible
    ========================================================= */
 .dark body {
-  background-color: #0b0f19;
+  background-color: #070e20;
   color: #f8fafc;
 }
 
-/* Base Surfaces in Dark Mode */
-.dark .bg-slate-50:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
-  background-color: #0b0f19;
+.dark header {
+  background-color: rgba(8, 17, 38, 0.94) !important;
+  backdrop-filter: blur(14px);
+  border-bottom-color: rgba(245, 206, 11, 0.25) !important;
 }
 
-.dark .bg-white:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]) {
-  background-color: #111827;
+/* Base Surfaces in Dark Mode (including opacity variants /50, /60, /70, /80, /90) */
+.dark .bg-slate-50:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .bg-slate-50\/50:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .bg-slate-50\/60:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .bg-slate-50\/70:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .bg-slate-50\/80:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .bg-slate-50\/90:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+  background-color: #131c31;
 }
 
-.dark .bg-slate-100:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
+.dark .bg-white:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]),
+.dark .bg-white\/80:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]),
+.dark .bg-white\/90:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]),
+.dark .bg-white\/95:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *):not([data-preserve-bg]) {
+  background-color: #0f172a;
+}
+
+.dark .bg-slate-100:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .bg-slate-100\/80:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
+.dark .bg-slate-100\/90:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
   background-color: #1e293b;
 }
 
@@ -170,6 +236,7 @@ html.light.palette-slate body {
 }
 
 /* High-Contrast Borders in Dark Mode */
+.dark .border-slate-100:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark .border-slate-200:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark .border-slate-200\/80:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark .border-slate-200\/90:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
@@ -185,26 +252,26 @@ html.light.palette-slate body {
 .dark .text-slate-900:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark .text-slate-950:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark .text-gray-900:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 .dark .text-slate-800:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark .text-gray-800:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
-  color: #f1f5f9;
+  color: #f8fafc;
 }
 
 .dark .text-slate-700:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark .text-gray-700:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
-  color: #e2e8f0;
+  color: #f1f5f9;
 }
 
 .dark .text-slate-600:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark .text-gray-600:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
-  color: #cbd5e1;
+  color: #e2e8f0;
 }
 
 .dark .text-slate-500:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
-  color: #94a3b8;
+  color: #cbd5e1;
 }
 
 .dark .text-slate-400:not(.preserve-theme):not(.id-card-landscape *):not(.id-card-portrait *) {
@@ -217,12 +284,23 @@ html.light.palette-slate body {
   color: #93c5fd;
 }
 
-.dark .bg-blue-50:not(.preserve-theme) {
-  background-color: rgba(30, 58, 138, 0.25);
+.dark .bg-blue-50:not(.preserve-theme),
+.dark .bg-blue-50\/60:not(.preserve-theme),
+.dark .bg-blue-50\/70:not(.preserve-theme),
+.dark .bg-blue-50\/80:not(.preserve-theme),
+.dark .bg-blue-50\/90:not(.preserve-theme) {
+  background-color: rgba(30, 58, 138, 0.38);
 }
 
-.dark .bg-blue-100:not(.preserve-theme) {
-  background-color: rgba(30, 58, 138, 0.45);
+.dark .bg-blue-100:not(.preserve-theme),
+.dark .bg-blue-200:not(.preserve-theme),
+.dark .bg-blue-200\/80:not(.preserve-theme) {
+  background-color: rgba(30, 58, 138, 0.65);
+}
+
+.dark .border-blue-200:not(.preserve-theme),
+.dark .border-blue-300:not(.preserve-theme) {
+  border-color: rgba(59, 130, 246, 0.45);
 }
 
 .dark .text-blue-700:not(.preserve-theme),
@@ -230,30 +308,166 @@ html.light.palette-slate body {
   color: #60a5fa;
 }
 
-.dark .bg-amber-50:not(.preserve-theme) {
-  background-color: rgba(120, 53, 15, 0.25);
+.dark .bg-amber-50:not(.preserve-theme),
+.dark .bg-amber-50\/60:not(.preserve-theme),
+.dark .bg-amber-50\/70:not(.preserve-theme),
+.dark .bg-amber-50\/80:not(.preserve-theme),
+.dark .bg-amber-50\/90:not(.preserve-theme) {
+  background-color: rgba(120, 53, 15, 0.38);
 }
 
+.dark .bg-amber-100:not(.preserve-theme),
+.dark .bg-amber-200:not(.preserve-theme),
+.dark .bg-amber-200\/80:not(.preserve-theme) {
+  background-color: rgba(120, 53, 15, 0.68);
+}
+
+.dark .border-amber-200:not(.preserve-theme),
+.dark .border-amber-200\/80:not(.preserve-theme),
+.dark .border-amber-300:not(.preserve-theme) {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.dark .text-amber-950:not(.preserve-theme),
 .dark .text-amber-900:not(.preserve-theme),
-.dark .text-amber-800:not(.preserve-theme) {
+.dark .text-amber-800:not(.preserve-theme),
+.dark .text-amber-700:not(.preserve-theme) {
   color: #fde68a;
 }
 
-.dark .bg-emerald-50:not(.preserve-theme) {
-  background-color: rgba(6, 78, 59, 0.25);
+.dark .bg-emerald-50:not(.preserve-theme),
+.dark .bg-emerald-50\/60:not(.preserve-theme),
+.dark .bg-emerald-50\/70:not(.preserve-theme),
+.dark .bg-emerald-50\/80:not(.preserve-theme),
+.dark .bg-emerald-50\/90:not(.preserve-theme) {
+  background-color: rgba(6, 78, 59, 0.40);
+}
+
+.dark .bg-emerald-100:not(.preserve-theme),
+.dark .bg-emerald-200:not(.preserve-theme),
+.dark .bg-emerald-200\/80:not(.preserve-theme),
+.dark .bg-emerald-200\/90:not(.preserve-theme) {
+  background-color: rgba(6, 78, 59, 0.72);
+}
+
+.dark .border-emerald-200:not(.preserve-theme),
+.dark .border-emerald-300:not(.preserve-theme) {
+  border-color: rgba(16, 185, 129, 0.45);
 }
 
 .dark .text-emerald-950:not(.preserve-theme),
+.dark .text-emerald-900:not(.preserve-theme),
 .dark .text-emerald-800:not(.preserve-theme),
 .dark .text-emerald-700:not(.preserve-theme) {
-  color: #a7f3d0;
+  color: #6ee7b7;
 }
 
-.dark .bg-rose-50:not(.preserve-theme) {
-  background-color: rgba(136, 19, 55, 0.25);
+.dark .bg-teal-50:not(.preserve-theme),
+.dark .bg-teal-50\/60:not(.preserve-theme),
+.dark .bg-teal-50\/70:not(.preserve-theme),
+.dark .bg-teal-50\/80:not(.preserve-theme),
+.dark .bg-teal-50\/90:not(.preserve-theme) {
+  background-color: rgba(19, 78, 74, 0.42);
+}
+
+.dark .bg-teal-100:not(.preserve-theme),
+.dark .bg-teal-200:not(.preserve-theme),
+.dark .bg-teal-200\/90:not(.preserve-theme) {
+  background-color: rgba(19, 78, 74, 0.72);
+}
+
+.dark .border-teal-200:not(.preserve-theme),
+.dark .border-teal-300:not(.preserve-theme) {
+  border-color: rgba(20, 184, 166, 0.45);
+}
+
+.dark .text-teal-950:not(.preserve-theme),
+.dark .text-teal-900:not(.preserve-theme),
+.dark .text-teal-800:not(.preserve-theme),
+.dark .text-teal-700:not(.preserve-theme) {
+  color: #5eead4;
+}
+
+.dark .bg-sky-50:not(.preserve-theme),
+.dark .bg-sky-50\/60:not(.preserve-theme),
+.dark .bg-sky-50\/70:not(.preserve-theme),
+.dark .bg-sky-50\/80:not(.preserve-theme),
+.dark .bg-cyan-50:not(.preserve-theme) {
+  background-color: rgba(12, 74, 110, 0.42);
+}
+
+.dark .bg-sky-100:not(.preserve-theme),
+.dark .bg-sky-200:not(.preserve-theme),
+.dark .bg-sky-200\/90:not(.preserve-theme),
+.dark .bg-cyan-100:not(.preserve-theme) {
+  background-color: rgba(12, 74, 110, 0.72);
+}
+
+.dark .text-sky-950:not(.preserve-theme),
+.dark .text-sky-900:not(.preserve-theme),
+.dark .text-sky-800:not(.preserve-theme),
+.dark .text-sky-700:not(.preserve-theme),
+.dark .text-cyan-900:not(.preserve-theme),
+.dark .text-cyan-800:not(.preserve-theme) {
+  color: #7dd3fc;
+}
+
+.dark .bg-purple-50:not(.preserve-theme),
+.dark .bg-purple-50\/60:not(.preserve-theme),
+.dark .bg-purple-50\/70:not(.preserve-theme),
+.dark .bg-purple-50\/80:not(.preserve-theme),
+.dark .bg-indigo-50:not(.preserve-theme),
+.dark .bg-indigo-50\/70:not(.preserve-theme),
+.dark .bg-indigo-50\/80:not(.preserve-theme) {
+  background-color: rgba(59, 7, 100, 0.42);
+}
+
+.dark .bg-purple-100:not(.preserve-theme),
+.dark .bg-purple-200:not(.preserve-theme),
+.dark .bg-purple-200\/90:not(.preserve-theme),
+.dark .bg-indigo-100:not(.preserve-theme),
+.dark .bg-indigo-200:not(.preserve-theme) {
+  background-color: rgba(59, 7, 100, 0.72);
+}
+
+.dark .border-purple-200:not(.preserve-theme),
+.dark .border-purple-300:not(.preserve-theme),
+.dark .border-indigo-200:not(.preserve-theme) {
+  border-color: rgba(168, 85, 247, 0.45);
+}
+
+.dark .text-purple-950:not(.preserve-theme),
+.dark .text-purple-900:not(.preserve-theme),
+.dark .text-purple-800:not(.preserve-theme),
+.dark .text-purple-700:not(.preserve-theme),
+.dark .text-indigo-950:not(.preserve-theme),
+.dark .text-indigo-900:not(.preserve-theme),
+.dark .text-indigo-800:not(.preserve-theme),
+.dark .text-indigo-700:not(.preserve-theme) {
+  color: #d8b4fe;
+}
+
+.dark .bg-rose-50:not(.preserve-theme),
+.dark .bg-rose-50\/60:not(.preserve-theme),
+.dark .bg-rose-50\/70:not(.preserve-theme),
+.dark .bg-rose-50\/80:not(.preserve-theme),
+.dark .bg-rose-50\/90:not(.preserve-theme) {
+  background-color: rgba(136, 19, 55, 0.38);
+}
+
+.dark .bg-rose-100:not(.preserve-theme),
+.dark .bg-rose-200:not(.preserve-theme),
+.dark .bg-rose-200\/80:not(.preserve-theme) {
+  background-color: rgba(136, 19, 55, 0.70);
+}
+
+.dark .border-rose-200:not(.preserve-theme),
+.dark .border-rose-300:not(.preserve-theme) {
+  border-color: rgba(244, 63, 94, 0.45);
 }
 
 .dark .text-rose-950:not(.preserve-theme),
+.dark .text-rose-900:not(.preserve-theme),
 .dark .text-rose-800:not(.preserve-theme),
 .dark .text-rose-700:not(.preserve-theme) {
   color: #fecdd3;
@@ -264,7 +478,7 @@ html.light.palette-slate body {
 .dark select:not(.preserve-input):not(.id-card-landscape *):not(.id-card-portrait *),
 .dark textarea:not(.preserve-input):not(.id-card-landscape *):not(.id-card-portrait *) {
   background-color: #1e293b;
-  color: #f8fafc;
+  color: #ffffff;
   border-color: #475569;
 }
 
@@ -275,21 +489,21 @@ html.light.palette-slate body {
 
 .dark option {
   background-color: #1e293b;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 /* Premium Card & Glassmorphism Styling */
 .premium-card {
   background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.95);
+  border: 1px solid rgba(203, 213, 225, 0.9);
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 8px -1px rgba(15, 23, 42, 0.04);
   border-radius: 1.25rem;
 }
 
 .dark .premium-card {
-  background: #111827;
-  border: 1px solid rgba(51, 65, 85, 0.7);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  background: #0f172a;
+  border: 1px solid rgba(51, 65, 85, 0.85);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
 }
 
 .premium-card-hover {
@@ -306,15 +520,15 @@ html.light.palette-slate body {
 }
 
 .glass-nav {
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  border-bottom: 1px solid rgba(203, 213, 225, 0.9);
 }
 
 .dark .glass-nav {
-  background: rgba(15, 23, 42, 0.94);
-  border-bottom: 1px solid rgba(51, 65, 85, 0.7);
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.8);
 }
 
 /* ID-1 Card Exact Dimensions: 85.6mm x 54mm (Landscape) and 54mm x 85.6mm (Portrait) */

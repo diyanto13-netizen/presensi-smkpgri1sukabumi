@@ -423,91 +423,91 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
 
       {/* Metric Cards Summary */}
       <div className="no-print grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Siswa</span>
-          <div className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{stats.total}</div>
-          <span className="text-[11px] text-slate-400">Dalam rombel</span>
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Total Siswa</span>
+          <div className="text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight mt-1">{stats.total}</div>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Dalam rombel</span>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800/70 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center justify-between">
             <span>Tepat Waktu</span>
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           </span>
-          <div className="text-2xl font-bold text-emerald-800 tracking-tight mt-1">
+          <div className="text-2xl font-mono font-black text-emerald-900 dark:text-white tracking-tight mt-1">
             {stats.tepatWaktu}
           </div>
-          <span className="text-[11px] text-emerald-600 font-medium">
+          <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">
             {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `≤ ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur'}
           </span>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-amber-200 dark:border-amber-800/70 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center justify-between">
             <span>Terlambat</span>
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           </span>
-          <div className="text-2xl font-bold text-amber-800 tracking-tight mt-1">
+          <div className="text-2xl font-mono font-black text-amber-900 dark:text-white tracking-tight mt-1">
             {stats.terlambat}
           </div>
-          <span className="text-[11px] text-amber-600 font-medium">
+          <span className="text-[11px] text-amber-700 dark:text-amber-300 font-semibold">
             {getEffectiveJamMasuk(selectedDate, config) !== '-' ? `> ${getEffectiveJamMasuk(selectedDate, config)} WIB` : 'Libur'}
           </span>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-teal-700 uppercase tracking-wider flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-teal-200 dark:border-teal-800/70 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-teal-800 dark:text-teal-300 uppercase tracking-wider flex items-center justify-between">
             <span>Sholat Dzuhur</span>
             <span>🕌</span>
           </span>
-          <div className="text-2xl font-bold text-teal-800 tracking-tight mt-1">
+          <div className="text-2xl font-mono font-black text-teal-900 dark:text-white tracking-tight mt-1">
             {stats.sholatDzuhur}
           </div>
-          <span className="text-[11px] text-teal-600 font-medium">Berjamaah</span>
+          <span className="text-[11px] text-teal-700 dark:text-teal-300 font-semibold">Berjamaah</span>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-sky-700 uppercase tracking-wider flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-sky-200 dark:border-sky-800/70 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-sky-800 dark:text-sky-300 uppercase tracking-wider flex items-center justify-between">
             <span>Sholat Ashar</span>
             <span>🕌</span>
           </span>
-          <div className="text-2xl font-bold text-sky-800 tracking-tight mt-1">
+          <div className="text-2xl font-mono font-black text-sky-900 dark:text-white tracking-tight mt-1">
             {stats.sholatAshar}
           </div>
-          <span className="text-[11px] text-sky-600 font-medium">Berjamaah</span>
+          <span className="text-[11px] text-sky-700 dark:text-sky-300 font-semibold">Berjamaah</span>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-indigo-700 uppercase tracking-wider flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-800/70 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider flex items-center justify-between">
             <span>Sudah Pulang</span>
-            <Clock className="w-3.5 h-3.5 text-indigo-600" />
+            <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
           </span>
-          <div className="text-2xl font-bold text-indigo-800 tracking-tight mt-1">
+          <div className="text-2xl font-mono font-black text-indigo-900 dark:text-white tracking-tight mt-1">
             {stats.sudahPulang}
           </div>
-          <span className="text-[11px] text-indigo-600 font-medium">Scan pulang</span>
+          <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-semibold">Scan pulang</span>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-rose-700 uppercase tracking-wider flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-rose-200 dark:border-rose-800/70 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider flex items-center justify-between">
             <span>Belum Hadir</span>
-            <UserX className="w-3.5 h-3.5 text-rose-600" />
+            <UserX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
           </span>
-          <div className="text-2xl font-bold text-rose-800 tracking-tight mt-1">
+          <div className="text-2xl font-mono font-black text-rose-900 dark:text-white tracking-tight mt-1">
             {stats.belumAbsen}
           </div>
-          <span className="text-[11px] text-rose-600 font-medium">Nihil presensi</span>
+          <span className="text-[11px] text-rose-700 dark:text-rose-300 font-semibold">Nihil presensi</span>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-blue-200 dark:border-blue-800/70 shadow-2xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider flex items-center justify-between">
             <span>Kehadiran</span>
-            <span className="text-[10px] font-mono text-blue-600">%</span>
+            <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400">%</span>
           </span>
-          <div className="text-2xl font-bold text-blue-900 tracking-tight mt-1">
+          <div className="text-2xl font-mono font-black text-blue-950 dark:text-amber-300 tracking-tight mt-1">
             {stats.persentase}%
           </div>
-          <span className="text-[11px] text-blue-600 font-medium">Rasio hadir</span>
+          <span className="text-[11px] text-blue-700 dark:text-blue-300 font-semibold">Rasio hadir</span>
         </div>
       </div>
 
@@ -521,26 +521,26 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
       </div>
 
       {/* Date & Class Filter Bar */}
-      <div className="no-print bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-sm">
+      <div className="no-print bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 text-sm">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <Calendar className="w-5 h-5 text-blue-900" />
-            <label className="font-bold text-slate-800">Pilih Tanggal:</label>
+            <Calendar className="w-5 h-5 text-blue-900 dark:text-blue-400" />
+            <label className="font-bold text-slate-800 dark:text-slate-100">Pilih Tanggal:</label>
             <input
               type="date"
               value={selectedDate}
               onChange={e => setSelectedDate(e.target.value)}
-              className="py-2 px-3.5 bg-slate-50 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-900"
+              className="py-2 px-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-900 dark:text-white"
             />
           </div>
 
           <div className="flex items-center gap-2.5">
-            <Filter className="w-5 h-5 text-blue-900" />
-            <label className="font-bold text-slate-800">Filter Rombel / Kelas:</label>
+            <Filter className="w-5 h-5 text-blue-900 dark:text-blue-400" />
+            <label className="font-bold text-slate-800 dark:text-slate-100">Filter Rombel / Kelas:</label>
             <select
               value={selectedClass}
               onChange={e => setSelectedClass(e.target.value)}
-              className="py-2 px-3.5 bg-slate-50 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-900"
+              className="py-2 px-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-900 dark:text-white"
             >
               <option value="ALL">Semua Kelas ({students.length} Siswa)</option>
               <optgroup label="Kelas XII (7 Rombel)">
@@ -568,19 +568,19 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-slate-600 text-xs sm:text-sm font-medium">
+        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 text-xs sm:text-sm font-medium">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
           <span>Format file Excel: <strong>.xlsx asli bergaris rapi</strong> (Font Arial, Kop Yayasan, Lembar Tanda Tangan).</span>
         </div>
       </div>
 
       {/* Printable Sheet View Container */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-5 sm:p-7">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden p-5 sm:p-7">
         {/* Printable Formal School Header */}
         <div className="border-b-2 border-amber-500 pb-4 mb-5 select-none">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
             <div className="w-16 h-18 p-0.5 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-500 shadow-sm flex items-center justify-center border border-amber-300 shrink-0">
-              <div className="w-full h-full rounded-xl bg-white/95 flex items-center justify-center p-1 overflow-hidden">
+              <div className="w-full h-full rounded-xl bg-white flex items-center justify-center p-1 overflow-hidden">
                 <SchoolLogo
                   src={config.logo_url}
                   className="w-full h-full object-contain drop-shadow-xs"
@@ -589,23 +589,23 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
               </div>
             </div>
             <div className="flex-1 text-center">
-              <p className="text-xs uppercase tracking-wider text-slate-600 font-bold">
+              <p className="text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300 font-bold">
                 {config.yayasan}
               </p>
-              <h2 className="text-xl sm:text-2xl font-heading font-black text-blue-950 uppercase tracking-tight mt-0.5">
+              <h2 className="text-xl sm:text-2xl font-heading font-black text-blue-950 dark:text-amber-300 uppercase tracking-tight mt-0.5">
                 {config.nama_sekolah}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 italic mt-1 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 italic mt-1 font-medium">
                 NPSN: {config.npsn} • {config.akreditasi} • {config.alamat} • Telp: {config.telepon}
               </p>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-200 text-center">
-            <h3 className="text-sm sm:text-base font-heading font-black text-slate-900 uppercase">
+          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
+            <h3 className="text-sm sm:text-base font-heading font-black text-slate-900 dark:text-white uppercase">
               LAPORAN REKAPITULASI PRESENSI HARIAN SISWA
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              Hari / Tanggal: <strong className="text-slate-900">{formatIndonesianDate(selectedDate)}</strong> | Filter: <strong className="text-slate-900">{selectedClass === 'ALL' ? 'Semua Kelas' : `Kelas ${selectedClass}`}</strong> | Batas Masuk: <strong className="text-slate-900">{config.jam_masuk_batas} WIB</strong>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
+              Hari / Tanggal: <strong className="text-slate-900 dark:text-white">{formatIndonesianDate(selectedDate)}</strong> | Filter: <strong className="text-slate-900 dark:text-white">{selectedClass === 'ALL' ? 'Semua Kelas' : `Kelas ${selectedClass}`}</strong> | Batas Masuk: <strong className="text-slate-900 dark:text-white">{config.jam_masuk_batas} WIB</strong>
             </p>
           </div>
         </div>
@@ -614,7 +614,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="bg-slate-950 border border-slate-900 text-amber-300 uppercase font-heading text-xs font-bold">
+              <tr className="bg-blue-950 border border-blue-900 text-amber-300 uppercase font-heading text-xs font-bold">
                 <th className="py-3 px-3 text-center w-12">No</th>
                 <th className="py-3 px-3.5 text-center">NIS</th>
                 <th className="py-3 px-3.5">Nama Lengkap Siswa</th>
@@ -631,10 +631,10 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                 <th className="py-3 px-3.5 text-center no-print">Tindakan Cepat</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 border border-slate-200">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 border border-slate-200 dark:border-slate-800">
               {consolidatedList.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="py-10 text-center text-slate-400 text-base">
+                  <td colSpan={14} className="py-10 text-center text-slate-500 dark:text-slate-400 text-base">
                     Tidak ada siswa ditemukan pada filter ini.
                   </td>
                 </tr>
@@ -646,140 +646,144 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                   return (
                     <tr
                       key={student.id}
-                      className={`${isEven ? 'bg-slate-50/70' : 'bg-white'} hover:bg-blue-50/40 transition`}
+                      className={`${
+                        isEven
+                          ? 'bg-slate-50 dark:bg-slate-800/75'
+                          : 'bg-white dark:bg-slate-900'
+                      } hover:bg-blue-50/60 dark:hover:bg-slate-800 transition`}
                     >
-                      <td className="py-3 px-3 text-center font-mono text-slate-500 border-r border-slate-200 font-semibold">
+                      <td className="py-3 px-3 text-center font-mono text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-800 font-bold">
                         {idx + 1}
                       </td>
 
-                      <td className="py-3 px-3.5 text-center font-mono font-bold text-blue-950 border-r border-slate-200">
+                      <td className="py-3 px-3.5 text-center font-mono font-bold text-blue-950 dark:text-amber-300 border-r border-slate-200 dark:border-slate-800">
                         {student.nis}
                       </td>
 
-                      <td className="py-3 px-3.5 font-bold text-slate-900 border-r border-slate-200 text-sm sm:text-base">
+                      <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white border-r border-slate-200 dark:border-slate-800 text-sm sm:text-base">
                         {student.nama}
                       </td>
 
-                      <td className="py-3 px-2 text-center text-slate-700 font-bold border-r border-slate-200">
+                      <td className="py-3 px-2 text-center text-slate-800 dark:text-slate-200 font-bold border-r border-slate-200 dark:border-slate-800">
                         {student.jenis_kelamin}
                       </td>
 
-                      <td className="py-3 px-3.5 text-center font-bold text-slate-800 border-r border-slate-200">
+                      <td className="py-3 px-3.5 text-center font-bold text-slate-900 dark:text-slate-100 border-r border-slate-200 dark:border-slate-800">
                         {student.kelas}
                       </td>
 
-                      <td className="py-3 px-3.5 text-slate-600 text-xs sm:text-sm border-r border-slate-200 font-medium">
+                      <td className="py-3 px-3.5 text-slate-700 dark:text-slate-300 text-xs sm:text-sm border-r border-slate-200 dark:border-slate-800 font-medium">
                         {student.jurusan}
                       </td>
 
-                      <td className="py-3 px-3 text-center font-mono border-r border-slate-200 font-semibold">
+                      <td className="py-3 px-3 text-center font-mono border-r border-slate-200 dark:border-slate-800 font-semibold">
                         {record?.jam_masuk ? (
-                          <span className="font-bold text-slate-900">
+                          <span className="font-bold text-slate-900 dark:text-white">
                             {record.jam_masuk}
                           </span>
                         ) : (
-                          <span className="text-slate-400 italic">-</span>
+                          <span className="text-slate-400 dark:text-slate-500 italic">-</span>
                         )}
                       </td>
 
-                      <td className="py-3 px-3.5 text-center border-r border-slate-200">
+                      <td className="py-3 px-3.5 text-center border-r border-slate-200 dark:border-slate-800">
                         {record?.status_masuk === 'TEPAT_WAKTU' && (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
                             Tepat Waktu
                           </span>
                         )}
                         {record?.status_masuk === 'TERLAMBAT' && (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-950 border border-amber-300">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
                             Terlambat
                           </span>
                         )}
                         {!record?.status_masuk && (
-                          <span className="text-slate-400 text-xs italic font-medium">Belum Hadir</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-xs italic font-medium">Belum Hadir</span>
                         )}
                       </td>
 
                       {/* Sholat Dzuhur Cell */}
-                      <td className="py-3 px-3 text-center border-r border-slate-200">
+                      <td className="py-3 px-3 text-center border-r border-slate-200 dark:border-slate-800">
                         {record?.status_dzuhur === 'TERLAKSANA' ? (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 text-teal-900 border border-teal-300 inline-flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-900 dark:text-teal-300 border border-teal-300 dark:border-teal-700 inline-flex items-center gap-1">
                             <span>🕌</span>
                             <span>{record.jam_dzuhur || 'Terlaksana'}</span>
                           </span>
                         ) : record?.status_dzuhur === 'BERHALANGAN' ? (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
                             Berhalangan
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-xs italic">-</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-xs italic">-</span>
                         )}
                       </td>
 
                       {/* Sholat Ashar Cell */}
-                      <td className="py-3 px-3 text-center border-r border-slate-200">
+                      <td className="py-3 px-3 text-center border-r border-slate-200 dark:border-slate-800">
                         {record?.status_ashar === 'TERLAKSANA' ? (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyan-100 text-cyan-900 border border-cyan-300 inline-flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-300 border border-sky-300 dark:border-sky-700 inline-flex items-center gap-1">
                             <span>🕌</span>
                             <span>{record.jam_ashar || 'Terlaksana'}</span>
                           </span>
                         ) : record?.status_ashar === 'BERHALANGAN' ? (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
                             Berhalangan
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-xs italic">-</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-xs italic">-</span>
                         )}
                       </td>
 
-                      <td className="py-3 px-3 text-center font-mono border-r border-slate-200">
+                      <td className="py-3 px-3 text-center font-mono border-r border-slate-200 dark:border-slate-800">
                         {record?.jam_pulang ? (
-                          <span className="font-bold text-slate-900">{record.jam_pulang}</span>
+                          <span className="font-bold text-slate-900 dark:text-white">{record.jam_pulang}</span>
                         ) : (
-                          <span className="text-slate-400 text-xs font-medium" title="Jadwal kepulangan resmi kelas">
+                          <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold" title="Jadwal kepulangan resmi kelas">
                             {config.jam_pulang_per_kelas?.[student.kelas] || student.jam_pulang}
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-3.5 text-center border-r border-slate-200">
+                      <td className="py-3 px-3.5 text-center border-r border-slate-200 dark:border-slate-800">
                         {status === 'TEPAT_WAKTU' && (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900">
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
                             Hadir (Tepat)
                           </span>
                         )}
                         {status === 'TERLAMBAT' && (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-950">
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
                             Hadir (Telat)
                           </span>
                         )}
                         {status === 'PULANG' && (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-900">
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
                             Sudah Pulang
                           </span>
                         )}
                         {status === 'IZIN' && (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900">
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
                             Izin
                           </span>
                         )}
                         {status === 'SAKIT' && (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-900">
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
                             Sakit
                           </span>
                         )}
                         {status === 'BELUM_ABSEN' && (
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
                             Nihil
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-3.5 text-center border-r border-slate-200 no-print">
+                      <td className="py-3 px-3.5 text-center border-r border-slate-200 dark:border-slate-800 no-print">
                         {record?.notifikasi_wa_terkirim ? (
-                          <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-300">
+                          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">
                             Terkirim
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-xs">-</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-xs">-</span>
                         )}
                       </td>
 
@@ -788,7 +792,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                           <button
                             type="button"
                             onClick={() => handleManualStatusChange(student, 'TEPAT_WAKTU')}
-                            className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-bold cursor-pointer"
+                            className="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 text-xs font-bold cursor-pointer"
                             title="Set Hadir Tepat Waktu"
                           >
                             Hadir
@@ -796,7 +800,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                           <button
                             type="button"
                             onClick={() => handleManualStatusChange(student, 'TERLAMBAT')}
-                            className="px-2 py-1 rounded-lg bg-amber-50 text-amber-900 hover:bg-amber-100 text-xs font-bold cursor-pointer"
+                            className="px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-200 text-xs font-bold cursor-pointer"
                             title="Set Terlambat"
                           >
                             Telat
@@ -810,10 +814,10 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                                 record?.status_dzuhur === 'TERLAKSANA' ? 'BERHALANGAN' : 'TERLAKSANA'
                               )
                             }
-                            className={`px-2 py-1 rounded-lg text-xs font-bold cursor-pointer transition ${
+                            className={`px-2 py-1 rounded-lg text-xs font-bold cursor-pointer transition border ${
                               record?.status_dzuhur === 'TERLAKSANA'
-                                ? 'bg-teal-700 text-white hover:bg-teal-800'
-                                : 'bg-teal-50 text-teal-900 hover:bg-teal-100'
+                                ? 'bg-teal-700 text-white border-teal-800 hover:bg-teal-800'
+                                : 'bg-teal-100 dark:bg-teal-950 text-teal-900 dark:text-teal-300 border-teal-300 dark:border-teal-700 hover:bg-teal-200'
                             }`}
                             title="Tandai Sholat Dzuhur Terlaksana"
                           >
@@ -828,10 +832,10 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                                 record?.status_ashar === 'TERLAKSANA' ? 'BERHALANGAN' : 'TERLAKSANA'
                               )
                             }
-                            className={`px-2 py-1 rounded-lg text-xs font-bold cursor-pointer transition ${
+                            className={`px-2 py-1 rounded-lg text-xs font-bold cursor-pointer transition border ${
                               record?.status_ashar === 'TERLAKSANA'
-                                ? 'bg-cyan-700 text-white hover:bg-cyan-800'
-                                : 'bg-cyan-50 text-cyan-900 hover:bg-cyan-100'
+                                ? 'bg-sky-700 text-white border-sky-800 hover:bg-sky-800'
+                                : 'bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-300 border-sky-300 dark:border-sky-700 hover:bg-sky-200'
                             }`}
                             title="Tandai Sholat Ashar Terlaksana"
                           >
@@ -840,7 +844,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                           <button
                             type="button"
                             onClick={() => handleManualStatusChange(student, 'IZIN')}
-                            className="px-2 py-1 rounded-lg bg-purple-50 text-purple-900 hover:bg-purple-100 text-xs font-bold cursor-pointer"
+                            className="px-2 py-1 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-700 hover:bg-purple-200 text-xs font-bold cursor-pointer"
                             title="Set Izin"
                           >
                             Izin
@@ -848,7 +852,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                           <button
                             type="button"
                             onClick={() => handleManualStatusChange(student, 'SAKIT')}
-                            className="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-900 hover:bg-indigo-100 text-xs font-bold cursor-pointer"
+                            className="px-2 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-200 text-xs font-bold cursor-pointer"
                             title="Set Sakit"
                           >
                             Sakit

@@ -22,7 +22,6 @@ import {
   Upload,
   Maximize2,
   Minimize2,
-  HelpCircle,
   FileText,
   Settings2,
   Scan,
@@ -85,12 +84,9 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const [simulatedTime, setSimulatedTime] = useState<string>('06:45');
   const [currentTimeDisplay, setCurrentTimeDisplay] = useState<string>('');
 
-  // Audio & Voice toggles & Diagnostic for Android Tablet
+  // Audio & Voice toggles
   const [soundActive, setSoundActive] = useState<boolean>(config.sound_enabled);
   const [voiceActive, setVoiceActive] = useState<boolean>(config.voice_announcement_enabled);
-  const [isTestingAudio, setIsTestingAudio] = useState<boolean>(false);
-  const [audioDiagnosticMessage, setAudioDiagnosticMessage] = useState<string | null>(null);
-  const [showAudioGuide, setShowAudioGuide] = useState<boolean>(false);
 
   // Camera switching loading state
   const [cameraSwitching, setCameraSwitching] = useState<boolean>(false);
@@ -785,29 +781,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
     }
   };
 
-  const handleTestTabletAudio = async () => {
-    setIsTestingAudio(true);
-    setAudioDiagnosticMessage(null);
-    try {
-      const res = await soundService.testAudioAndSpeech();
-      if (!res.hasIndonesianVoice) {
-        setAudioDiagnosticMessage(
-          `🔊 Bip berhasil dibunyikan! Mesin suara saat ini: ${res.voiceName}. Bila ucapan bahasa Indonesia belum keluar di tablet, pasang paket bahasa Indonesia di Pengaturan Tablet Android.`
-        );
-      } else {
-        setAudioDiagnosticMessage(
-          `✅ Audio & Suara Tablet Aktif! Suara: ${res.voiceName}. Bip dan ucapan siap berfungsi otomatis.`
-        );
-      }
-    } catch {
-      setAudioDiagnosticMessage(
-        '⚠️ Gagal mengaktifkan audio. Pastikan volume tablet tidak di-mute dan izin audio diperbolehkan.'
-      );
-    } finally {
-      setIsTestingAudio(false);
-    }
-  };
-
   // Scan directly from Image/Photo File (Upload fallback for cards)
   const handleScanFromFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -961,67 +934,9 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               <Sparkles className={`w-3.5 h-3.5 ${voiceActive ? 'text-amber-400' : 'text-slate-500'}`} />
               <span>{voiceActive ? 'Suara Aktif' : 'Suara Nonaktif'}</span>
             </button>
-
-            {/* Tablet / Kiosk Audio Test & Unlock Button */}
-            <button
-              type="button"
-              onClick={handleTestTabletAudio}
-              disabled={isTestingAudio}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-75"
-              title="Buka blokir audio browser & tes speaker tablet"
-            >
-              <Volume2 className={`w-3.5 h-3.5 text-slate-950 ${isTestingAudio ? 'animate-pulse' : ''}`} />
-              <span>{isTestingAudio ? 'Menguji...' : 'Tes Audio Tablet'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowAudioGuide(prev => !prev)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
-              title="Bantuan masalah suara tablet Android"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </div>
-
-      {/* Tablet Audio Notification / Diagnostic Banner */}
-      {(audioDiagnosticMessage || showAudioGuide) && (
-        <div className="bg-slate-900 border border-amber-400/40 text-slate-200 p-4 rounded-2xl shadow-md text-xs space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-amber-300 text-sm">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Status &amp; Solusi Audio Tablet Android</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setAudioDiagnosticMessage(null);
-                setShowAudioGuide(false);
-              }}
-              className="text-slate-400 hover:text-white text-xs underline cursor-pointer"
-            >
-              Tutup
-            </button>
-          </div>
-          {audioDiagnosticMessage && (
-            <p className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 font-mono text-[11px] text-emerald-300">
-              {audioDiagnosticMessage}
-            </p>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-slate-300 leading-relaxed text-[11.5px]">
-            <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800">
-              <strong className="text-white block mb-1">1. Mengapa di Smartphone Normal tapi di Tablet Sempat Bisu?</strong>
-              Pada tablet yang dipasang di meja/stand (mode kiosk), tidak ada yang menyentuh layar. Browser Chrome memblokir audio otomatis (*Autoplay Policy*) sampai layar disentuh minimal 1 kali. Cukup klik tombol <strong>"Tes Audio Tablet"</strong> untuk membuka izin selamanya.
-            </div>
-            <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800">
-              <strong className="text-white block mb-1">2. Jika Suara Ucapan Belum Terdengar di Tablet:</strong>
-              Pastikan paket offline Bahasa Indonesia terpasang di tablet: Buka <em>Pengaturan Tablet &gt; Manajemen Umum &gt; Bahasa &amp; Input &gt; Teks ke Ucapan (TTS) &gt; Mesin Google TTS &gt; Pasang data suara Bahasa Indonesia</em>.
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Grid: Left = Camera / Scanner, Right = Last Scan Result & Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

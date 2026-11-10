@@ -349,12 +349,17 @@ export default function App() {
   return (
     <div className="min-h-screen bg-transparent text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300">
       {/* Global Navigation Header (Hidden on print) */}
-      <header className="no-print sticky top-0 z-40 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shadow-2xs">
+      <header className="no-print sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 shadow-2xs">
+        {/* Heraldic Top Ribbon: Filosofi Warna Logo SMKS PGRI 1 Sukabumi (Biru Perisai • Hijau Lencana • Kuning Emas • Merah Obor) */}
+        <div
+          className="h-1 w-full bg-gradient-to-r from-[#1e3a8a] via-[#2b75dc] via-45% to-[#f5ce0b]"
+          title="Filosofi Warna Logo SMKS PGRI 1 Kota Sukabumi: Biru Ilmu & Teknologi, Hijau Karakter, Kuning Kejayaan"
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4">
+          <div className="flex items-center justify-between h-16 gap-3 lg:gap-6">
             {/* School Branding with Official Insignia */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 dark:border-slate-700 shadow-2xs p-1 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-3 min-w-0 shrink">
+              <div className="w-10 h-10 rounded-xl bg-white border border-amber-300/80 dark:border-amber-500/50 shadow-2xs p-1 flex items-center justify-center shrink-0 ring-2 ring-blue-600/10">
                 <SchoolLogo
                   src={schoolConfig.logo_url}
                   className="w-full h-full object-contain"
@@ -362,12 +367,12 @@ export default function App() {
                 />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  <span className="font-semibold text-slate-700 dark:text-slate-200 tracking-tight">Presensi QR</span>
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap overflow-hidden">
+                  <span className="font-bold text-blue-900 dark:text-amber-300 tracking-tight">Presensi QR</span>
                   <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">·</span>
-                  <span>NPSN {schoolConfig.npsn}</span>
-                  <span aria-hidden="true" className="text-slate-300 dark:text-slate-600 hidden sm:inline">·</span>
-                  <span className="hidden sm:inline text-emerald-700 dark:text-emerald-400 font-semibold">{schoolConfig.akreditasi}</span>
+                  <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">NPSN {schoolConfig.npsn}</span>
+                  <span aria-hidden="true" className="text-slate-300 dark:text-slate-600 hidden xl:inline">·</span>
+                  <span className="hidden xl:inline text-emerald-700 dark:text-emerald-400 font-bold">{schoolConfig.akreditasi}</span>
                 </div>
                 <h1 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
                   {schoolConfig.nama_sekolah}
@@ -375,167 +380,87 @@ export default function App() {
               </div>
             </div>
 
-            {/* Navigation Tabs (Refined Segmented Controls) */}
-            <nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+            {/* Navigation Tabs (Single-Line Segmented Controls — Never Wraps or Stacks) */}
+            <nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/90 dark:border-slate-700 shrink-0">
               <button
                 onClick={() => setActiveTab('scanner')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'scanner'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
+                    ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
+                    : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
                 }`}
               >
-                <Camera className={`w-3.5 h-3.5 ${activeTab === 'scanner' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <Camera className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'scanner' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
                 <span>Terminal Scanner</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('generator')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'generator'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
+                    ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
+                    : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
                 }`}
               >
-                <CreditCard className={`w-3.5 h-3.5 ${activeTab === 'generator' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <CreditCard className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'generator' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
                 <span>Cetak Kartu QR</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('students')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'students'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
+                    ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
+                    : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
                 }`}
               >
-                <Users className={`w-3.5 h-3.5 ${activeTab === 'students' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <Users className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'students' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
                 <span>Data Siswa</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('recap')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'recap'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
+                    ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
+                    : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
                 }`}
               >
-                <BarChart3 className={`w-3.5 h-3.5 ${activeTab === 'recap' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <BarChart3 className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'recap' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
                 <span>Rekap Absensi</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('docs')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'docs'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750'
+                    ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
+                    : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
                 }`}
                 title="Panduan Skema Database SQL & API"
               >
-                <BookOpen className={`w-3.5 h-3.5 ${activeTab === 'docs' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <BookOpen className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'docs' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
                 <span>SQL &amp; Docs</span>
               </button>
             </nav>
 
-            {/* Header Right Actions & Live Clock */}
-            <div className="flex items-center gap-2">
-              {/* Color Palette Switcher (Foto 2 Aurora vs Foto 1 Sunrise) */}
-              <button
-                type="button"
-                onClick={handleCyclePalette}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer select-none ${
-                  palette === 'aurora'
-                    ? 'bg-purple-900/40 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60'
-                    : palette === 'sunrise'
-                    ? 'bg-amber-100/80 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-200'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
-                }`}
-                title={`Warna Latar Belakang: ${
-                  palette === 'aurora'
-                    ? 'Midnight Aurora (Foto 2) - Klik untuk ganti ke Sunrise Horizon (Foto 1)'
-                    : palette === 'sunrise'
-                    ? 'Sunrise Horizon (Foto 1) - Klik untuk ganti ke Slate Netral'
-                    : 'Slate Netral - Klik untuk ganti ke Midnight Aurora (Foto 2)'
-                }`}
-                aria-label="Ganti Warna Latar Belakang"
-              >
-                <Palette className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-                <span className="hidden sm:inline">
-                  {palette === 'aurora'
-                    ? 'Aurora (Foto 2)'
-                    : palette === 'sunrise'
-                    ? 'Sunrise (Foto 1)'
-                    : 'Slate'}
-                </span>
-              </button>
-
-              {/* Dark / Light Mode Switcher Button */}
-              <button
-                type="button"
-                onClick={handleToggleTheme}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer select-none ${
-                  theme === 'dark'
-                    ? 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700 hover:text-amber-200'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-                title={theme === 'dark' ? 'Klik untuk beralih ke Mode Terang (Light Mode)' : 'Klik untuk beralih ke Mode Gelap (Dark Mode)'}
-                aria-label="Ganti Mode Gelap / Terang"
-              >
-                {theme === 'dark' ? (
-                  <>
-                    <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="hidden sm:inline font-bold text-amber-300">Mode Terang</span>
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    <span className="hidden sm:inline font-bold text-slate-700">Mode Gelap</span>
-                  </>
-                )}
-              </button>
-
-              {/* Cloud Database Sync Status */}
-              <button
-                type="button"
-                onClick={handleManualSync}
-                disabled={isSyncing}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition shadow-2xs cursor-pointer disabled:opacity-60"
-                title="Sinkronisasi Cloud Database (PostgreSQL & Firestore)"
-              >
-                <Database className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                <span>{isSyncing ? 'Sinkron...' : 'Cloud Sync'}</span>
-                <RotateCw className={`w-3 h-3 text-slate-400 ${isSyncing ? 'animate-spin text-blue-600 dark:text-blue-400' : ''}`} />
-              </button>
-
+            {/* Header Right Actions: Live WIB Clock & Settings Button */}
+            <div className="flex items-center gap-2.5 shrink-0">
               {/* Live WIB Clock badge */}
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-xs font-mono font-medium text-slate-700 dark:text-slate-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-xs font-mono font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap shrink-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <span>{headerTime || '07:00:00'}</span>
-                <span className="text-[10px] text-slate-600 dark:text-slate-400 font-sans font-semibold">WIB</span>
+                <span className="text-[10px] text-slate-600 dark:text-slate-300 font-sans font-bold">WIB</span>
               </div>
 
-              {/* Proposal Presentation Slide Deck Link */}
-              <a
-                href="/presentation.html"
-                target="_blank"
-                rel="noreferrer"
-                className="px-2.5 sm:px-3 py-1.5 text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-300 dark:border-amber-700/60 rounded-lg transition flex items-center gap-1.5 text-xs font-semibold shadow-2xs cursor-pointer"
-                title="Buka Slide Presentasi Penawaran untuk Pihak Sekolah (Bisa Tayang Fullscreen / Cetak PDF)"
-              >
-                <Presentation className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
-                <span className="hidden md:inline">Slide Penawaran</span>
-              </a>
-
-              {/* Settings button */}
+              {/* Settings button (Contains Theme Palette, Dark/Light Mode, Cloud Sync, Slide Penawaran & School Settings) */}
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="px-2.5 sm:px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition flex items-center gap-1.5 text-xs font-medium shadow-2xs cursor-pointer"
-                title="Pengaturan Sekolah & Fonnte"
+                className="px-3.5 py-2 text-amber-300 dark:text-slate-950 bg-blue-950 dark:bg-amber-400 hover:bg-blue-900 dark:hover:bg-amber-300 border border-blue-900 dark:border-amber-500 rounded-xl transition flex items-center gap-2 text-xs font-bold shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
+                title="Pengaturan Sistem, Tema Warna PGRI, Mode Gelap/Terang, Cloud Sync & Slide Penawaran"
               >
-                <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                <span className="hidden md:inline">Pengaturan</span>
+                <Settings className="w-3.5 h-3.5 shrink-0" />
+                <span>Pengaturan</span>
               </button>
             </div>
           </div>

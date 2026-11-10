@@ -8,8 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  AreaChart,
-  Area,
 } from 'recharts';
 import {
   TrendingUp,
@@ -343,25 +341,27 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200 space-y-6">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6">
       {/* Primary Navigation & Switcher Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className={`p-2 rounded-xl border ${
-              mainTab === 'sholat' 
-                ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
-                : 'bg-blue-100 text-blue-900 border-blue-200'
-            }`}>
+          <div className="flex items-center gap-3">
+            <span
+              className={`p-2.5 rounded-xl border shrink-0 ${
+                mainTab === 'sholat'
+                  ? 'bg-emerald-100 dark:bg-emerald-950/90 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                  : 'bg-blue-100 dark:bg-blue-950/90 text-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-700'
+              }`}
+            >
               {mainTab === 'sholat' ? <span className="text-xl">🕌</span> : <TrendingUp className="w-5 h-5" />}
             </span>
             <div>
-              <h3 className="text-lg sm:text-xl font-heading font-black text-slate-900">
-                {mainTab === 'sholat' 
-                  ? 'Visualisasi Tren Kehadiran Sholat Dzuhur & Ashar' 
+              <h3 className="text-lg sm:text-xl font-heading font-black text-slate-900 dark:text-white">
+                {mainTab === 'sholat'
+                  ? 'Visualisasi Tren Kehadiran Sholat Dzuhur & Ashar'
                   : 'Visualisasi Tren Presensi KBM Siswa'}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
                 {mainTab === 'sholat'
                   ? `Monitoring kepatuhan ibadah sholat berjamaah ${rangeMode === 'weekly' ? '7 hari terakhir' : '30 hari terakhir'}`
                   : `Grafik kehadiran jam masuk & pulang ${rangeMode === 'weekly' ? '7 hari terakhir' : '30 hari terakhir'}`}{' '}
@@ -374,26 +374,26 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
         {/* Top Controls: Mode Switcher & Time Range */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Main Mode: Shalat vs KBM */}
-          <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setMainTab('sholat')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 mainTab === 'sholat'
-                  ? 'bg-gradient-to-r from-emerald-700 to-teal-800 text-amber-200 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white'
               }`}
             >
               <span>🕌</span>
-              <span>Tren Shalat (Dzuhur & Ashar)</span>
+              <span>Tren Shalat (Dzuhur &amp; Ashar)</span>
             </button>
             <button
               type="button"
               onClick={() => setMainTab('kbm')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 mainTab === 'kbm'
-                  ? 'bg-blue-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-blue-900 dark:bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
@@ -402,14 +402,14 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
           </div>
 
           {/* Time Range Switcher (7 Days vs 30 Days) */}
-          <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setRangeMode('weekly')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 rangeMode === 'weekly'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 shadow-xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white'
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -420,8 +420,8 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
               onClick={() => setRangeMode('monthly')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 rangeMode === 'monthly'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 shadow-xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
@@ -435,57 +435,57 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
       {mainTab === 'sholat' ? (
         <div className="space-y-6">
           {/* Sholat Sub-selector: Terpisah (Split) vs Dzuhur vs Ashar vs Compare */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200/80">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-100 dark:bg-slate-800/95 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-amber-300 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-amber-400" />
                 Pilihan Tampilan Grafik Sesi:
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setSholatSessionFilter('split')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   sholatSessionFilter === 'split'
-                    ? 'bg-emerald-800 text-white shadow-xs'
-                    : 'bg-white text-emerald-950 border border-emerald-300 hover:bg-emerald-100'
+                    ? 'bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs border border-emerald-800 dark:border-emerald-500'
+                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-700'
                 }`}
               >
                 <span>📊</span>
-                <span>Terpisah (Dzuhur & Ashar)</span>
+                <span>Terpisah (Dzuhur &amp; Ashar)</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSholatSessionFilter('dzuhur')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   sholatSessionFilter === 'dzuhur'
-                    ? 'bg-teal-700 text-white shadow-xs'
-                    : 'bg-white text-teal-900 border border-teal-300 hover:bg-teal-100'
+                    ? 'bg-teal-700 dark:bg-teal-600 text-white shadow-xs border border-teal-800 dark:border-teal-500'
+                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 hover:bg-teal-50 dark:hover:bg-slate-700'
                 }`}
               >
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                <Sun className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 <span>Khusus Sesi Dzuhur</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSholatSessionFilter('ashar')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   sholatSessionFilter === 'ashar'
-                    ? 'bg-sky-700 text-white shadow-xs'
-                    : 'bg-white text-sky-900 border border-sky-300 hover:bg-sky-100'
+                    ? 'bg-sky-700 dark:bg-sky-600 text-white shadow-xs border border-sky-800 dark:border-sky-500'
+                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 hover:bg-sky-50 dark:hover:bg-slate-700'
                 }`}
               >
-                <Moon className="w-3.5 h-3.5 text-sky-500" />
+                <Moon className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                 <span>Khusus Sesi Ashar</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSholatSessionFilter('compare')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   sholatSessionFilter === 'compare'
-                    ? 'bg-indigo-700 text-white shadow-xs'
-                    : 'bg-white text-indigo-900 border border-indigo-300 hover:bg-indigo-100'
+                    ? 'bg-blue-900 dark:bg-blue-600 text-white shadow-xs border border-blue-950 dark:border-blue-500'
+                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700'
                 }`}
               >
                 <span>⚖️</span>
@@ -494,63 +494,87 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
             </div>
           </div>
 
-          {/* KPI Highlights for Shalat */}
+          {/* KPI Highlights for Shalat — High Contrast Solid Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="p-3.5 sm:p-4 rounded-xl bg-teal-50/80 border border-teal-200 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-teal-200/90 text-teal-900 shrink-0">
-                <Sun className="w-4 h-4 text-amber-600" />
+            {/* Card 1: Rata-rata Dzuhur */}
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-teal-200 dark:border-teal-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-amber-300 border border-teal-300 dark:border-teal-700 shrink-0">
+                <Sun className="w-5 h-5" />
               </div>
-              <div>
-                <div className="text-xs font-semibold text-teal-900 uppercase tracking-wide">Rata-rata Dzuhur</div>
-                <div className="text-lg sm:text-xl font-heading font-black text-teal-950 mt-0.5">
-                  {sholatPeriodStats.avgDzuhur} <span className="text-xs font-medium text-teal-700">siswa/hari</span>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-teal-900 dark:text-teal-300 uppercase tracking-wide">
+                  Rata-rata Dzuhur
                 </div>
-                <div className="text-[11px] text-teal-700 font-bold mt-0.5">
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                  {sholatPeriodStats.avgDzuhur}{' '}
+                  <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
+                    siswa/hari
+                  </span>
+                </div>
+                <div className="text-xs text-teal-800 dark:text-teal-300 font-bold mt-0.5">
                   Partisipasi: ~{sholatPeriodStats.avgDzuhurPercent}%
                 </div>
               </div>
             </div>
 
-            <div className="p-3.5 sm:p-4 rounded-xl bg-sky-50/80 border border-sky-200 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-sky-200/90 text-sky-900 shrink-0">
-                <Moon className="w-4 h-4 text-sky-700" />
+            {/* Card 2: Rata-rata Ashar */}
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-sky-200 dark:border-sky-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700 shrink-0">
+                <Moon className="w-5 h-5" />
               </div>
-              <div>
-                <div className="text-xs font-semibold text-sky-900 uppercase tracking-wide">Rata-rata Ashar</div>
-                <div className="text-lg sm:text-xl font-heading font-black text-sky-950 mt-0.5">
-                  {sholatPeriodStats.avgAshar} <span className="text-xs font-medium text-sky-700">siswa/hari</span>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-sky-900 dark:text-sky-300 uppercase tracking-wide">
+                  Rata-rata Ashar
                 </div>
-                <div className="text-[11px] text-sky-700 font-bold mt-0.5">
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                  {sholatPeriodStats.avgAshar}{' '}
+                  <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
+                    siswa/hari
+                  </span>
+                </div>
+                <div className="text-xs text-sky-800 dark:text-sky-300 font-bold mt-0.5">
                   Partisipasi: ~{sholatPeriodStats.avgAsharPercent}%
                 </div>
               </div>
             </div>
 
-            <div className="p-3.5 sm:p-4 rounded-xl bg-purple-50/80 border border-purple-200 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-purple-200/90 text-purple-900 shrink-0">
-                <ShieldCheck className="w-4 h-4" />
+            {/* Card 3: Udzur Syar'i / Izin */}
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-purple-200 dark:border-purple-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700 shrink-0">
+                <ShieldCheck className="w-5 h-5" />
               </div>
-              <div>
-                <div className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Udzur Syar'i / Izin</div>
-                <div className="text-lg sm:text-xl font-heading font-black text-purple-950 mt-0.5">
-                  {sholatPeriodStats.sumUdzurDzuhur + sholatPeriodStats.sumUdzurAshar} <span className="text-xs font-medium text-purple-700">catatan</span>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wide">
+                  Udzur Syar&apos;i / Izin
                 </div>
-                <div className="text-[11px] text-purple-700 font-bold mt-0.5">
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                  {sholatPeriodStats.sumUdzurDzuhur + sholatPeriodStats.sumUdzurAshar}{' '}
+                  <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
+                    catatan
+                  </span>
+                </div>
+                <div className="text-xs text-purple-800 dark:text-purple-300 font-bold mt-0.5">
                   Dzuhur: {sholatPeriodStats.sumUdzurDzuhur} • Ashar: {sholatPeriodStats.sumUdzurAshar}
                 </div>
               </div>
             </div>
 
-            <div className="p-3.5 sm:p-4 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-emerald-200/90 text-emerald-900 shrink-0">
-                <CheckCircle2 className="w-4 h-4" />
+            {/* Card 4: Total Presensi Shalat */}
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-emerald-200 dark:border-emerald-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
               </div>
-              <div>
-                <div className="text-xs font-semibold text-emerald-900 uppercase tracking-wide">Total Presensi Shalat</div>
-                <div className="text-lg sm:text-xl font-heading font-black text-emerald-950 mt-0.5">
-                  {sholatPeriodStats.sumDzuhur + sholatPeriodStats.sumAshar} <span className="text-xs font-medium text-emerald-700">presensi</span>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">
+                  Total Presensi Shalat
                 </div>
-                <div className="text-[11px] text-emerald-700 font-bold mt-0.5 truncate">
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                  {sholatPeriodStats.sumDzuhur + sholatPeriodStats.sumAshar}{' '}
+                  <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
+                    presensi
+                  </span>
+                </div>
+                <div className="text-xs text-emerald-800 dark:text-emerald-300 font-bold mt-0.5 truncate">
                   Puncak: {sholatPeriodStats.peakDzuhur.label}
                 </div>
               </div>
@@ -563,20 +587,22 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
           {sholatSessionFilter === 'split' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* CHART 1: SESI SHALAT DZUHUR */}
-              <div className="bg-slate-50/70 p-5 rounded-2xl border border-teal-200 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-teal-100">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 bg-teal-100 text-teal-800 rounded-lg text-sm">🕌</span>
+              <div className="bg-slate-50 dark:bg-slate-800/90 p-5 rounded-2xl border border-teal-200 dark:border-teal-800/80 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700 rounded-xl text-sm">
+                      🕌
+                    </span>
                     <div>
-                      <h4 className="font-heading font-black text-slate-900 text-sm sm:text-base">
+                      <h4 className="font-heading font-black text-slate-900 dark:text-white text-sm sm:text-base">
                         Tren Sesi Sholat Dzuhur
                       </h4>
-                      <p className="text-[11px] text-slate-500 font-medium">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                         Kehadiran sholat Dzuhur berjamaah di musholla
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-teal-100 text-teal-800 border border-teal-200">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-900 dark:text-teal-300 border border-teal-300 dark:border-teal-700">
                     Sesi Dzuhur
                   </span>
                 </div>
@@ -587,30 +613,30 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
                       data={chartData}
                       margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
                       <XAxis
                         dataKey="label"
                         stroke="#64748B"
-                        fontSize={11}
+                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
                         tickLine={false}
-                        axisLine={{ stroke: '#CBD5E1' }}
+                        axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                         interval={rangeMode === 'monthly' ? 4 : 0}
                       />
                       <YAxis
                         stroke="#64748B"
-                        fontSize={11}
+                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
                         tickLine={false}
-                        axisLine={{ stroke: '#CBD5E1' }}
+                        axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                         allowDecimals={false}
                       />
                       <Tooltip content={<CustomDzuhurTooltip />} />
                       <Legend
                         verticalAlign="top"
                         align="right"
-                        wrapperStyle={{ paddingBottom: '10px', fontSize: '11px' }}
+                        wrapperStyle={{ paddingBottom: '10px', fontSize: '12px' }}
                         formatter={(val) => {
-                          if (val === 'dzuhurTerlaksana') return <span className="text-teal-900 font-bold">Terlaksana (Hadir)</span>;
-                          if (val === 'dzuhurBerhalangan') return <span className="text-purple-900 font-bold">Berhalangan (Udzur)</span>;
+                          if (val === 'dzuhurTerlaksana') return <span className="text-teal-800 dark:text-teal-300 font-bold">Terlaksana (Hadir)</span>;
+                          if (val === 'dzuhurBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur)</span>;
                           return val;
                         }}
                       />
@@ -634,20 +660,22 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
               </div>
 
               {/* CHART 2: SESI SHALAT ASHAR */}
-              <div className="bg-slate-50/70 p-5 rounded-2xl border border-sky-200 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-sky-100">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 bg-sky-100 text-sky-800 rounded-lg text-sm">🕌</span>
+              <div className="bg-slate-50 dark:bg-slate-800/90 p-5 rounded-2xl border border-sky-200 dark:border-sky-800/80 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700 rounded-xl text-sm">
+                      🕌
+                    </span>
                     <div>
-                      <h4 className="font-heading font-black text-slate-900 text-sm sm:text-base">
+                      <h4 className="font-heading font-black text-slate-900 dark:text-white text-sm sm:text-base">
                         Tren Sesi Sholat Ashar
                       </h4>
-                      <p className="text-[11px] text-slate-500 font-medium">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                         Kehadiran sholat Ashar berjamaah sebelum kepulangan
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-300 border border-sky-300 dark:border-sky-700">
                     Sesi Ashar
                   </span>
                 </div>
@@ -658,30 +686,30 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
                       data={chartData}
                       margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
                       <XAxis
                         dataKey="label"
                         stroke="#64748B"
-                        fontSize={11}
+                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
                         tickLine={false}
-                        axisLine={{ stroke: '#CBD5E1' }}
+                        axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                         interval={rangeMode === 'monthly' ? 4 : 0}
                       />
                       <YAxis
                         stroke="#64748B"
-                        fontSize={11}
+                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
                         tickLine={false}
-                        axisLine={{ stroke: '#CBD5E1' }}
+                        axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                         allowDecimals={false}
                       />
                       <Tooltip content={<CustomAsharTooltip />} />
                       <Legend
                         verticalAlign="top"
                         align="right"
-                        wrapperStyle={{ paddingBottom: '10px', fontSize: '11px' }}
+                        wrapperStyle={{ paddingBottom: '10px', fontSize: '12px' }}
                         formatter={(val) => {
-                          if (val === 'asharTerlaksana') return <span className="text-sky-900 font-bold">Terlaksana (Hadir)</span>;
-                          if (val === 'asharBerhalangan') return <span className="text-purple-900 font-bold">Berhalangan (Udzur)</span>;
+                          if (val === 'asharTerlaksana') return <span className="text-sky-800 dark:text-sky-300 font-bold">Terlaksana (Hadir)</span>;
+                          if (val === 'asharBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur)</span>;
                           return val;
                         }}
                       />
@@ -708,18 +736,18 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
 
           {/* 2. OPTION 'DZUHUR': Fokus Tampilan Penuh Sesi Sholat Dzuhur */}
           {sholatSessionFilter === 'dzuhur' && (
-            <div className="bg-slate-50/70 p-6 rounded-2xl border border-teal-200 space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-800/90 p-6 rounded-2xl border border-teal-200 dark:border-teal-800/80 space-y-4 shadow-2xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-700">
                 <div>
-                  <h4 className="font-heading font-black text-teal-950 text-base sm:text-lg flex items-center gap-2">
+                  <h4 className="font-heading font-black text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
                     <span>🕌</span> Grafik Detail Tren Sesi Shalat Dzuhur
                   </h4>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                     Analisis kehadiran shalat Dzuhur berjamaah vs berhalangan vs nihil presensi
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-bold text-teal-800 bg-teal-100 px-3 py-1 rounded-full">
+                  <span className="text-xs font-bold text-teal-900 dark:text-teal-300 bg-teal-100 dark:bg-teal-950 border border-teal-300 dark:border-teal-700 px-3 py-1 rounded-full">
                     Rata-rata: {sholatPeriodStats.avgDzuhur} siswa ({sholatPeriodStats.avgDzuhurPercent}%)
                   </span>
                 </div>
@@ -731,20 +759,20 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
                     data={chartData}
                     margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
                     <XAxis
                       dataKey="label"
                       stroke="#64748B"
-                      fontSize={11}
+                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
                       tickLine={false}
-                      axisLine={{ stroke: '#CBD5E1' }}
+                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                       interval={rangeMode === 'monthly' ? 4 : 0}
                     />
                     <YAxis
                       stroke="#64748B"
-                      fontSize={11}
+                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
                       tickLine={false}
-                      axisLine={{ stroke: '#CBD5E1' }}
+                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                       allowDecimals={false}
                     />
                     <Tooltip content={<CustomDzuhurTooltip />} />
@@ -753,8 +781,8 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
                       align="right"
                       wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
                       formatter={(val) => {
-                        if (val === 'dzuhurTerlaksana') return <span className="text-teal-900 font-bold">Terlaksana (Hadir)</span>;
-                        if (val === 'dzuhurBerhalangan') return <span className="text-purple-900 font-bold">Berhalangan (Udzur Syar'i)</span>;
+                        if (val === 'dzuhurTerlaksana') return <span className="text-teal-800 dark:text-teal-300 font-bold">Terlaksana (Hadir)</span>;
+                        if (val === 'dzuhurBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur Syar&apos;i)</span>;
                         return val;
                       }}
                     />
@@ -780,18 +808,18 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
 
           {/* 3. OPTION 'ASHAR': Fokus Tampilan Penuh Sesi Sholat Ashar */}
           {sholatSessionFilter === 'ashar' && (
-            <div className="bg-slate-50/70 p-6 rounded-2xl border border-sky-200 space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-800/90 p-6 rounded-2xl border border-sky-200 dark:border-sky-800/80 space-y-4 shadow-2xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-700">
                 <div>
-                  <h4 className="font-heading font-black text-sky-950 text-base sm:text-lg flex items-center gap-2">
+                  <h4 className="font-heading font-black text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
                     <span>🕌</span> Grafik Detail Tren Sesi Shalat Ashar
                   </h4>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                     Analisis kehadiran shalat Ashar berjamaah sebelum pulang sekolah
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-bold text-sky-800 bg-sky-100 px-3 py-1 rounded-full">
+                  <span className="text-xs font-bold text-sky-900 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 border border-sky-300 dark:border-sky-700 px-3 py-1 rounded-full">
                     Rata-rata: {sholatPeriodStats.avgAshar} siswa ({sholatPeriodStats.avgAsharPercent}%)
                   </span>
                 </div>
@@ -803,20 +831,20 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
                     data={chartData}
                     margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
                     <XAxis
                       dataKey="label"
                       stroke="#64748B"
-                      fontSize={11}
+                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
                       tickLine={false}
-                      axisLine={{ stroke: '#CBD5E1' }}
+                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                       interval={rangeMode === 'monthly' ? 4 : 0}
                     />
                     <YAxis
                       stroke="#64748B"
-                      fontSize={11}
+                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
                       tickLine={false}
-                      axisLine={{ stroke: '#CBD5E1' }}
+                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                       allowDecimals={false}
                     />
                     <Tooltip content={<CustomAsharTooltip />} />
@@ -825,8 +853,8 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
                       align="right"
                       wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
                       formatter={(val) => {
-                        if (val === 'asharTerlaksana') return <span className="text-sky-900 font-bold">Terlaksana (Hadir)</span>;
-                        if (val === 'asharBerhalangan') return <span className="text-purple-900 font-bold">Berhalangan (Udzur Syar'i)</span>;
+                        if (val === 'asharTerlaksana') return <span className="text-sky-800 dark:text-sky-300 font-bold">Terlaksana (Hadir)</span>;
+                        if (val === 'asharBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur Syar&apos;i)</span>;
                         return val;
                       }}
                     />
@@ -852,21 +880,21 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
 
           {/* 4. OPTION 'COMPARE': Perbandingan Langsung Dzuhur vs Ashar */}
           {sholatSessionFilter === 'compare' && (
-            <div className="bg-slate-50/70 p-6 rounded-2xl border border-indigo-200 space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-800/90 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-800/80 space-y-4 shadow-2xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-700">
                 <div>
-                  <h4 className="font-heading font-black text-indigo-950 text-base sm:text-lg flex items-center gap-2">
+                  <h4 className="font-heading font-black text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
                     <span>⚖️</span> Komparasi Kehadiran Sesi Dzuhur vs Sesi Ashar
                   </h4>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                     Perbandingan langsung jumlah siswa yang shalat di sesi Dzuhur vs sesi Ashar
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-teal-800 bg-teal-100 px-2.5 py-1 rounded-full">
+                  <span className="text-xs font-bold text-teal-900 dark:text-teal-300 bg-teal-100 dark:bg-teal-950 border border-teal-300 dark:border-teal-700 px-2.5 py-1 rounded-full">
                     Dzuhur: ~{sholatPeriodStats.avgDzuhurPercent}%
                   </span>
-                  <span className="text-xs font-bold text-sky-800 bg-sky-100 px-2.5 py-1 rounded-full">
+                  <span className="text-xs font-bold text-sky-900 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 border border-sky-300 dark:border-sky-700 px-2.5 py-1 rounded-full">
                     Ashar: ~{sholatPeriodStats.avgAsharPercent}%
                   </span>
                 </div>
@@ -878,63 +906,69 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
                     data={chartData}
                     margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
                     <XAxis
                       dataKey="label"
                       stroke="#64748B"
-                      fontSize={11}
+                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
                       tickLine={false}
-                      axisLine={{ stroke: '#CBD5E1' }}
+                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                       interval={rangeMode === 'monthly' ? 4 : 0}
                     />
                     <YAxis
                       stroke="#64748B"
-                      fontSize={11}
+                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
                       tickLine={false}
-                      axisLine={{ stroke: '#CBD5E1' }}
+                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
                       allowDecimals={false}
                     />
-                    <Tooltip content={(props) => {
-                      if (props.active && props.payload && props.payload.length) {
-                        const data = props.payload[0].payload;
-                        return (
-                          <div className="bg-slate-900 text-white p-4 rounded-xl shadow-xl border border-slate-700 text-xs space-y-2 min-w-[210px]">
-                            <div className="font-bold text-sm text-indigo-200 border-b border-slate-800 pb-1.5 flex items-center justify-between">
-                              <span>{data.label}</span>
-                              <span className="text-slate-400 font-mono text-[11px]">{data.dateStr}</span>
+                    <Tooltip
+                      content={(props) => {
+                        if (props.active && props.payload && props.payload.length) {
+                          const data = props.payload[0].payload;
+                          return (
+                            <div className="bg-slate-900 text-white p-4 rounded-xl shadow-xl border border-slate-700 text-xs space-y-2 min-w-[210px]">
+                              <div className="font-bold text-sm text-indigo-200 border-b border-slate-800 pb-1.5 flex items-center justify-between">
+                                <span>{data.label}</span>
+                                <span className="text-slate-400 font-mono text-[11px]">{data.dateStr}</span>
+                              </div>
+                              <div className="space-y-1.5 pt-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1.5 text-teal-400 font-medium">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-teal-500 inline-block" />
+                                    Sholat Dzuhur:
+                                  </span>
+                                  <span className="font-bold font-mono text-teal-300">
+                                    {data.dzuhurTerlaksana} siswa ({data.dzuhurPersen}%)
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1.5 text-sky-400 font-medium">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
+                                    Sholat Ashar:
+                                  </span>
+                                  <span className="font-bold font-mono text-sky-300">
+                                    {data.asharTerlaksana} siswa ({data.asharPersen}%)
+                                  </span>
+                                </div>
+                                <div className="border-t border-slate-800 pt-1.5 flex items-center justify-between font-bold text-slate-100">
+                                  <span>Total Ibadah Hari Ini:</span>
+                                  <span className="font-mono text-white">{data.totalSholat} presensi</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="space-y-1.5 pt-1">
-                              <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-1.5 text-teal-400 font-medium">
-                                  <span className="w-2.5 h-2.5 rounded-full bg-teal-500 inline-block" />
-                                  Sholat Dzuhur:
-                                </span>
-                                <span className="font-bold font-mono text-teal-300">{data.dzuhurTerlaksana} siswa ({data.dzuhurPersen}%)</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-1.5 text-sky-400 font-medium">
-                                  <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
-                                  Sholat Ashar:
-                                </span>
-                                <span className="font-bold font-mono text-sky-300">{data.asharTerlaksana} siswa ({data.asharPersen}%)</span>
-                              </div>
-                              <div className="border-t border-slate-800 pt-1.5 flex items-center justify-between font-bold text-slate-100">
-                                <span>Total Ibadah Hari Ini:</span>
-                                <span className="font-mono text-white">{data.totalSholat} presensi</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }} />
+                          );
+                        }
+                        return null;
+                      }}
+                    />
                     <Legend
                       verticalAlign="top"
                       align="right"
                       wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
                       formatter={(val) => {
-                        if (val === 'dzuhurTerlaksana') return <span className="text-teal-900 font-bold">Dzuhur (Terlaksana)</span>;
-                        if (val === 'asharTerlaksana') return <span className="text-sky-900 font-bold">Ashar (Terlaksana)</span>;
+                        if (val === 'dzuhurTerlaksana') return <span className="text-teal-800 dark:text-teal-300 font-bold">Dzuhur (Terlaksana)</span>;
+                        if (val === 'asharTerlaksana') return <span className="text-sky-800 dark:text-sky-300 font-bold">Ashar (Terlaksana)</span>;
                         return val;
                       }}
                     />
@@ -959,51 +993,68 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
       ) : (
         /* VIEW: TREN PRESENSI KBM (MASUK & PULANG) */
         <div className="space-y-6">
-          {/* Mini KPI Highlights for KBM */}
+          {/* Mini KPI Highlights for KBM — High Contrast Solid Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="p-3.5 sm:p-4 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-blue-200/80 text-blue-900 shrink-0">
-                <Users className="w-4 h-4" />
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-blue-200 dark:border-blue-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shrink-0">
+                <Users className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Rata-rata Hadir</div>
-                <div className="text-lg sm:text-xl font-heading font-black text-blue-950 mt-0.5">
-                  {kbmPeriodStats.avgHadir} <span className="text-xs font-medium text-slate-500">siswa/hari</span>
+                <div className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide">
+                  Rata-rata Hadir
+                </div>
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                  {kbmPeriodStats.avgHadir}{' '}
+                  <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
+                    siswa/hari
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="p-3.5 sm:p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-emerald-200/80 text-emerald-800 shrink-0">
-                <CheckCircle2 className="w-4 h-4" />
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-emerald-200 dark:border-emerald-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-emerald-800 uppercase tracking-wide">Tepat Waktu</div>
-                <div className="text-lg sm:text-xl font-heading font-black text-emerald-900 mt-0.5">
-                  {kbmPeriodStats.totalTepatWaktu} <span className="text-xs font-medium text-emerald-700">presensi</span>
+                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">
+                  Tepat Waktu
+                </div>
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                  {kbmPeriodStats.totalTepatWaktu}{' '}
+                  <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
+                    presensi
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="p-3.5 sm:p-4 rounded-xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-amber-200/80 text-amber-900 shrink-0">
-                <AlertTriangle className="w-4 h-4" />
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-amber-200 dark:border-amber-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Terlambat</div>
-                <div className="text-lg sm:text-xl font-heading font-black text-amber-900 mt-0.5">
-                  {kbmPeriodStats.totalTerlambat} <span className="text-xs font-medium text-amber-700">presensi</span>
+                <div className="text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wide">
+                  Terlambat
+                </div>
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                  {kbmPeriodStats.totalTerlambat}{' '}
+                  <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
+                    presensi
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="p-3.5 sm:p-4 rounded-xl bg-purple-50/70 border border-purple-200/80 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-purple-200/80 text-purple-900 shrink-0">
-                <Clock className="w-4 h-4" />
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-purple-200 dark:border-purple-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-700 shrink-0">
+                <Clock className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-purple-800 uppercase tracking-wide">Puncak Hadir</div>
-                <div className="text-lg sm:text-xl font-heading font-black text-purple-950 mt-0.5 truncate">
+                <div className="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wide">
+                  Puncak Hadir
+                </div>
+                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5 truncate">
                   {kbmPeriodStats.highestAttendance.label}
                 </div>
               </div>
@@ -1011,63 +1062,65 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
           </div>
 
           {/* Main Recharts Graphic Container for KBM */}
-          <div className="w-full h-72 sm:h-80 pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis
-                  dataKey="label"
-                  stroke="#64748B"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={{ stroke: '#CBD5E1' }}
-                  interval={rangeMode === 'monthly' ? 4 : 0}
-                />
-                <YAxis
-                  stroke="#64748B"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={{ stroke: '#CBD5E1' }}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomKbmTooltip />} />
-                <Legend
-                  verticalAlign="top"
-                  align="right"
-                  wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
-                  iconType="circle"
-                  formatter={(value) => {
-                    if (value === 'tepatWaktu') return <span className="text-slate-700 font-bold">Tepat Waktu</span>;
-                    if (value === 'terlambat') return <span className="text-slate-700 font-bold">Terlambat</span>;
-                    if (value === 'pulang') return <span className="text-slate-700 font-bold">Sudah Pulang</span>;
-                    return value;
-                  }}
-                />
-                <Bar
-                  dataKey="tepatWaktu"
-                  name="tepatWaktu"
-                  fill="#10B981"
-                  stackId="a"
-                  radius={[0, 0, 0, 0]}
-                />
-                <Bar
-                  dataKey="terlambat"
-                  name="terlambat"
-                  fill="#F59E0B"
-                  stackId="a"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar
-                  dataKey="pulang"
-                  name="pulang"
-                  fill="#2563EB"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="bg-slate-50 dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <div className="w-full h-72 sm:h-80 pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#64748B"
+                    tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
+                    interval={rangeMode === 'monthly' ? 4 : 0}
+                  />
+                  <YAxis
+                    stroke="#64748B"
+                    tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomKbmTooltip />} />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
+                    iconType="circle"
+                    formatter={(value) => {
+                      if (value === 'tepatWaktu') return <span className="text-emerald-800 dark:text-emerald-300 font-bold">Tepat Waktu</span>;
+                      if (value === 'terlambat') return <span className="text-amber-800 dark:text-amber-300 font-bold">Terlambat</span>;
+                      if (value === 'pulang') return <span className="text-blue-800 dark:text-blue-300 font-bold">Sudah Pulang</span>;
+                      return value;
+                    }}
+                  />
+                  <Bar
+                    dataKey="tepatWaktu"
+                    name="tepatWaktu"
+                    fill="#10B981"
+                    stackId="a"
+                    radius={[0, 0, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="terlambat"
+                    name="terlambat"
+                    fill="#F59E0B"
+                    stackId="a"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="pulang"
+                    name="pulang"
+                    fill="#2563EB"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       )}
