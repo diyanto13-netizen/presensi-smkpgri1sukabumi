@@ -34,6 +34,7 @@ import { Siswa, Absensi, SchoolConfig } from './types';
 import {
   getStoredStudents,
   saveStudents,
+  deduplicateStudents,
   getStoredAttendance,
   saveAttendance,
   getSchoolConfig,
@@ -117,29 +118,23 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Sync from Cloud Database (PostgreSQL & Firebase Firestore)
+  // Sync from Cloud Database (PostgreSQL & Firebase Firestore) with strict anti-duplication
   const syncFromDatabase = async (showNotice: boolean = false) => {
     setIsSyncing(true);
     try {
-      // 1. Attempt API fetch (Cloud SQL PostgreSQL)
-      const [remoteConfig, remoteStudents, remoteAttendance] = await Promise.all([
+      // 1. Attempt API fetch (Cloud SQL PostgreSQL) & Firestore fetch
+      const [remoteConfig, remoteStudents, remoteAttendance, firestoreStudents] = await Promise.all([
         fetchSchoolConfigApi(),
         fetchStudentsApi(),
         fetchAttendanceApi('all'),
+        getStudentsFromFirestore(),
       ]);
 
       let finalConfig = remoteConfig;
-      let finalStudents = remoteStudents;
+      let finalStudents = remoteStudents && remoteStudents.length > 0 ? remoteStudents : firestoreStudents;
       let finalAttendance = remoteAttendance;
 
-      // 2. If API was unavailable or returned empty (e.g. running on Vercel without express backend), fallback to Firebase Firestore
-      if (!finalStudents || finalStudents.length === 0) {
-        const firestoreStudents = await getStudentsFromFirestore();
-        if (firestoreStudents && firestoreStudents.length > 0) {
-          finalStudents = firestoreStudents;
-        }
-      }
-
+      // 2. Fallback to Firebase Firestore for attendance & config if API was unavailable or empty
       if (!finalAttendance || finalAttendance.length === 0) {
         const firestoreAttendance = await getAttendanceFromFirestore();
         if (firestoreAttendance && firestoreAttendance.length > 0) {
@@ -160,37 +155,26 @@ export default function App() {
         saveSchoolConfig(finalConfig);
       }
 
-      // 4. Apply resolved students with protective merge (prevents real students from being overwritten by stale sample data)
-      const local = getStoredStudents();
-      const hasLocalXII = local && local.some(s => s.kelas === 'XII TKJ 2');
-      const hasRemoteXII = finalStudents && finalStudents.some(s => s.kelas === 'XII TKJ 2');
+      // 4. Deduplicate & resolve students (prevents any 23 -> 46 duplication between Local, PostgreSQL & Firestore)
+      const local = deduplicateStudents(getStoredStudents());
+      const cleanRemote = deduplicateStudents(finalStudents || []);
+      const cleanFirestore = deduplicateStudents(firestoreStudents || []);
 
-      if (hasLocalXII && !hasRemoteXII) {
-        // Local has real XII TKJ 2 students, never let stale remote overwrite it; push local to cloud
-        setStudents(local);
-        saveStudents(local);
-        syncAllStudentsApi(local).catch(() => {});
-        syncStudentsToFirestore(local).catch(() => {});
-      } else if (finalStudents && finalStudents.length > 0) {
-        if (local && local.length > finalStudents.length) {
-          // Local has more records (e.g. newly imported), merge and update cloud
-          const mergedMap = new Map<string, Siswa>();
-          finalStudents.forEach(s => mergedMap.set(s.nis, s));
-          local.forEach(s => mergedMap.set(s.nis, s));
-          const merged = Array.from(mergedMap.values());
-          setStudents(merged);
-          saveStudents(merged);
-          syncAllStudentsApi(merged).catch(() => {});
-          syncStudentsToFirestore(merged).catch(() => {});
-        } else {
-          setStudents(finalStudents);
-          saveStudents(finalStudents);
-        }
-      } else if (local && local.length > 0) {
-        setStudents(local);
-        saveStudents(local);
-        syncAllStudentsApi(local).catch(() => {});
-        syncStudentsToFirestore(local).catch(() => {});
+      let resolvedStudents: Siswa[] = [];
+      if (cleanRemote.length > 0 || local.length > 0) {
+        // Merge remote + firestore + local through strict NIS & (Nama+Kelas) deduplication
+        // Placing local last ensures any custom uploaded photo in local is preserved by deduplicateStudents
+        resolvedStudents = deduplicateStudents([...cleanFirestore, ...cleanRemote, ...local]);
+      }
+
+      if (resolvedStudents.length > 0) {
+        setStudents(resolvedStudents);
+        saveStudents(resolvedStudents);
+        // Clean up any duplicate documents in PostgreSQL and Firestore so cloud stays strictly deduplicated
+        await Promise.allSettled([
+          syncAllStudentsApi(resolvedStudents),
+          syncStudentsToFirestore(resolvedStudents, true),
+        ]);
       }
 
       // 5. Apply resolved attendance records
@@ -206,7 +190,9 @@ export default function App() {
       }
 
       if (showNotice) {
-        setSyncNotice(`Sinkronisasi Cloud berhasil! ${finalStudents?.length || 0} siswa dan ${finalAttendance?.length || 0} log absensi aktif.`);
+        setSyncNotice(
+          `Sinkronisasi Cloud berhasil! ${resolvedStudents.length} siswa unik (bebas duplikat) dan ${finalAttendance?.length || 0} log absensi aktif.`
+        );
         setTimeout(() => setSyncNotice(null), 4000);
       }
     } catch (err) {
@@ -222,8 +208,8 @@ export default function App() {
 
   // Load stored state on initial render and sync with Cloud Database
   useEffect(() => {
-    // 1. Initial instant load from localStorage
-    const localStudents = getStoredStudents();
+    // 1. Initial instant load from localStorage (automatically deduplicated)
+    const localStudents = deduplicateStudents(getStoredStudents());
     const localAttendance = getStoredAttendance();
     const localConfig = getSchoolConfig();
 
@@ -242,30 +228,34 @@ export default function App() {
   const handlePushLocalToCloud = async () => {
     setIsSyncing(true);
     try {
+      const cleanStudents = deduplicateStudents(students);
+      setStudents(cleanStudents);
+      saveStudents(cleanStudents);
+
       await Promise.allSettled([
         saveSchoolConfigApi(schoolConfig),
-        syncAllStudentsApi(students),
+        syncAllStudentsApi(cleanStudents),
         attendanceRecords.length > 0 ? bulkSaveAttendanceApi(attendanceRecords) : Promise.resolve(true),
-        syncStudentsToFirestore(students),
+        syncStudentsToFirestore(cleanStudents, true),
         saveSchoolConfigToFirestore(schoolConfig),
         attendanceRecords.length > 0 ? bulkSaveAttendanceToFirestore(attendanceRecords) : Promise.resolve(true),
       ]);
-      setSyncNotice(`Berhasil mengunggah ${students.length} data siswa dan konfigurasi ke Cloud Database (PostgreSQL & Firebase Firestore)!`);
+      setSyncNotice(`Berhasil menyinkronkan ${cleanStudents.length} data siswa unik (tanpa duplikat) ke Cloud Database (PostgreSQL & Firebase Firestore)!`);
       setTimeout(() => setSyncNotice(null), 4000);
     } catch (e) {
       console.error(e);
-      alert('Gagal mengunggah ke Cloud Database.');
     } finally {
       setIsSyncing(false);
     }
   };
 
-  // Update students handler (persisted locally, PostgreSQL, and Firestore)
+  // Update students handler (persisted locally, PostgreSQL, and Firestore — always deduplicated)
   const handleUpdateStudents = (updated: Siswa[]) => {
-    setStudents(updated);
-    saveStudents(updated);
-    syncAllStudentsApi(updated);
-    syncStudentsToFirestore(updated).catch(e => console.warn('Firestore sync students warning:', e));
+    const cleanUpdated = deduplicateStudents(updated);
+    setStudents(cleanUpdated);
+    saveStudents(cleanUpdated);
+    syncAllStudentsApi(cleanUpdated);
+    syncStudentsToFirestore(cleanUpdated, true).catch(e => console.warn('Firestore sync students warning:', e));
   };
 
   // Record single attendance event handler (persisted locally, PostgreSQL, and Firestore)

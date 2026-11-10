@@ -370,6 +370,96 @@ const STORAGE_KEYS = {
   CONFIG: 'pgri_sukabumi_config_v1',
 };
 
+function isCustomPhoto(url?: string): boolean {
+  if (!url) return false;
+  if (url.startsWith('data:image/')) return true;
+  if (!url.includes('images.unsplash.com')) return true;
+  return false;
+}
+
+/**
+ * Deduplicates students by NIS and by (Nama + Kelas), removes legacy sample dummy records,
+ * and normalizes student IDs to canonical `s-${nis}` format so Cloud Sync never duplicates records.
+ */
+export function deduplicateStudents(list: Siswa[]): Siswa[] {
+  if (!Array.isArray(list) || list.length === 0) return [];
+
+  // Check if real student records exist (e.g. XII TKJ 2 or non-sample NIS)
+  const hasRealStudents = list.some(
+    s =>
+      s &&
+      s.nis &&
+      !String(s.nis).trim().startsWith('232410') &&
+      !/^s-([1-9]|[12]\d|30)$/.test(String(s.id || '').trim())
+  );
+
+  const byNis = new Map<string, Siswa>();
+  const byNameClass = new Map<string, string>(); // normalized "nama|kelas" -> canonical nis
+
+  for (const raw of list) {
+    if (!raw || (!raw.nis && !raw.nama)) continue;
+
+    const cleanNis = String(raw.nis || '').trim();
+    const cleanNama = String(raw.nama || '').trim();
+    const cleanKelas = String(raw.kelas || 'XII TKJ 2').trim();
+    const rawId = String(raw.id || '').trim();
+
+    if (!cleanNis || !cleanNama) continue;
+
+    // Filter out old built-in sample dummy records if real students are present
+    const isOldSampleDummy =
+      hasRealStudents &&
+      (/^s-([1-9]|[12]\d|30)$/.test(rawId) ||
+        /^232410\d{2}$/.test(cleanNis) ||
+        /^242510\d{2}$/.test(cleanNis));
+
+    if (isOldSampleDummy) {
+      continue;
+    }
+
+    const nameClassKey = `${cleanNama.toLowerCase().replace(/\s+/g, ' ')}|${cleanKelas.toLowerCase().replace(/\s+/g, ' ')}`;
+    const existingNisForSameName = byNameClass.get(nameClassKey);
+    const targetKey = existingNisForSameName || cleanNis;
+
+    const canonicalStudent: Siswa = {
+      ...raw,
+      id: `s-${targetKey}`,
+      nis: targetKey,
+      nama: cleanNama,
+      kelas: cleanKelas,
+    };
+
+    const existing = byNis.get(targetKey);
+    if (!existing) {
+      byNis.set(targetKey, canonicalStudent);
+      byNameClass.set(nameClassKey, targetKey);
+    } else {
+      // Merge: prefer custom uploaded photo (data:image/...) and non-empty fields
+      const preferredFoto = isCustomPhoto(canonicalStudent.foto_url)
+        ? canonicalStudent.foto_url
+        : isCustomPhoto(existing.foto_url)
+        ? existing.foto_url
+        : canonicalStudent.foto_url || existing.foto_url;
+
+      byNis.set(targetKey, {
+        ...existing,
+        ...canonicalStudent,
+        id: `s-${targetKey}`,
+        nis: targetKey,
+        nisn: canonicalStudent.nisn || existing.nisn,
+        nama_ortu: canonicalStudent.nama_ortu || existing.nama_ortu,
+        no_wa_ortu:
+          canonicalStudent.no_wa_ortu && canonicalStudent.no_wa_ortu !== '-'
+            ? canonicalStudent.no_wa_ortu
+            : existing.no_wa_ortu,
+        foto_url: preferredFoto,
+      });
+    }
+  }
+
+  return Array.from(byNis.values());
+}
+
 export function getStoredStudents(): Siswa[] {
   if (typeof window === 'undefined') return INITIAL_STUDENTS;
   try {
@@ -379,15 +469,15 @@ export function getStoredStudents(): Siswa[] {
       return INITIAL_STUDENTS;
     }
     const parsed: Siswa[] = JSON.parse(raw);
-    
+
     // Auto-migrate any old dummy classes (e.g., RPL/TKRO) to official classes
     let hasChanges = false;
     const migrated = parsed.map(s => {
       let changed = false;
       let newKelas = s.kelas;
       let newJurusan = s.jurusan;
-      
-      if (s.kelas.includes('RPL') || s.kelas.includes('TKRO')) {
+
+      if (s.kelas && (s.kelas.includes('RPL') || s.kelas.includes('TKRO'))) {
         changed = true;
         if (s.kelas.startsWith('XII')) {
           newKelas = s.kelas.includes('TKRO') ? 'XII BR 1' : 'XII TKJ 1';
@@ -398,7 +488,7 @@ export function getStoredStudents(): Siswa[] {
         }
         newJurusan = getJurusanByClassName(newKelas);
       }
-      
+
       if (changed) {
         hasChanges = true;
         return {
@@ -411,12 +501,12 @@ export function getStoredStudents(): Siswa[] {
       return s;
     });
 
-    if (hasChanges) {
-      saveStudents(migrated);
-      return migrated;
+    const deduplicated = deduplicateStudents(migrated);
+    if (hasChanges || deduplicated.length !== parsed.length) {
+      saveStudents(deduplicated);
     }
 
-    return parsed;
+    return deduplicated.length > 0 ? deduplicated : INITIAL_STUDENTS;
   } catch (err) {
     console.error('Failed to parse students from localStorage:', err);
     return INITIAL_STUDENTS;
@@ -426,7 +516,8 @@ export function getStoredStudents(): Siswa[] {
 export function saveStudents(students: Siswa[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEYS.SISWA, JSON.stringify(students));
+    const deduplicated = deduplicateStudents(students);
+    localStorage.setItem(STORAGE_KEYS.SISWA, JSON.stringify(deduplicated));
   } catch (err) {
     console.error('Failed to save students to localStorage:', err);
   }

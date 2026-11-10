@@ -11,21 +11,28 @@ import {
 import { db } from '../lib/firebase.ts';
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrors.ts';
 import { Siswa, Absensi, SchoolConfig } from '../types';
+import { deduplicateStudents } from '../utils/storage';
 
 const STUDENTS_COLLECTION = 'students';
 const ATTENDANCE_COLLECTION = 'attendance';
 const CONFIG_COLLECTION = 'school_config';
 const MAIN_CONFIG_DOC = 'main';
 
+function getCanonicalStudentDocId(nis?: string, fallbackId?: string): string {
+  const cleanNis = String(nis || '').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+  if (cleanNis) return `s-${cleanNis}`;
+  return fallbackId || `s-${Date.now()}`;
+}
+
 /**
- * Fetch all students from Firestore
+ * Fetch all students from Firestore (automatically deduplicated by NIS & Nama)
  */
 export async function getStudentsFromFirestore(): Promise<Siswa[]> {
   try {
     const colRef = collection(db, STUDENTS_COLLECTION);
     const snap = await getDocs(colRef);
     if (snap.empty) return [];
-    return snap.docs.map((d) => {
+    const rawList = snap.docs.map((d) => {
       const data = d.data();
       return {
         id: d.id,
@@ -42,6 +49,7 @@ export async function getStudentsFromFirestore(): Promise<Siswa[]> {
         foto_url: data.foto_url,
       } as Siswa;
     });
+    return deduplicateStudents(rawList);
   } catch (error) {
     console.warn('Firestore getStudents warning:', error);
     return [];
@@ -49,36 +57,28 @@ export async function getStudentsFromFirestore(): Promise<Siswa[]> {
 }
 
 /**
- * Sync batch of students to Firestore and prune any deleted documents
+ * Sync batch of students to Firestore and prune any deleted or duplicate documents
  */
 export async function syncStudentsToFirestore(
   studentsList: Siswa[],
   pruneDeleted: boolean = true
 ): Promise<boolean> {
   try {
+    const cleanStudents = deduplicateStudents(studentsList || []);
     const colRef = collection(db, STUDENTS_COLLECTION);
     const snap = await getDocs(colRef);
 
-    // Track active identifiers
+    // Track canonical active document IDs (strictly 1 document ID per unique NIS)
     const activeDocIds = new Set<string>();
-    const activeNis = new Set<string>();
-    const activeIds = new Set<string>();
-
-    (studentsList || []).forEach(s => {
-      const docId = s.id || `std_${s.nis.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+    cleanStudents.forEach(s => {
+      const docId = getCanonicalStudentDocId(s.nis, s.id);
       activeDocIds.add(docId);
-      if (s.id) activeIds.add(s.id);
-      if (s.nis) activeNis.add(String(s.nis).trim());
     });
 
-    // 1. Identify and delete documents in Firestore that are no longer in studentsList
+    // 1. Identify and delete ANY document in Firestore whose doc.id is not the canonical activeDocId
+    // (This removes both deleted students AND legacy duplicate documents like s-imp-... or old sample IDs)
     if (pruneDeleted) {
-      const toDeleteDocs = snap.docs.filter(d => {
-        const data = d.data();
-        const docNis = data.nis ? String(data.nis).trim() : '';
-        const docIdVal = data.id ? String(data.id) : '';
-        return !activeDocIds.has(d.id) && !activeIds.has(docIdVal) && (!docNis || !activeNis.has(docNis));
-      });
+      const toDeleteDocs = snap.docs.filter(d => !activeDocIds.has(d.id));
 
       if (toDeleteDocs.length > 0) {
         const BATCH_SIZE = 450;
@@ -91,15 +91,15 @@ export async function syncStudentsToFirestore(
       }
     }
 
-    // 2. Upsert the active students
-    if (studentsList && studentsList.length > 0) {
+    // 2. Upsert the deduplicated active students using canonical IDs
+    if (cleanStudents.length > 0) {
       const BATCH_SIZE = 450;
-      for (let i = 0; i < studentsList.length; i += BATCH_SIZE) {
-        const chunk = studentsList.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < cleanStudents.length; i += BATCH_SIZE) {
+        const chunk = cleanStudents.slice(i, i + BATCH_SIZE);
         const batch = writeBatch(db);
 
         for (const s of chunk) {
-          const studentId = s.id || `std_${s.nis.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+          const studentId = getCanonicalStudentDocId(s.nis, s.id);
           const docRef = doc(db, STUDENTS_COLLECTION, studentId);
           const payload: Record<string, any> = {
             id: studentId,
@@ -136,7 +136,7 @@ export async function syncStudentsToFirestore(
  * Save single student to Firestore
  */
 export async function saveStudentToFirestore(s: Siswa): Promise<boolean> {
-  const studentId = s.id || `std_${s.nis.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const studentId = getCanonicalStudentDocId(s.nis, s.id);
   const docRef = doc(db, STUDENTS_COLLECTION, studentId);
   try {
     const payload: Record<string, any> = {
@@ -482,7 +482,7 @@ export function subscribeStudentsFromFirestore(
           foto_url: data.foto_url,
         } as Siswa;
       });
-      onUpdate(list);
+      onUpdate(deduplicateStudents(list));
     },
     (error) => {
       if (onError) onError(error);

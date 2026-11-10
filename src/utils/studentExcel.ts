@@ -311,7 +311,7 @@ export function parseStudentRows(
       : getDefaultDepartureForClass(rawKelas);
 
     const studentData: Siswa = {
-      id: 's-imp-' + Date.now() + '-' + r,
+      id: `s-${cleanNis}`,
       nis: cleanNis,
       nisn: rawNisn || '',
       nama: rawNama,
