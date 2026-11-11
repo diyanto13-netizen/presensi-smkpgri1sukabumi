@@ -5,9 +5,8 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { getAllStudents, upsertStudent, bulkUpsertStudents, deleteStudentById, bulkDeleteStudentsByIds, syncAllStudents } from './src/db/students.ts';
 import { getAttendanceByDate, getAllAttendanceLogs, recordAttendanceLog, bulkUpdateAttendanceLogs, getAttendanceRecapStats, clearAttendanceLogs } from './src/db/attendance.ts';
-import { getDbSchoolConfig, saveDbSchoolConfig } from './src/db/config.ts';
+import { getDbSchoolConfig, saveDbSchoolConfig, getDbViolations, saveDbViolations } from './src/db/config.ts';
 import { getOrCreateUser } from './src/db/users.ts';
-import { ensureDatabaseSchema } from './src/db/index.ts';
 import { Absensi } from './src/types';
 
 dotenv.config();
@@ -18,7 +17,6 @@ const isProduction = process.env.NODE_ENV === 'production';
 const PORT = 3000;
 
 async function startServer() {
-  await ensureDatabaseSchema();
   const app = express();
   app.use(express.json({ limit: '10mb' }));
 
@@ -200,6 +198,28 @@ async function startServer() {
       res.json({ success: true, data: user });
     } catch (error: any) {
       console.error('Error syncing user with PostgreSQL:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // 5. Student Violations Routes (Poin Pelanggaran Siswa)
+  app.get('/api/violations', async (req, res) => {
+    try {
+      const list = await getDbViolations();
+      res.json({ success: true, data: list });
+    } catch (error: any) {
+      console.error('Error fetching violations from PostgreSQL:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.post('/api/violations', async (req, res) => {
+    try {
+      const list = Array.isArray(req.body) ? req.body : req.body.violations || [];
+      const ok = await saveDbViolations(list);
+      res.json({ success: ok, count: list.length });
+    } catch (error: any) {
+      console.error('Error saving violations to PostgreSQL:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   });

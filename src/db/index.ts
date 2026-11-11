@@ -34,25 +34,4 @@ const pool = createPool();
 // Initialize Drizzle with the pool and schema.
 export const db = drizzle(pool, { schema });
 
-// Ensure database columns are synchronized with schema (adds Dzuhur columns and drops Ashar columns)
-export const ensureDatabaseSchema = async () => {
-  try {
-    await pool.query(`
-      ALTER TABLE IF EXISTS "school_config"
-        ADD COLUMN IF NOT EXISTS "sholat_absen_enabled" boolean DEFAULT true NOT NULL,
-        ADD COLUMN IF NOT EXISTS "sholat_dzuhur_mulai" varchar(20) DEFAULT '11:45' NOT NULL,
-        ADD COLUMN IF NOT EXISTS "sholat_dzuhur_selesai" varchar(20) DEFAULT '13:15' NOT NULL,
-        DROP COLUMN IF EXISTS "sholat_ashar_mulai",
-        DROP COLUMN IF EXISTS "sholat_ashar_selesai";
-
-      ALTER TABLE IF EXISTS "attendance"
-        ADD COLUMN IF NOT EXISTS "jam_dzuhur" varchar(20),
-        ADD COLUMN IF NOT EXISTS "status_dzuhur" varchar(50),
-        DROP COLUMN IF EXISTS "jam_ashar",
-        DROP COLUMN IF EXISTS "status_ashar";
-    `);
-  } catch (err) {
-    console.warn('Database schema auto-sync warning:', err);
-  }
-};
 

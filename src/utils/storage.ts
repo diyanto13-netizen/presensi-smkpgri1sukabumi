@@ -1,4 +1,4 @@
-import { Siswa, Absensi, SchoolConfig } from '../types';
+import { Siswa, Absensi, SchoolConfig, PelanggaranSiswa } from '../types';
 import {
   DEFAULT_JAM_PULANG_PER_KELAS,
   DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
@@ -366,6 +366,7 @@ const STORAGE_KEYS = {
   SISWA: 'pgri_sukabumi_siswa_v1',
   ABSENSI: 'pgri_sukabumi_absensi_v1',
   CONFIG: 'pgri_sukabumi_config_v1',
+  PELANGGARAN: 'pgri_sukabumi_pelanggaran_v1',
 };
 
 function isCustomPhoto(url?: string): boolean {
@@ -539,6 +540,28 @@ export function saveAttendance(records: Absensi[]) {
     localStorage.setItem(STORAGE_KEYS.ABSENSI, JSON.stringify(records));
   } catch (err) {
     console.error('Failed to save attendance to localStorage:', err);
+  }
+}
+
+export function getStoredViolations(): PelanggaranSiswa[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.PELANGGARAN);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error('Failed to parse violations from localStorage:', err);
+    return [];
+  }
+}
+
+export function saveViolations(records: PelanggaranSiswa[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.PELANGGARAN, JSON.stringify(records));
+  } catch (err) {
+    console.error('Failed to save violations to localStorage:', err);
   }
 }
 

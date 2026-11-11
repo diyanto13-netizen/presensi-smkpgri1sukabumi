@@ -166,3 +166,30 @@ export async function resetAttendanceApi(tanggal?: string): Promise<boolean> {
   }
 }
 
+export async function fetchViolationsApi(): Promise<import('../types').PelanggaranSiswa[] | null> {
+  try {
+    const res = await fetch('/api/violations');
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.success && Array.isArray(json.data) ? json.data : null;
+  } catch (err) {
+    console.warn('API fetchViolations failed:', err);
+    return null;
+  }
+}
+
+export async function saveViolationsApi(violations: import('../types').PelanggaranSiswa[]): Promise<boolean> {
+  try {
+    const res = await fetch('/api/violations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ violations }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('API saveViolations failed:', err);
+    return false;
+  }
+}
+
+

@@ -1,6 +1,8 @@
 import ExcelJS from 'exceljs';
-import { Siswa, Absensi, SchoolConfig } from '../types';
-import { formatIndonesianDate } from './storage';
+import { Siswa, Absensi, SchoolConfig, PelanggaranSiswa } from '../types';
+import { formatIndonesianDate, getTodayDateString } from './storage';
+import { getStatusPembinaan } from './violationRules';
+import { MASTER_KELAS_LIST } from './classConfig';
 
 interface ExportParams {
   students: Siswa[];
@@ -780,4 +782,300 @@ export async function exportSholatAttendanceToExcel(params: ExportSholatParams):
   document.body.removeChild(anchor);
   window.URL.revokeObjectURL(url);
 }
+
+interface ExportViolationParams {
+  students: Siswa[];
+  violations: PelanggaranSiswa[];
+  selectedClass: string;
+  config: SchoolConfig;
+}
+
+export async function exportViolationReportToExcel(params: ExportViolationParams): Promise<void> {
+  const { students, violations, selectedClass, config } = params;
+  const todayStr = getTodayDateString();
+
+  const filteredStudents = students.filter(
+    s => selectedClass === 'ALL' || s.kelas === selectedClass
+  );
+  const filteredViolations = violations.filter(
+    v => selectedClass === 'ALL' || v.kelas === selectedClass
+  );
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = config.nama_sekolah || 'SMKS PGRI 1 Kota Sukabumi';
+  workbook.created = new Date();
+
+  // ================= SHEET 1: REKAP POIN PER SISWA =================
+  const wsSiswa = workbook.addWorksheet('Rekap Poin Per Siswa', {
+    pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+
+  wsSiswa.columns = [
+    { key: 'no', width: 6 },
+    { key: 'nis', width: 14 },
+    { key: 'nama', width: 28 },
+    { key: 'jk', width: 6 },
+    { key: 'kelas', width: 14 },
+    { key: 'jurusan', width: 26 },
+    { key: 'ringan', width: 12 },
+    { key: 'sedang', width: 12 },
+    { key: 'berat', width: 12 },
+    { key: 'totalPoin', width: 14 },
+    { key: 'statusPembinaan', width: 28 },
+    { key: 'tindakan', width: 36 },
+  ];
+
+  wsSiswa.mergeCells('A1:L1');
+  wsSiswa.getCell('A1').value = (config.nama_sekolah || 'SMKS PGRI 1 KOTA SUKABUMI').toUpperCase();
+  wsSiswa.getCell('A1').font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
+  wsSiswa.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  wsSiswa.mergeCells('A2:L2');
+  wsSiswa.getCell('A2').value = `LAPORAN REKAPITULASI POIN PELANGGARAN PER SISWA (${selectedClass === 'ALL' ? 'SEMUA KELAS' : 'KELAS ' + selectedClass})`;
+  wsSiswa.getCell('A2').font = { name: 'Arial', size: 11, bold: true };
+  wsSiswa.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  wsSiswa.mergeCells('A3:L3');
+  wsSiswa.getCell('A3').value = `Dicetak Tanggal: ${formatIndonesianDate(todayStr)} • NPSN: ${config.npsn}`;
+  wsSiswa.getCell('A3').font = { name: 'Arial', size: 9.5, italic: true, color: { argb: 'FF475569' } };
+  wsSiswa.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  const headerRow1 = wsSiswa.getRow(5);
+  headerRow1.height = 26;
+  const headersSiswa = [
+    'NO',
+    'NIS',
+    'NAMA LENGKAP SISWA',
+    'L/P',
+    'KELAS',
+    'JURUSAN',
+    'RINGAN (x)',
+    'SEDANG (x)',
+    'BERAT (x)',
+    'TOTAL POIN',
+    'STATUS PEMBINAAN',
+    'TINDAK LANJUT SEKOLAH',
+  ];
+
+  headersSiswa.forEach((h, i) => {
+    const cell = headerRow1.getCell(i + 1);
+    cell.value = h;
+    cell.font = { name: 'Arial', size: 9.5, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+
+  let rowIdx = 6;
+  filteredStudents.forEach((s, idx) => {
+    const sViolations = violations.filter(v => v.nis === s.nis);
+    const ringanCount = sViolations.filter(v => v.kategori === 'RINGAN').length;
+    const sedangCount = sViolations.filter(v => v.kategori === 'SEDANG').length;
+    const beratCount = sViolations.filter(v => v.kategori === 'BERAT').length;
+    const totalPoin = sViolations.reduce((acc, v) => acc + (Number(v.poin) || 0), 0);
+    const hasKhusus = sViolations.some(v => v.penanganan_khusus);
+    const pembinaan = getStatusPembinaan(totalPoin, hasKhusus);
+
+    const row = wsSiswa.getRow(rowIdx++);
+    row.height = 20;
+    row.getCell(1).value = idx + 1;
+    row.getCell(2).value = s.nis;
+    row.getCell(3).value = s.nama;
+    row.getCell(4).value = s.jenis_kelamin;
+    row.getCell(5).value = s.kelas;
+    row.getCell(6).value = s.jurusan;
+    row.getCell(7).value = ringanCount;
+    row.getCell(8).value = sedangCount;
+    row.getCell(9).value = beratCount;
+    row.getCell(10).value = totalPoin;
+    row.getCell(11).value = pembinaan.label;
+    row.getCell(12).value = pembinaan.tindakan;
+
+    for (let c = 1; c <= 12; c++) {
+      const cell = row.getCell(c);
+      cell.font = { name: 'Arial', size: 9 };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      };
+      if ([1, 2, 4, 5, 7, 8, 9, 10].includes(c)) {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      } else {
+        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+      }
+    }
+    row.getCell(3).font = { name: 'Arial', size: 9, bold: true };
+    row.getCell(10).font = {
+      name: 'Arial',
+      size: 9.5,
+      bold: true,
+      color: { argb: totalPoin >= 50 ? 'FFDC2626' : totalPoin > 0 ? 'FFD97706' : 'FF15803D' },
+    };
+  });
+
+  // ================= SHEET 2: REKAP POIN PER KELAS =================
+  const wsKelas = workbook.addWorksheet('Rekap Poin Per Kelas', {
+    pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+
+  wsKelas.columns = [
+    { key: 'no', width: 6 },
+    { key: 'kelas', width: 16 },
+    { key: 'jurusan', width: 30 },
+    { key: 'jmlSiswa', width: 14 },
+    { key: 'siswaMelanggar', width: 16 },
+    { key: 'terlambat', width: 16 },
+    { key: 'tidakDzuhur', width: 18 },
+    { key: 'manualLain', width: 16 },
+    { key: 'totalKasus', width: 15 },
+    { key: 'totalPoin', width: 16 },
+  ];
+
+  wsKelas.mergeCells('A1:J1');
+  wsKelas.getCell('A1').value = `REKAPITULASI POIN PELANGGARAN PER KELAS - ${config.nama_sekolah}`;
+  wsKelas.getCell('A1').font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FF1E3A8A' } };
+  wsKelas.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  const headerRow2 = wsKelas.getRow(3);
+  headerRow2.height = 26;
+  const headersKelas = [
+    'NO',
+    'KELAS',
+    'PROGRAM KEAHLIAN / JURUSAN',
+    'TOTAL SISWA',
+    'SISWA MELANGGAR',
+    'TERLAMBAT (R-01)',
+    'TIDAK DZUHUR (R-18)',
+    'PELANGGARAN LAIN',
+    'TOTAL KASUS',
+    'TOTAL POIN KELAS',
+  ];
+
+  headersKelas.forEach((h, i) => {
+    const cell = headerRow2.getCell(i + 1);
+    cell.value = h;
+    cell.font = { name: 'Arial', size: 9.5, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+
+  let kRowIdx = 4;
+  MASTER_KELAS_LIST.forEach((k, idx) => {
+    const classStudents = students.filter(s => s.kelas === k.kelas);
+    const classViolations = violations.filter(v => v.kelas === k.kelas);
+    const uniqueNisSet = new Set(classViolations.map(v => v.nis));
+    const lateCount = classViolations.filter(v => v.kode_pelanggaran === 'R-01').length;
+    const dzuhurCount = classViolations.filter(v => v.kode_pelanggaran === 'R-18').length;
+    const otherCount = classViolations.length - lateCount - dzuhurCount;
+    const totalClassPoints = classViolations.reduce((acc, v) => acc + (Number(v.poin) || 0), 0);
+
+    const row = wsKelas.getRow(kRowIdx++);
+    row.height = 20;
+    row.getCell(1).value = idx + 1;
+    row.getCell(2).value = k.kelas;
+    row.getCell(3).value = k.namaJurusan;
+    row.getCell(4).value = classStudents.length;
+    row.getCell(5).value = uniqueNisSet.size;
+    row.getCell(6).value = lateCount;
+    row.getCell(7).value = dzuhurCount;
+    row.getCell(8).value = otherCount;
+    row.getCell(9).value = classViolations.length;
+    row.getCell(10).value = totalClassPoints;
+
+    for (let c = 1; c <= 10; c++) {
+      const cell = row.getCell(c);
+      cell.font = { name: 'Arial', size: 9 };
+      cell.alignment = { horizontal: c === 3 ? 'left' : 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      };
+    }
+    row.getCell(2).font = { name: 'Arial', size: 9, bold: true };
+    row.getCell(10).font = { name: 'Arial', size: 9.5, bold: true };
+  });
+
+  // ================= SHEET 3: LOG RIWAYAT PELANGGARAN =================
+  const wsLog = workbook.addWorksheet('Log Riwayat Pelanggaran', {
+    pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+
+  wsLog.columns = [
+    { key: 'no', width: 6 },
+    { key: 'tanggal', width: 14 },
+    { key: 'waktu', width: 11 },
+    { key: 'nis', width: 14 },
+    { key: 'nama', width: 26 },
+    { key: 'kelas', width: 14 },
+    { key: 'kode', width: 10 },
+    { key: 'kategori', width: 12 },
+    { key: 'jenis', width: 38 },
+    { key: 'poin', width: 10 },
+    { key: 'sumber', width: 20 },
+    { key: 'keterangan', width: 38 },
+  ];
+
+  const headerRow3 = wsLog.getRow(1);
+  headerRow3.height = 26;
+  const headersLog = [
+    'NO',
+    'TANGGAL',
+    'WAKTU',
+    'NIS',
+    'NAMA SISWA',
+    'KELAS',
+    'KODE',
+    'KATEGORI',
+    'JENIS PELANGGARAN',
+    'POIN',
+    'SUMBER PENCATATAN',
+    'KETERANGAN / PELAPOR',
+  ];
+
+  headersLog.forEach((h, i) => {
+    const cell = headerRow3.getCell(i + 1);
+    cell.value = h;
+    cell.font = { name: 'Arial', size: 9.5, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF991B1B' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+
+  filteredViolations.forEach((v, idx) => {
+    const row = wsLog.getRow(idx + 2);
+    row.height = 20;
+    row.getCell(1).value = idx + 1;
+    row.getCell(2).value = v.tanggal;
+    row.getCell(3).value = v.waktu;
+    row.getCell(4).value = v.nis;
+    row.getCell(5).value = v.nama;
+    row.getCell(6).value = v.kelas;
+    row.getCell(7).value = v.kode_pelanggaran;
+    row.getCell(8).value = v.kategori;
+    row.getCell(9).value = v.jenis_pelanggaran;
+    row.getCell(10).value = v.poin;
+    row.getCell(11).value = v.sumber === 'MANUAL_GURU' ? 'Input Guru / BK' : v.sumber === 'OTOMATIS_PRESENSI' ? 'Otomatis Scan Masuk' : 'Otomatis Sholat Dzuhur';
+    row.getCell(12).value = v.keterangan || v.pelapor || '-';
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  const cleanClass = selectedClass === 'ALL' ? 'Semua_Kelas' : selectedClass.replace(/\s+/g, '_');
+  const filename = `Laporan_Poin_Pelanggaran_SMKS_PGRI_1_Sukabumi_${todayStr}_${cleanClass}.xlsx`;
+
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  window.URL.revokeObjectURL(url);
+}
+
 

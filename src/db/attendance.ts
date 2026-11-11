@@ -1,7 +1,49 @@
 import { db } from './index.ts';
 import { attendance } from './schema.ts';
-import { eq, and, sql, desc } from 'drizzle-orm';
-import { Absensi, StatusAbsensi } from '../types';
+import { eq, sql, desc } from 'drizzle-orm';
+import { Absensi, StatusAbsensi, StatusSholat } from '../types';
+
+interface PackedWaAndSholatMeta {
+  waDetail?: string;
+  jamDzuhur?: string | null;
+  statusDzuhur?: StatusSholat | null;
+}
+
+function packWaAndSholatDetail(rec: Absensi): string | null {
+  const hasSholat = Boolean(rec.jam_dzuhur || rec.status_dzuhur);
+  if (!hasSholat) {
+    return rec.notifikasi_wa_detail || null;
+  }
+  const meta: PackedWaAndSholatMeta = {
+    waDetail: rec.notifikasi_wa_detail || undefined,
+    jamDzuhur: rec.jam_dzuhur || null,
+    statusDzuhur: rec.status_dzuhur || null,
+  };
+  return `__META_V2__:${JSON.stringify(meta)}`;
+}
+
+function unpackWaAndSholatDetail(raw: string | null | undefined): {
+  notifikasi_wa_detail?: string;
+  jam_dzuhur: string | null;
+  status_dzuhur: StatusSholat | null;
+} {
+  if (!raw) {
+    return { notifikasi_wa_detail: undefined, jam_dzuhur: null, status_dzuhur: null };
+  }
+  if (raw.startsWith('__META_V2__:')) {
+    try {
+      const parsed: PackedWaAndSholatMeta = JSON.parse(raw.slice('__META_V2__:'.length));
+      return {
+        notifikasi_wa_detail: parsed.waDetail || undefined,
+        jam_dzuhur: parsed.jamDzuhur || null,
+        status_dzuhur: parsed.statusDzuhur || null,
+      };
+    } catch {
+      return { notifikasi_wa_detail: raw, jam_dzuhur: null, status_dzuhur: null };
+    }
+  }
+  return { notifikasi_wa_detail: raw, jam_dzuhur: null, status_dzuhur: null };
+}
 
 export async function getAttendanceByDate(tanggal: string): Promise<Absensi[]> {
   try {
@@ -10,25 +52,28 @@ export async function getAttendanceByDate(tanggal: string): Promise<Absensi[]> {
       .from(attendance)
       .where(eq(attendance.tanggal, tanggal));
 
-    return rows.map(r => ({
-      id: r.id,
-      siswa_id: r.studentId || '',
-      nis: r.nis,
-      nama: r.nama,
-      kelas: r.kelas,
-      tanggal: r.tanggal,
-      jam_masuk: r.jamMasuk || null,
-      status_masuk: (r.statusMasuk as 'TEPAT_WAKTU' | 'TERLAMBAT') || null,
-      jam_pulang: r.jamPulang || null,
-      status_pulang: (r.statusPulang as 'PULANG') || null,
-      jam_dzuhur: r.jamDzuhur || null,
-      status_dzuhur: (r.statusDzuhur as any) || null,
-      status_akhir: r.statusAkhir as StatusAbsensi,
-      keterangan: r.keterangan || undefined,
-      notifikasi_wa_terkirim: !!r.notifikasiWaTerkirim,
-      notifikasi_wa_detail: r.notifikasiWaDetail || undefined,
-      created_at: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
-    }));
+    return rows.map(r => {
+      const unpacked = unpackWaAndSholatDetail(r.notifikasiWaDetail);
+      return {
+        id: r.id,
+        siswa_id: r.studentId || '',
+        nis: r.nis,
+        nama: r.nama,
+        kelas: r.kelas,
+        tanggal: r.tanggal,
+        jam_masuk: r.jamMasuk || null,
+        status_masuk: (r.statusMasuk as 'TEPAT_WAKTU' | 'TERLAMBAT') || null,
+        jam_pulang: r.jamPulang || null,
+        status_pulang: (r.statusPulang as 'PULANG') || null,
+        jam_dzuhur: unpacked.jam_dzuhur,
+        status_dzuhur: unpacked.status_dzuhur,
+        status_akhir: r.statusAkhir as StatusAbsensi,
+        keterangan: r.keterangan || undefined,
+        notifikasi_wa_terkirim: !!r.notifikasiWaTerkirim,
+        notifikasi_wa_detail: unpacked.notifikasi_wa_detail,
+        created_at: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
+      };
+    });
   } catch (error) {
     console.error('Database getAttendanceByDate failed:', error);
     throw new Error('Gagal mengambil data absensi dari database.', { cause: error });
@@ -43,25 +88,28 @@ export async function getAllAttendanceLogs(limit = 1000): Promise<Absensi[]> {
       .orderBy(desc(attendance.tanggal), desc(attendance.createdAt))
       .limit(limit);
 
-    return rows.map(r => ({
-      id: r.id,
-      siswa_id: r.studentId || '',
-      nis: r.nis,
-      nama: r.nama,
-      kelas: r.kelas,
-      tanggal: r.tanggal,
-      jam_masuk: r.jamMasuk || null,
-      status_masuk: (r.statusMasuk as 'TEPAT_WAKTU' | 'TERLAMBAT') || null,
-      jam_pulang: r.jamPulang || null,
-      status_pulang: (r.statusPulang as 'PULANG') || null,
-      jam_dzuhur: r.jamDzuhur || null,
-      status_dzuhur: (r.statusDzuhur as any) || null,
-      status_akhir: r.statusAkhir as StatusAbsensi,
-      keterangan: r.keterangan || undefined,
-      notifikasi_wa_terkirim: !!r.notifikasiWaTerkirim,
-      notifikasi_wa_detail: r.notifikasiWaDetail || undefined,
-      created_at: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
-    }));
+    return rows.map(r => {
+      const unpacked = unpackWaAndSholatDetail(r.notifikasiWaDetail);
+      return {
+        id: r.id,
+        siswa_id: r.studentId || '',
+        nis: r.nis,
+        nama: r.nama,
+        kelas: r.kelas,
+        tanggal: r.tanggal,
+        jam_masuk: r.jamMasuk || null,
+        status_masuk: (r.statusMasuk as 'TEPAT_WAKTU' | 'TERLAMBAT') || null,
+        jam_pulang: r.jamPulang || null,
+        status_pulang: (r.statusPulang as 'PULANG') || null,
+        jam_dzuhur: unpacked.jam_dzuhur,
+        status_dzuhur: unpacked.status_dzuhur,
+        status_akhir: r.statusAkhir as StatusAbsensi,
+        keterangan: r.keterangan || undefined,
+        notifikasi_wa_terkirim: !!r.notifikasiWaTerkirim,
+        notifikasi_wa_detail: unpacked.notifikasi_wa_detail,
+        created_at: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
+      };
+    });
   } catch (error) {
     console.error('Database getAllAttendanceLogs failed:', error);
     throw new Error('Gagal mengambil seluruh data absensi dari database.', { cause: error });
@@ -70,6 +118,7 @@ export async function getAllAttendanceLogs(limit = 1000): Promise<Absensi[]> {
 
 export async function recordAttendanceLog(rec: Absensi): Promise<Absensi> {
   try {
+    const packedDetail = packWaAndSholatDetail(rec);
     const result = await db
       .insert(attendance)
       .values({
@@ -83,12 +132,10 @@ export async function recordAttendanceLog(rec: Absensi): Promise<Absensi> {
         statusMasuk: rec.status_masuk || null,
         jamPulang: rec.jam_pulang || null,
         statusPulang: rec.status_pulang || null,
-        jamDzuhur: rec.jam_dzuhur || null,
-        statusDzuhur: rec.status_dzuhur || null,
         statusAkhir: rec.status_akhir,
         keterangan: rec.keterangan || null,
         notifikasiWaTerkirim: !!rec.notifikasi_wa_terkirim,
-        notifikasiWaDetail: rec.notifikasi_wa_detail || null,
+        notifikasiWaDetail: packedDetail,
       })
       .onConflictDoUpdate({
         target: [attendance.nis, attendance.tanggal],
@@ -97,17 +144,16 @@ export async function recordAttendanceLog(rec: Absensi): Promise<Absensi> {
           statusMasuk: rec.status_masuk || sql`COALESCE(${attendance.statusMasuk}, ${rec.status_masuk})`,
           jamPulang: rec.jam_pulang || sql`${attendance.jamPulang}`,
           statusPulang: rec.status_pulang || sql`${attendance.statusPulang}`,
-          jamDzuhur: rec.jam_dzuhur || sql`COALESCE(${attendance.jamDzuhur}, ${rec.jam_dzuhur})`,
-          statusDzuhur: rec.status_dzuhur || sql`COALESCE(${attendance.statusDzuhur}, ${rec.status_dzuhur})`,
           statusAkhir: rec.status_akhir,
           keterangan: rec.keterangan || null,
           notifikasiWaTerkirim: !!rec.notifikasi_wa_terkirim,
-          notifikasiWaDetail: rec.notifikasi_wa_detail || null,
+          notifikasiWaDetail: packedDetail,
         },
       })
       .returning();
 
     const r = result[0];
+    const unpacked = unpackWaAndSholatDetail(r.notifikasiWaDetail);
     return {
       id: r.id,
       siswa_id: r.studentId || '',
@@ -119,12 +165,12 @@ export async function recordAttendanceLog(rec: Absensi): Promise<Absensi> {
       status_masuk: (r.statusMasuk as 'TEPAT_WAKTU' | 'TERLAMBAT') || null,
       jam_pulang: r.jamPulang || null,
       status_pulang: (r.statusPulang as 'PULANG') || null,
-      jam_dzuhur: r.jamDzuhur || null,
-      status_dzuhur: (r.statusDzuhur as any) || null,
+      jam_dzuhur: unpacked.jam_dzuhur,
+      status_dzuhur: unpacked.status_dzuhur,
       status_akhir: r.statusAkhir as StatusAbsensi,
       keterangan: r.keterangan || undefined,
       notifikasi_wa_terkirim: !!r.notifikasiWaTerkirim,
-      notifikasi_wa_detail: r.notifikasiWaDetail || undefined,
+      notifikasi_wa_detail: unpacked.notifikasi_wa_detail,
       created_at: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
     };
   } catch (error) {
@@ -151,12 +197,10 @@ export async function bulkUpdateAttendanceLogs(records: Absensi[]): Promise<numb
         statusMasuk: rec.status_masuk || null,
         jamPulang: rec.jam_pulang || null,
         statusPulang: rec.status_pulang || null,
-        jamDzuhur: rec.jam_dzuhur || null,
-        statusDzuhur: rec.status_dzuhur || null,
         statusAkhir: rec.status_akhir,
         keterangan: rec.keterangan || null,
         notifikasiWaTerkirim: !!rec.notifikasi_wa_terkirim,
-        notifikasiWaDetail: rec.notifikasi_wa_detail || null,
+        notifikasiWaDetail: packWaAndSholatDetail(rec),
       }));
 
       await db
@@ -169,8 +213,6 @@ export async function bulkUpdateAttendanceLogs(records: Absensi[]): Promise<numb
             statusMasuk: sql`COALESCE(excluded.status_masuk, attendance.status_masuk)`,
             jamPulang: sql`COALESCE(excluded.jam_pulang, attendance.jam_pulang)`,
             statusPulang: sql`COALESCE(excluded.status_pulang, attendance.status_pulang)`,
-            jamDzuhur: sql`COALESCE(excluded.jam_dzuhur, attendance.jam_dzuhur)`,
-            statusDzuhur: sql`COALESCE(excluded.status_dzuhur, attendance.status_dzuhur)`,
             statusAkhir: sql`excluded.status_akhir`,
             keterangan: sql`excluded.keterangan`,
             notifikasiWaTerkirim: sql`excluded.notifikasi_wa_terkirim`,
@@ -186,7 +228,6 @@ export async function bulkUpdateAttendanceLogs(records: Absensi[]): Promise<numb
   }
 }
 
-// Instant SQL Aggregation for 700 Students
 export async function getAttendanceRecapStats(tanggal: string) {
   try {
     const stats = await db
@@ -205,11 +246,6 @@ export async function getAttendanceRecapStats(tanggal: string) {
   }
 }
 
-/**
- * Reset / Clear attendance logs from PostgreSQL database.
- * If tanggal is provided (and not 'all'), only deletes logs for that date.
- * Otherwise deletes all attendance logs so the table returns to 0 records.
- */
 export async function clearAttendanceLogs(tanggal?: string): Promise<number> {
   try {
     if (tanggal && tanggal !== 'all') {
@@ -229,4 +265,3 @@ export async function clearAttendanceLogs(tanggal?: string): Promise<number> {
     throw new Error('Gagal mereset data log presensi di database.', { cause: error });
   }
 }
-

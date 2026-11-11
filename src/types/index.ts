@@ -106,5 +106,42 @@ export interface SchoolConfig {
   sholat_absen_enabled?: boolean;
   sholat_dzuhur_mulai?: string; // default "11:45"
   sholat_dzuhur_selesai?: string; // default "13:00"
+  // Auto Violation Points Config
+  auto_violation_terlambat?: boolean; // default true (+5 poin jika scan masuk > jam_masuk_batas)
+  auto_violation_dzuhur?: boolean; // default true (+5 poin jika hadir KBM namun tidak sholat dzuhur tanpa alasan)
 }
+
+export type KategoriPelanggaran = 'RINGAN' | 'SEDANG' | 'BERAT';
+
+export interface JenisPelanggaranItem {
+  kode: string; // e.g. 'R-01', 'R-18', 'S-01', 'B-01', 'B-09'
+  nomor: number;
+  kategori: KategoriPelanggaran;
+  jenis_pelanggaran: string;
+  poin: number;
+  penanganan_khusus?: boolean;
+  otomatis_sistem?: 'TERLAMBAT' | 'TIDAK_SHOLAT_DZUHUR';
+}
+
+export interface PelanggaranSiswa {
+  id: string; // Deterministic for auto: 'auto-late-{nis}-{tanggal}' or 'auto-dzuhur-{nis}-{tanggal}', or UUID for manual
+  siswa_id: string;
+  nis: string;
+  nama: string;
+  kelas: string;
+  jurusan?: string;
+  tanggal: string; // YYYY-MM-DD
+  waktu: string; // HH:mm:ss
+  kode_pelanggaran: string; // e.g. 'R-01'
+  kategori: KategoriPelanggaran;
+  jenis_pelanggaran: string;
+  poin: number;
+  penanganan_khusus?: boolean;
+  sumber: 'OTOMATIS_PRESENSI' | 'OTOMATIS_SHOLAT' | 'MANUAL_GURU';
+  pelapor?: string; // e.g. 'Sistem Presensi QR', 'Guru Piket / Kesiswaan', 'Guru BK'
+  keterangan?: string;
+  tindak_lanjut?: string;
+  created_at: string;
+}
+
 

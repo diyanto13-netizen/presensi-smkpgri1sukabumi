@@ -22,6 +22,7 @@ import {
   Sun,
   Moon,
   Palette,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   Theme,
@@ -30,7 +31,7 @@ import {
   getInitialPalette,
   applyThemeToDocument,
 } from './utils/theme';
-import { Siswa, Absensi, SchoolConfig } from './types';
+import { Siswa, Absensi, SchoolConfig, PelanggaranSiswa } from './types';
 import {
   getStoredStudents,
   saveStudents,
@@ -41,6 +42,8 @@ import {
   saveSchoolConfig,
   applyClassScheduleToStudents,
   getTodayDateString,
+  getStoredViolations,
+  saveViolations,
 } from './utils/storage';
 import {
   fetchSchoolConfigApi,
@@ -52,6 +55,8 @@ import {
   recordAttendanceApi,
   bulkSaveAttendanceApi,
   resetAttendanceApi,
+  fetchViolationsApi,
+  saveViolationsApi,
 } from './services/api';
 import {
   syncStudentsToFirestore,
@@ -63,21 +68,24 @@ import {
   getAttendanceFromFirestore,
   getSchoolConfigFromFirestore,
 } from './services/firestoreService';
+import { syncViolationsWithAttendance } from './utils/violationRules';
 import { ScannerTerminal } from './components/ScannerTerminal';
 import { CardGenerator } from './components/CardGenerator';
 import { StudentManager } from './components/StudentManager';
 import { AttendanceRecap } from './components/AttendanceRecap';
+import { ViolationManager } from './components/ViolationManager';
 import { SettingsModal } from './components/SettingsModal';
 import { SqlSchemaGuide } from './components/SqlSchemaGuide';
 import { SchoolLogo } from './components/SchoolLogo';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
-    'scanner' | 'generator' | 'students' | 'recap' | 'docs'
+    'scanner' | 'generator' | 'students' | 'recap' | 'violations' | 'docs'
   >('scanner');
 
   const [students, setStudents] = useState<Siswa[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<Absensi[]>([]);
+  const [violations, setViolations] = useState<PelanggaranSiswa[]>([]);
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig>(getSchoolConfig());
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [headerTime, setHeaderTime] = useState<string>('');
@@ -123,12 +131,14 @@ export default function App() {
     setIsSyncing(true);
     try {
       // 1. Attempt API fetch (Cloud SQL PostgreSQL) & Firestore fetch
-      const [remoteConfig, remoteStudents, remoteAttendance, firestoreStudents] = await Promise.all([
-        fetchSchoolConfigApi(),
-        fetchStudentsApi(),
-        fetchAttendanceApi('all'),
-        getStudentsFromFirestore(),
-      ]);
+      const [remoteConfig, remoteStudents, remoteAttendance, firestoreStudents, remoteViolations] =
+        await Promise.all([
+          fetchSchoolConfigApi(),
+          fetchStudentsApi(),
+          fetchAttendanceApi('all'),
+          getStudentsFromFirestore(),
+          fetchViolationsApi(),
+        ]);
 
       let finalConfig = remoteConfig;
       let finalStudents = remoteStudents && remoteStudents.length > 0 ? remoteStudents : firestoreStudents;
@@ -150,6 +160,7 @@ export default function App() {
       }
 
       // 3. Apply resolved configuration
+      const activeConfig = finalConfig || getSchoolConfig();
       if (finalConfig) {
         setSchoolConfig(finalConfig);
         saveSchoolConfig(finalConfig);
@@ -178,20 +189,39 @@ export default function App() {
       }
 
       // 5. Apply resolved attendance records
+      let resolvedAttendance: Absensi[] = [];
       if (finalAttendance && finalAttendance.length > 0) {
+        resolvedAttendance = finalAttendance;
         setAttendanceRecords(finalAttendance);
         saveAttendance(finalAttendance);
       } else {
         const localAtt = getStoredAttendance();
+        resolvedAttendance = localAtt;
         if (localAtt && localAtt.length > 0) {
           bulkSaveAttendanceApi(localAtt).catch(() => {});
           bulkSaveAttendanceToFirestore(localAtt).catch(() => {});
         }
       }
 
+      // 6. Merge & synchronize violation records (remote + local + auto-attendance)
+      const localViolations = getStoredViolations();
+      const mergedMap = new Map<string, PelanggaranSiswa>();
+      [...(remoteViolations || []), ...localViolations].forEach(v => {
+        if (v && v.id) mergedMap.set(v.id, v);
+      });
+      const { updatedViolations: syncedViolations } = syncViolationsWithAttendance(
+        resolvedAttendance,
+        resolvedStudents,
+        Array.from(mergedMap.values()),
+        activeConfig
+      );
+      setViolations(syncedViolations);
+      saveViolations(syncedViolations);
+      saveViolationsApi(syncedViolations).catch(() => {});
+
       if (showNotice) {
         setSyncNotice(
-          `Sinkronisasi Cloud berhasil! ${resolvedStudents.length} siswa unik (bebas duplikat) dan ${finalAttendance?.length || 0} log absensi aktif.`
+          `Sinkronisasi Cloud berhasil! ${resolvedStudents.length} siswa unik (bebas duplikat), ${resolvedAttendance.length} log absensi, dan ${syncedViolations.length} catatan poin aktif.`
         );
         setTimeout(() => setSyncNotice(null), 4000);
       }
@@ -212,14 +242,64 @@ export default function App() {
     const localStudents = deduplicateStudents(getStoredStudents());
     const localAttendance = getStoredAttendance();
     const localConfig = getSchoolConfig();
+    const localViolations = getStoredViolations();
+    const { updatedViolations: initialSyncedViolations } = syncViolationsWithAttendance(
+      localAttendance,
+      localStudents,
+      localViolations,
+      localConfig
+    );
 
     setStudents(localStudents);
     setAttendanceRecords(localAttendance);
     setSchoolConfig(localConfig);
+    setViolations(initialSyncedViolations);
+    saveViolations(initialSyncedViolations);
 
     // 2. Background sync from Cloud SQL / Firebase Firestore
     syncFromDatabase(false);
   }, []);
+
+  // Automatically keep violation points synchronized whenever attendanceRecords, students, or schoolConfig changes
+  useEffect(() => {
+    if (students.length === 0 && attendanceRecords.length === 0) return;
+    setViolations(prev => {
+      const { updatedViolations: synced } = syncViolationsWithAttendance(
+        attendanceRecords,
+        students,
+        prev,
+        schoolConfig
+      );
+      if (JSON.stringify(synced) !== JSON.stringify(prev)) {
+        saveViolations(synced);
+        saveViolationsApi(synced).catch(() => {});
+        return synced;
+      }
+      return prev;
+    });
+  }, [attendanceRecords, students, schoolConfig]);
+
+  const handleUpdateViolations = (updated: PelanggaranSiswa[]) => {
+    setViolations(updated);
+    saveViolations(updated);
+    saveViolationsApi(updated).catch(() => {});
+  };
+
+  const handleSyncAutoViolations = () => {
+    const { updatedViolations: synced } = syncViolationsWithAttendance(
+      attendanceRecords,
+      students,
+      violations,
+      schoolConfig
+    );
+    setViolations(synced);
+    saveViolations(synced);
+    saveViolationsApi(synced).catch(() => {});
+    setSyncNotice(
+      `Sinkronisasi poin otomatis selesai! Total ${synced.length} catatan pelanggaran terdata sesuai log Masuk & Sholat Dzuhur.`
+    );
+    setTimeout(() => setSyncNotice(null), 4000);
+  };
 
   const handleManualSync = async () => {
     await syncFromDatabase(true);
@@ -236,6 +316,7 @@ export default function App() {
         saveSchoolConfigApi(schoolConfig),
         syncAllStudentsApi(cleanStudents),
         attendanceRecords.length > 0 ? bulkSaveAttendanceApi(attendanceRecords) : Promise.resolve(true),
+        saveViolationsApi(violations),
         syncStudentsToFirestore(cleanStudents, true),
         saveSchoolConfigToFirestore(schoolConfig),
         attendanceRecords.length > 0 ? bulkSaveAttendanceToFirestore(attendanceRecords) : Promise.resolve(true),
@@ -346,7 +427,7 @@ export default function App() {
           title="Filosofi Warna Logo SMKS PGRI 1 Kota Sukabumi: Biru Ilmu & Teknologi, Hijau Karakter, Kuning Kejayaan"
         />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-3 lg:gap-6">
+          <div className="flex items-center justify-between h-16 gap-3 lg:gap-4">
             {/* School Branding with Official Insignia */}
             <div className="flex items-center gap-3 min-w-0 shrink">
               <div className="w-10 h-10 rounded-xl bg-white border border-amber-300/80 dark:border-amber-500/50 shadow-2xs p-1 flex items-center justify-center shrink-0 ring-2 ring-blue-600/10">
@@ -374,7 +455,7 @@ export default function App() {
             <nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/90 dark:border-slate-700 shrink-0">
               <button
                 onClick={() => setActiveTab('scanner')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'scanner'
                     ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
                     : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
@@ -386,7 +467,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('generator')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'generator'
                     ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
                     : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
@@ -398,7 +479,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('students')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'students'
                     ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
                     : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
@@ -410,7 +491,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('recap')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                   activeTab === 'recap'
                     ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
                     : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
@@ -418,6 +499,29 @@ export default function App() {
               >
                 <BarChart3 className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'recap' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
                 <span>Rekap Absensi</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('violations')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === 'violations'
+                    ? 'bg-rose-600 text-white shadow-xs border border-rose-500'
+                    : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
+                }`}
+              >
+                <ShieldAlert className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'violations' ? 'text-white' : 'text-rose-600 dark:text-rose-400'}`} />
+                <span>Poin Pelanggaran</span>
+                {violations.length > 0 && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-extrabold ${
+                      activeTab === 'violations'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
+                    }`}
+                  >
+                    {violations.length}
+                  </span>
+                )}
               </button>
             </nav>
 
@@ -444,7 +548,7 @@ export default function App() {
         </div>
 
         {/* Mobile Navigation Bar */}
-        <div className="lg:hidden border-t border-slate-200/80 dark:border-slate-800 px-2 py-1.5 grid grid-cols-4 gap-1 bg-white/95 dark:bg-slate-900/95 text-[11px] font-semibold text-center">
+        <div className="lg:hidden border-t border-slate-200/80 dark:border-slate-800 px-2 py-1.5 grid grid-cols-5 gap-1 bg-white/95 dark:bg-slate-900/95 text-[11px] font-semibold text-center">
           <button
             onClick={() => setActiveTab('scanner')}
             className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
@@ -480,6 +584,15 @@ export default function App() {
           >
             <BarChart3 className="w-4 h-4" />
             <span className="truncate w-full">Rekap</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('violations')}
+            className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
+              activeTab === 'violations' ? 'text-rose-600 dark:text-rose-400 font-bold bg-rose-50/80 dark:bg-rose-950/60' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4" />
+            <span className="truncate w-full">Poin</span>
           </button>
         </div>
       </header>
@@ -539,6 +652,17 @@ export default function App() {
             config={schoolConfig}
             onUpdateAttendance={handleBulkUpdateAttendance}
             onResetAttendance={handleResetAttendance}
+          />
+        )}
+
+        {activeTab === 'violations' && (
+          <ViolationManager
+            students={students}
+            attendanceRecords={attendanceRecords}
+            violations={violations}
+            config={schoolConfig}
+            onUpdateViolations={handleUpdateViolations}
+            onSyncAutoViolations={handleSyncAutoViolations}
           />
         )}
 
