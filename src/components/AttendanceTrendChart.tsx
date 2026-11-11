@@ -18,9 +18,8 @@ import {
   AlertTriangle,
   Users,
   Sun,
-  Moon,
-  Sparkles,
   ShieldCheck,
+  Award,
 } from 'lucide-react';
 import { Absensi, Siswa } from '../types';
 
@@ -37,7 +36,6 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
 }) => {
   const [mainTab, setMainTab] = useState<'kbm' | 'sholat'>('sholat');
   const [rangeMode, setRangeMode] = useState<'weekly' | 'monthly'>('weekly');
-  const [sholatSessionFilter, setSholatSessionFilter] = useState<'split' | 'dzuhur' | 'ashar' | 'compare'>('split');
 
   // Filter scope by selectedClass
   const filteredStudents = useMemo(() => {
@@ -82,10 +80,6 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
       let dzuhurTerlaksana = 0;
       let dzuhurBerhalangan = 0;
 
-      // Shalat Ashar metrics
-      let asharTerlaksana = 0;
-      let asharBerhalangan = 0;
-
       dayRecords.forEach(r => {
         if (r.status_masuk === 'TEPAT_WAKTU') tepatWaktu++;
         if (r.status_masuk === 'TERLAMBAT') terlambat++;
@@ -93,9 +87,6 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
 
         if (r.status_dzuhur === 'TERLAKSANA') dzuhurTerlaksana++;
         if (r.status_dzuhur === 'BERHALANGAN') dzuhurBerhalangan++;
-
-        if (r.status_ashar === 'TERLAKSANA') asharTerlaksana++;
-        if (r.status_ashar === 'BERHALANGAN') asharBerhalangan++;
       });
 
       const totalHadir = tepatWaktu + terlambat;
@@ -103,9 +94,6 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
 
       const dzuhurBelum = Math.max(0, totalSiswaScope - (dzuhurTerlaksana + dzuhurBerhalangan));
       const dzuhurPersen = Math.min(100, Math.round((dzuhurTerlaksana / totalSiswaScope) * 100));
-
-      const asharBelum = Math.max(0, totalSiswaScope - (asharTerlaksana + asharBerhalangan));
-      const asharPersen = Math.min(100, Math.round((asharTerlaksana / totalSiswaScope) * 100));
 
       result.push({
         dateStr,
@@ -120,11 +108,6 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
         dzuhurBerhalangan,
         dzuhurBelum,
         dzuhurPersen,
-        asharTerlaksana,
-        asharBerhalangan,
-        asharBelum,
-        asharPersen,
-        totalSholat: dzuhurTerlaksana + asharTerlaksana,
       });
     }
 
@@ -159,49 +142,31 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
     };
   }, [chartData]);
 
-  // Overall statistics for Sholat Dzuhur & Ashar
+  // Overall statistics for Sholat Dzuhur
   const sholatPeriodStats = useMemo(() => {
     let sumDzuhur = 0;
-    let sumAshar = 0;
     let sumUdzurDzuhur = 0;
-    let sumUdzurAshar = 0;
     let peakDzuhur = { label: '-', count: 0 };
-    let peakAshar = { label: '-', count: 0 };
 
     chartData.forEach(item => {
       sumDzuhur += item.dzuhurTerlaksana;
-      sumAshar += item.asharTerlaksana;
       sumUdzurDzuhur += item.dzuhurBerhalangan;
-      sumUdzurAshar += item.asharBerhalangan;
 
       if (item.dzuhurTerlaksana > peakDzuhur.count) {
         peakDzuhur = { label: item.label, count: item.dzuhurTerlaksana };
       }
-      if (item.asharTerlaksana > peakAshar.count) {
-        peakAshar = { label: item.label, count: item.asharTerlaksana };
-      }
     });
 
     const activeDzuhurDays = chartData.filter(d => d.dzuhurTerlaksana > 0).length || 1;
-    const activeAsharDays = chartData.filter(d => d.asharTerlaksana > 0).length || 1;
-
     const avgDzuhur = Math.round(sumDzuhur / activeDzuhurDays);
-    const avgAshar = Math.round(sumAshar / activeAsharDays);
-
     const avgDzuhurPercent = Math.min(100, Math.round((avgDzuhur / totalSiswaScope) * 100));
-    const avgAsharPercent = Math.min(100, Math.round((avgAshar / totalSiswaScope) * 100));
 
     return {
       sumDzuhur,
-      sumAshar,
       sumUdzurDzuhur,
-      sumUdzurAshar,
       avgDzuhur,
-      avgAshar,
       avgDzuhurPercent,
-      avgAsharPercent,
       peakDzuhur,
-      peakAshar,
     };
   }, [chartData, totalSiswaScope]);
 
@@ -256,7 +221,7 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
         <div className="bg-slate-900 text-white p-4 rounded-xl shadow-xl border border-teal-800 text-xs space-y-2 min-w-[220px]">
           <div className="font-bold text-sm text-teal-300 border-b border-slate-800 pb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <span>🕌</span> Sesi Shalat Dzuhur
+              <span>🕌</span> Sesi Sholat Dzuhur
             </span>
             <span className="text-slate-400 font-mono text-[11px]">{data.dateStr}</span>
           </div>
@@ -294,52 +259,6 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
     return null;
   };
 
-  // Custom Ashar Chart Tooltip
-  const CustomAsharTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-slate-900 text-white p-4 rounded-xl shadow-xl border border-sky-800 text-xs space-y-2 min-w-[220px]">
-          <div className="font-bold text-sm text-sky-300 border-b border-slate-800 pb-1.5 flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <span>🕌</span> Sesi Shalat Ashar
-            </span>
-            <span className="text-slate-400 font-mono text-[11px]">{data.dateStr}</span>
-          </div>
-          <div className="text-xs text-slate-300 font-semibold">{data.label}</div>
-          <div className="space-y-1.5 pt-1">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-sky-300 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
-                Hadir Sholat (Terlaksana):
-              </span>
-              <span className="font-bold font-mono text-sky-200">{data.asharTerlaksana} siswa</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-purple-300 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block" />
-                Berhalangan / Udzur:
-              </span>
-              <span className="font-bold font-mono text-purple-200">{data.asharBerhalangan} siswa</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-slate-400 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block" />
-                Belum Presensi / Nihil:
-              </span>
-              <span className="font-bold font-mono text-slate-300">{data.asharBelum} siswa</span>
-            </div>
-            <div className="border-t border-slate-800 pt-1.5 flex items-center justify-between font-bold text-sky-100">
-              <span>Partisipasi Ashar:</span>
-              <span className="font-mono text-sky-300">{data.asharPersen}% siswa</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6">
       {/* Primary Navigation & Switcher Header */}
@@ -358,12 +277,12 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
             <div>
               <h3 className="text-lg sm:text-xl font-heading font-black text-slate-900 dark:text-white">
                 {mainTab === 'sholat'
-                  ? 'Visualisasi Tren Kehadiran Sholat Dzuhur & Ashar'
+                  ? 'Visualisasi Tren Kehadiran Sholat Dzuhur Berjamaah'
                   : 'Visualisasi Tren Presensi KBM Siswa'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
                 {mainTab === 'sholat'
-                  ? `Monitoring kepatuhan ibadah sholat berjamaah ${rangeMode === 'weekly' ? '7 hari terakhir' : '30 hari terakhir'}`
+                  ? `Monitoring kepatuhan ibadah sholat Dzuhur berjamaah ${rangeMode === 'weekly' ? '7 hari terakhir' : '30 hari terakhir'}`
                   : `Grafik kehadiran jam masuk & pulang ${rangeMode === 'weekly' ? '7 hari terakhir' : '30 hari terakhir'}`}{' '}
                 {selectedClass !== 'ALL' ? `(Kelas ${selectedClass})` : '(Semua Kelas)'}
               </p>
@@ -385,7 +304,7 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
               }`}
             >
               <span>🕌</span>
-              <span>Tren Shalat (Dzuhur &amp; Ashar)</span>
+              <span>Tren Sholat Dzuhur</span>
             </button>
             <button
               type="button"
@@ -431,70 +350,10 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
         </div>
       </div>
 
-      {/* VIEW: TREN SHALAT DZUHUR & ASHAR */}
+      {/* VIEW: TREN SHALAT DZUHUR */}
       {mainTab === 'sholat' ? (
         <div className="space-y-6">
-          {/* Sholat Sub-selector: Terpisah (Split) vs Dzuhur vs Ashar vs Compare */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-100 dark:bg-slate-800/95 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-amber-300 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-amber-400" />
-                Pilihan Tampilan Grafik Sesi:
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSholatSessionFilter('split')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  sholatSessionFilter === 'split'
-                    ? 'bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs border border-emerald-800 dark:border-emerald-500'
-                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                <span>📊</span>
-                <span>Terpisah (Dzuhur &amp; Ashar)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSholatSessionFilter('dzuhur')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  sholatSessionFilter === 'dzuhur'
-                    ? 'bg-teal-700 dark:bg-teal-600 text-white shadow-xs border border-teal-800 dark:border-teal-500'
-                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 hover:bg-teal-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                <span>Khusus Sesi Dzuhur</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSholatSessionFilter('ashar')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  sholatSessionFilter === 'ashar'
-                    ? 'bg-sky-700 dark:bg-sky-600 text-white shadow-xs border border-sky-800 dark:border-sky-500'
-                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 hover:bg-sky-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                <span>Khusus Sesi Ashar</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSholatSessionFilter('compare')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  sholatSessionFilter === 'compare'
-                    ? 'bg-blue-900 dark:bg-blue-600 text-white shadow-xs border border-blue-950 dark:border-blue-500'
-                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                <span>⚖️</span>
-                <span>Perbandingan Dzuhur vs Ashar</span>
-              </button>
-            </div>
-          </div>
-
-          {/* KPI Highlights for Shalat — High Contrast Solid Cards */}
+          {/* KPI Highlights for Shalat Dzuhur — High Contrast Solid Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: Rata-rata Dzuhur */}
             <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-teal-200 dark:border-teal-700/80 shadow-2xs flex items-center gap-3.5">
@@ -517,23 +376,23 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
               </div>
             </div>
 
-            {/* Card 2: Rata-rata Ashar */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-sky-200 dark:border-sky-700/80 shadow-2xs flex items-center gap-3.5">
-              <div className="p-2.5 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700 shrink-0">
-                <Moon className="w-5 h-5" />
+            {/* Card 2: Total Hadir Dzuhur */}
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-emerald-200 dark:border-emerald-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-sky-900 dark:text-sky-300 uppercase tracking-wide">
-                  Rata-rata Ashar
+                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">
+                  Total Hadir Dzuhur
                 </div>
                 <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
-                  {sholatPeriodStats.avgAshar}{' '}
+                  {sholatPeriodStats.sumDzuhur}{' '}
                   <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
-                    siswa/hari
+                    presensi
                   </span>
                 </div>
-                <div className="text-xs text-sky-800 dark:text-sky-300 font-bold mt-0.5">
-                  Partisipasi: ~{sholatPeriodStats.avgAsharPercent}%
+                <div className="text-xs text-emerald-800 dark:text-emerald-300 font-bold mt-0.5">
+                  Terlaksana di musholla
                 </div>
               </div>
             </div>
@@ -548,447 +407,105 @@ export const AttendanceTrendChart: React.FC<AttendanceTrendChartProps> = ({
                   Udzur Syar&apos;i / Izin
                 </div>
                 <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
-                  {sholatPeriodStats.sumUdzurDzuhur + sholatPeriodStats.sumUdzurAshar}{' '}
+                  {sholatPeriodStats.sumUdzurDzuhur}{' '}
                   <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
                     catatan
                   </span>
                 </div>
                 <div className="text-xs text-purple-800 dark:text-purple-300 font-bold mt-0.5">
-                  Dzuhur: {sholatPeriodStats.sumUdzurDzuhur} • Ashar: {sholatPeriodStats.sumUdzurAshar}
+                  Siswi berhalangan
                 </div>
               </div>
             </div>
 
-            {/* Card 4: Total Presensi Shalat */}
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-emerald-200 dark:border-emerald-700/80 shadow-2xs flex items-center gap-3.5">
-              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
+            {/* Card 4: Puncak Jamaah Dzuhur */}
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-800/95 border-2 border-amber-200 dark:border-amber-700/80 shadow-2xs flex items-center gap-3.5">
+              <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shrink-0">
+                <Award className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">
-                  Total Presensi Shalat
+                <div className="text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wide">
+                  Puncak Jamaah
                 </div>
-                <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
-                  {sholatPeriodStats.sumDzuhur + sholatPeriodStats.sumAshar}{' '}
-                  <span className="text-xs font-sans font-bold text-slate-600 dark:text-slate-300">
-                    presensi
-                  </span>
+                <div className="text-lg sm:text-xl font-mono font-black text-slate-900 dark:text-white mt-0.5 truncate">
+                  {sholatPeriodStats.peakDzuhur.label}
                 </div>
-                <div className="text-xs text-emerald-800 dark:text-emerald-300 font-bold mt-0.5 truncate">
-                  Puncak: {sholatPeriodStats.peakDzuhur.label}
+                <div className="text-xs text-amber-800 dark:text-amber-300 font-bold mt-0.5 truncate">
+                  {sholatPeriodStats.peakDzuhur.count} siswa hadir
                 </div>
               </div>
             </div>
           </div>
 
-          {/* RENDER CHARTS ACCORDING TO USER FILTER */}
-
-          {/* 1. OPTION 'SPLIT': Menampilkan Sesi Sholat Dzuhur dan Ashar SECARA TERPISAH (2 Grafik Berdampingan) */}
-          {sholatSessionFilter === 'split' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* CHART 1: SESI SHALAT DZUHUR */}
-              <div className="bg-slate-50 dark:bg-slate-800/90 p-5 rounded-2xl border border-teal-200 dark:border-teal-800/80 space-y-3 shadow-2xs">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center gap-2.5">
-                    <span className="p-2 bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700 rounded-xl text-sm">
-                      🕌
-                    </span>
-                    <div>
-                      <h4 className="font-heading font-black text-slate-900 dark:text-white text-sm sm:text-base">
-                        Tren Sesi Sholat Dzuhur
-                      </h4>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                        Kehadiran sholat Dzuhur berjamaah di musholla
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-900 dark:text-teal-300 border border-teal-300 dark:border-teal-700">
-                    Sesi Dzuhur
-                  </span>
-                </div>
-
-                <div className="w-full h-64 sm:h-72 pt-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={chartData}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
-                      <XAxis
-                        dataKey="label"
-                        stroke="#64748B"
-                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                        interval={rangeMode === 'monthly' ? 4 : 0}
-                      />
-                      <YAxis
-                        stroke="#64748B"
-                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                        allowDecimals={false}
-                      />
-                      <Tooltip content={<CustomDzuhurTooltip />} />
-                      <Legend
-                        verticalAlign="top"
-                        align="right"
-                        wrapperStyle={{ paddingBottom: '10px', fontSize: '12px' }}
-                        formatter={(val) => {
-                          if (val === 'dzuhurTerlaksana') return <span className="text-teal-800 dark:text-teal-300 font-bold">Terlaksana (Hadir)</span>;
-                          if (val === 'dzuhurBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur)</span>;
-                          return val;
-                        }}
-                      />
-                      <Bar
-                        dataKey="dzuhurTerlaksana"
-                        name="dzuhurTerlaksana"
-                        fill="#0D9488"
-                        stackId="dz"
-                        radius={[0, 0, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="dzuhurBerhalangan"
-                        name="dzuhurBerhalangan"
-                        fill="#A855F7"
-                        stackId="dz"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+          {/* Grafik Detail Tren Sesi Sholat Dzuhur */}
+          <div className="bg-slate-50 dark:bg-slate-800/90 p-6 rounded-2xl border border-teal-200 dark:border-teal-800/80 space-y-4 shadow-2xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-700">
+              <div>
+                <h4 className="font-heading font-black text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
+                  <span>🕌</span> Grafik Tren Kehadiran Sholat Dzuhur Berjamaah
+                </h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                  Analisis kehadiran sholat Dzuhur berjamaah vs berhalangan syar&apos;i
+                </p>
               </div>
-
-              {/* CHART 2: SESI SHALAT ASHAR */}
-              <div className="bg-slate-50 dark:bg-slate-800/90 p-5 rounded-2xl border border-sky-200 dark:border-sky-800/80 space-y-3 shadow-2xs">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center gap-2.5">
-                    <span className="p-2 bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700 rounded-xl text-sm">
-                      🕌
-                    </span>
-                    <div>
-                      <h4 className="font-heading font-black text-slate-900 dark:text-white text-sm sm:text-base">
-                        Tren Sesi Sholat Ashar
-                      </h4>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                        Kehadiran sholat Ashar berjamaah sebelum kepulangan
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-300 border border-sky-300 dark:border-sky-700">
-                    Sesi Ashar
-                  </span>
-                </div>
-
-                <div className="w-full h-64 sm:h-72 pt-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={chartData}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
-                      <XAxis
-                        dataKey="label"
-                        stroke="#64748B"
-                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                        interval={rangeMode === 'monthly' ? 4 : 0}
-                      />
-                      <YAxis
-                        stroke="#64748B"
-                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                        allowDecimals={false}
-                      />
-                      <Tooltip content={<CustomAsharTooltip />} />
-                      <Legend
-                        verticalAlign="top"
-                        align="right"
-                        wrapperStyle={{ paddingBottom: '10px', fontSize: '12px' }}
-                        formatter={(val) => {
-                          if (val === 'asharTerlaksana') return <span className="text-sky-800 dark:text-sky-300 font-bold">Terlaksana (Hadir)</span>;
-                          if (val === 'asharBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur)</span>;
-                          return val;
-                        }}
-                      />
-                      <Bar
-                        dataKey="asharTerlaksana"
-                        name="asharTerlaksana"
-                        fill="#0284C7"
-                        stackId="as"
-                        radius={[0, 0, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="asharBerhalangan"
-                        name="asharBerhalangan"
-                        fill="#A855F7"
-                        stackId="as"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              <div className="text-right">
+                <span className="text-xs font-bold text-teal-900 dark:text-teal-300 bg-teal-100 dark:bg-teal-950 border border-teal-300 dark:border-teal-700 px-3 py-1 rounded-full">
+                  Rata-rata: {sholatPeriodStats.avgDzuhur} siswa ({sholatPeriodStats.avgDzuhurPercent}%)
+                </span>
               </div>
             </div>
-          )}
 
-          {/* 2. OPTION 'DZUHUR': Fokus Tampilan Penuh Sesi Sholat Dzuhur */}
-          {sholatSessionFilter === 'dzuhur' && (
-            <div className="bg-slate-50 dark:bg-slate-800/90 p-6 rounded-2xl border border-teal-200 dark:border-teal-800/80 space-y-4 shadow-2xs">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-700">
-                <div>
-                  <h4 className="font-heading font-black text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
-                    <span>🕌</span> Grafik Detail Tren Sesi Shalat Dzuhur
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    Analisis kehadiran shalat Dzuhur berjamaah vs berhalangan vs nihil presensi
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold text-teal-900 dark:text-teal-300 bg-teal-100 dark:bg-teal-950 border border-teal-300 dark:border-teal-700 px-3 py-1 rounded-full">
-                    Rata-rata: {sholatPeriodStats.avgDzuhur} siswa ({sholatPeriodStats.avgDzuhurPercent}%)
-                  </span>
-                </div>
-              </div>
-
-              <div className="w-full h-72 sm:h-80 pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
-                    <XAxis
-                      dataKey="label"
-                      stroke="#64748B"
-                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                      interval={rangeMode === 'monthly' ? 4 : 0}
-                    />
-                    <YAxis
-                      stroke="#64748B"
-                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                      allowDecimals={false}
-                    />
-                    <Tooltip content={<CustomDzuhurTooltip />} />
-                    <Legend
-                      verticalAlign="top"
-                      align="right"
-                      wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
-                      formatter={(val) => {
-                        if (val === 'dzuhurTerlaksana') return <span className="text-teal-800 dark:text-teal-300 font-bold">Terlaksana (Hadir)</span>;
-                        if (val === 'dzuhurBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur Syar&apos;i)</span>;
-                        return val;
-                      }}
-                    />
-                    <Bar
-                      dataKey="dzuhurTerlaksana"
-                      name="dzuhurTerlaksana"
-                      fill="#0D9488"
-                      stackId="dzFull"
-                      radius={[0, 0, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="dzuhurBerhalangan"
-                      name="dzuhurBerhalangan"
-                      fill="#A855F7"
-                      stackId="dzFull"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="w-full h-72 sm:h-80 pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="#64748B"
+                    tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
+                    interval={rangeMode === 'monthly' ? 4 : 0}
+                  />
+                  <YAxis
+                    stroke="#64748B"
+                    tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomDzuhurTooltip />} />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
+                    formatter={(val) => {
+                      if (val === 'dzuhurTerlaksana') return <span className="text-teal-800 dark:text-teal-300 font-bold">Terlaksana (Hadir)</span>;
+                      if (val === 'dzuhurBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur Syar&apos;i)</span>;
+                      return val;
+                    }}
+                  />
+                  <Bar
+                    dataKey="dzuhurTerlaksana"
+                    name="dzuhurTerlaksana"
+                    fill="#0D9488"
+                    stackId="dzFull"
+                    radius={[0, 0, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="dzuhurBerhalangan"
+                    name="dzuhurBerhalangan"
+                    fill="#A855F7"
+                    stackId="dzFull"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          )}
-
-          {/* 3. OPTION 'ASHAR': Fokus Tampilan Penuh Sesi Sholat Ashar */}
-          {sholatSessionFilter === 'ashar' && (
-            <div className="bg-slate-50 dark:bg-slate-800/90 p-6 rounded-2xl border border-sky-200 dark:border-sky-800/80 space-y-4 shadow-2xs">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-700">
-                <div>
-                  <h4 className="font-heading font-black text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
-                    <span>🕌</span> Grafik Detail Tren Sesi Shalat Ashar
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    Analisis kehadiran shalat Ashar berjamaah sebelum pulang sekolah
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold text-sky-900 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 border border-sky-300 dark:border-sky-700 px-3 py-1 rounded-full">
-                    Rata-rata: {sholatPeriodStats.avgAshar} siswa ({sholatPeriodStats.avgAsharPercent}%)
-                  </span>
-                </div>
-              </div>
-
-              <div className="w-full h-72 sm:h-80 pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
-                    <XAxis
-                      dataKey="label"
-                      stroke="#64748B"
-                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                      interval={rangeMode === 'monthly' ? 4 : 0}
-                    />
-                    <YAxis
-                      stroke="#64748B"
-                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                      allowDecimals={false}
-                    />
-                    <Tooltip content={<CustomAsharTooltip />} />
-                    <Legend
-                      verticalAlign="top"
-                      align="right"
-                      wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
-                      formatter={(val) => {
-                        if (val === 'asharTerlaksana') return <span className="text-sky-800 dark:text-sky-300 font-bold">Terlaksana (Hadir)</span>;
-                        if (val === 'asharBerhalangan') return <span className="text-purple-800 dark:text-purple-300 font-bold">Berhalangan (Udzur Syar&apos;i)</span>;
-                        return val;
-                      }}
-                    />
-                    <Bar
-                      dataKey="asharTerlaksana"
-                      name="asharTerlaksana"
-                      fill="#0284C7"
-                      stackId="asFull"
-                      radius={[0, 0, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="asharBerhalangan"
-                      name="asharBerhalangan"
-                      fill="#A855F7"
-                      stackId="asFull"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {/* 4. OPTION 'COMPARE': Perbandingan Langsung Dzuhur vs Ashar */}
-          {sholatSessionFilter === 'compare' && (
-            <div className="bg-slate-50 dark:bg-slate-800/90 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-800/80 space-y-4 shadow-2xs">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-700">
-                <div>
-                  <h4 className="font-heading font-black text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
-                    <span>⚖️</span> Komparasi Kehadiran Sesi Dzuhur vs Sesi Ashar
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    Perbandingan langsung jumlah siswa yang shalat di sesi Dzuhur vs sesi Ashar
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-teal-900 dark:text-teal-300 bg-teal-100 dark:bg-teal-950 border border-teal-300 dark:border-teal-700 px-2.5 py-1 rounded-full">
-                    Dzuhur: ~{sholatPeriodStats.avgDzuhurPercent}%
-                  </span>
-                  <span className="text-xs font-bold text-sky-900 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 border border-sky-300 dark:border-sky-700 px-2.5 py-1 rounded-full">
-                    Ashar: ~{sholatPeriodStats.avgAsharPercent}%
-                  </span>
-                </div>
-              </div>
-
-              <div className="w-full h-72 sm:h-80 pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94A3B8" strokeOpacity={0.35} />
-                    <XAxis
-                      dataKey="label"
-                      stroke="#64748B"
-                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                      interval={rangeMode === 'monthly' ? 4 : 0}
-                    />
-                    <YAxis
-                      stroke="#64748B"
-                      tick={{ fill: '#64748B', fontSize: 11, fontWeight: 700 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#94A3B8', strokeOpacity: 0.5 }}
-                      allowDecimals={false}
-                    />
-                    <Tooltip
-                      content={(props) => {
-                        if (props.active && props.payload && props.payload.length) {
-                          const data = props.payload[0].payload;
-                          return (
-                            <div className="bg-slate-900 text-white p-4 rounded-xl shadow-xl border border-slate-700 text-xs space-y-2 min-w-[210px]">
-                              <div className="font-bold text-sm text-indigo-200 border-b border-slate-800 pb-1.5 flex items-center justify-between">
-                                <span>{data.label}</span>
-                                <span className="text-slate-400 font-mono text-[11px]">{data.dateStr}</span>
-                              </div>
-                              <div className="space-y-1.5 pt-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1.5 text-teal-400 font-medium">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-teal-500 inline-block" />
-                                    Sholat Dzuhur:
-                                  </span>
-                                  <span className="font-bold font-mono text-teal-300">
-                                    {data.dzuhurTerlaksana} siswa ({data.dzuhurPersen}%)
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1.5 text-sky-400 font-medium">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
-                                    Sholat Ashar:
-                                  </span>
-                                  <span className="font-bold font-mono text-sky-300">
-                                    {data.asharTerlaksana} siswa ({data.asharPersen}%)
-                                  </span>
-                                </div>
-                                <div className="border-t border-slate-800 pt-1.5 flex items-center justify-between font-bold text-slate-100">
-                                  <span>Total Ibadah Hari Ini:</span>
-                                  <span className="font-mono text-white">{data.totalSholat} presensi</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Legend
-                      verticalAlign="top"
-                      align="right"
-                      wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
-                      formatter={(val) => {
-                        if (val === 'dzuhurTerlaksana') return <span className="text-teal-800 dark:text-teal-300 font-bold">Dzuhur (Terlaksana)</span>;
-                        if (val === 'asharTerlaksana') return <span className="text-sky-800 dark:text-sky-300 font-bold">Ashar (Terlaksana)</span>;
-                        return val;
-                      }}
-                    />
-                    <Bar
-                      dataKey="dzuhurTerlaksana"
-                      name="dzuhurTerlaksana"
-                      fill="#0D9488"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="asharTerlaksana"
-                      name="asharTerlaksana"
-                      fill="#0284C7"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       ) : (
         /* VIEW: TREN PRESENSI KBM (MASUK & PULANG) */

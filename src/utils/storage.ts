@@ -31,8 +31,6 @@ export const INITIAL_SCHOOL_CONFIG: SchoolConfig = {
   sholat_absen_enabled: true,
   sholat_dzuhur_mulai: '11:45',
   sholat_dzuhur_selesai: '13:00',
-  sholat_ashar_mulai: '15:15',
-  sholat_ashar_selesai: '16:15',
   fonnte_token: '',
   fonnte_test_mode: true,
   sound_enabled: true,
@@ -584,8 +582,6 @@ export function getSchoolConfig(): SchoolConfig {
       sholat_absen_enabled: parsed.sholat_absen_enabled !== false,
       sholat_dzuhur_mulai: parsed.sholat_dzuhur_mulai || '11:45',
       sholat_dzuhur_selesai: parsed.sholat_dzuhur_selesai || '13:00',
-      sholat_ashar_mulai: parsed.sholat_ashar_mulai || '15:15',
-      sholat_ashar_selesai: parsed.sholat_ashar_selesai || '16:15',
       jam_masuk_harian: {
         ...INITIAL_SCHOOL_CONFIG.jam_masuk_harian,
         ...(parsed.jam_masuk_harian || {}),

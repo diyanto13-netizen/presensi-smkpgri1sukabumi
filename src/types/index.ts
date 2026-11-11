@@ -44,8 +44,6 @@ export interface Absensi {
   // Absensi Sholat Berjamaah
   jam_dzuhur?: string | null; // HH:mm:ss
   status_dzuhur?: StatusSholat | null;
-  jam_ashar?: string | null; // HH:mm:ss
-  status_ashar?: StatusSholat | null;
   status_akhir: StatusAbsensi;
   keterangan?: string;
   notifikasi_wa_terkirim: boolean;
@@ -55,12 +53,12 @@ export interface Absensi {
 
 export interface ScanResult {
   success: boolean;
-  type: 'MASUK' | 'PULANG' | 'DZUHUR' | 'ASHAR' | 'REJECTED' | 'ALREADY_COMPLETED';
+  type: 'MASUK' | 'PULANG' | 'DZUHUR' | 'REJECTED' | 'ALREADY_COMPLETED';
   siswa?: Siswa;
   absensi?: Absensi;
   message: string;
   timestamp: string;
-  statusDetail?: 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'DZUHUR' | 'ASHAR';
+  statusDetail?: 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'DZUHUR';
   waNotificationStatus?: 'SENT' | 'FAILED' | 'SIMULATED';
 }
 
@@ -108,7 +106,5 @@ export interface SchoolConfig {
   sholat_absen_enabled?: boolean;
   sholat_dzuhur_mulai?: string; // default "11:45"
   sholat_dzuhur_selesai?: string; // default "13:00"
-  sholat_ashar_mulai?: string; // default "15:15"
-  sholat_ashar_selesai?: string; // default "16:15"
 }
 

@@ -77,7 +77,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [manualNis, setManualNis] = useState<string>('');
-  const [mode, setMode] = useState<'AUTO' | 'MASUK' | 'DZUHUR' | 'ASHAR' | 'PULANG'>('AUTO');
+  const [mode, setMode] = useState<'AUTO' | 'MASUK' | 'DZUHUR' | 'PULANG'>('AUTO');
 
   // Simulated Time Controls for testing/demo
   const [useSimulatedTime, setUseSimulatedTime] = useState<boolean>(false);
@@ -290,7 +290,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
       const hasCheckedIn = Boolean(existingRecord?.jam_masuk);
       const hasCheckedOut = Boolean(existingRecord?.jam_pulang);
       const hasCheckedDzuhur = Boolean(existingRecord?.jam_dzuhur);
-      const hasCheckedAshar = Boolean(existingRecord?.jam_ashar);
 
       // Determine effective class departure time from daily schedule (Senin - Jum'at) or config
       const effectiveJamPulang = getEffectiveJamPulang(student.kelas, todayDate, config);
@@ -306,15 +305,12 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
         hasCheckedIn,
         hasCheckedOut,
         hasCheckedDzuhur,
-        hasCheckedAshar,
         forcedMode: mode,
         isWeekendHoliday: isWeekend,
         dayName: dayDisplayName,
         sholatAbsenEnabled: config.sholat_absen_enabled !== false,
         sholatDzuhurMulai: config.sholat_dzuhur_mulai || '11:45',
         sholatDzuhurSelesai: config.sholat_dzuhur_selesai || '13:00',
-        sholatAsharMulai: config.sholat_ashar_mulai || '15:15',
-        sholatAsharSelesai: config.sholat_ashar_selesai || '16:15',
       });
 
       if (!ruleResult.allowed) {
@@ -351,8 +347,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
           status_pulang: existingRecord?.status_pulang || null,
           jam_dzuhur: existingRecord?.jam_dzuhur || null,
           status_dzuhur: existingRecord?.status_dzuhur || null,
-          jam_ashar: existingRecord?.jam_ashar || null,
-          status_ashar: existingRecord?.status_ashar || null,
           status_akhir: ruleResult.status as 'TEPAT_WAKTU' | 'TERLAMBAT',
           notifikasi_wa_terkirim: false,
           created_at: existingRecord?.created_at || new Date().toISOString(),
@@ -371,28 +365,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
           status_pulang: existingRecord?.status_pulang || null,
           jam_dzuhur: effectiveTime,
           status_dzuhur: 'TERLAKSANA',
-          jam_ashar: existingRecord?.jam_ashar || null,
-          status_ashar: existingRecord?.status_ashar || null,
-          status_akhir: existingRecord?.status_akhir || 'TEPAT_WAKTU',
-          notifikasi_wa_terkirim: false,
-          created_at: existingRecord?.created_at || new Date().toISOString(),
-        };
-      } else if (ruleResult.type === 'ASHAR') {
-        updatedRecord = {
-          id: existingRecord?.id || 'att-' + Date.now(),
-          siswa_id: student.id,
-          nis: student.nis,
-          nama: student.nama,
-          kelas: student.kelas,
-          tanggal: todayDate,
-          jam_masuk: existingRecord?.jam_masuk || '07:00:00',
-          status_masuk: existingRecord?.status_masuk || 'TEPAT_WAKTU',
-          jam_pulang: existingRecord?.jam_pulang || null,
-          status_pulang: existingRecord?.status_pulang || null,
-          jam_dzuhur: existingRecord?.jam_dzuhur || null,
-          status_dzuhur: existingRecord?.status_dzuhur || null,
-          jam_ashar: effectiveTime,
-          status_ashar: 'TERLAKSANA',
           status_akhir: existingRecord?.status_akhir || 'TEPAT_WAKTU',
           notifikasi_wa_terkirim: false,
           created_at: existingRecord?.created_at || new Date().toISOString(),
@@ -412,8 +384,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
           status_pulang: 'PULANG',
           jam_dzuhur: existingRecord?.jam_dzuhur || null,
           status_dzuhur: existingRecord?.status_dzuhur || null,
-          jam_ashar: existingRecord?.jam_ashar || null,
-          status_ashar: existingRecord?.status_ashar || null,
           status_akhir: 'PULANG',
           notifikasi_wa_terkirim: false,
           created_at: existingRecord?.created_at || new Date().toISOString(),
@@ -422,7 +392,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
 
       // Audio & Voice Feedback
       if (soundActive) {
-        if (ruleResult.status === 'TEPAT_WAKTU' || ruleResult.type === 'DZUHUR' || ruleResult.type === 'ASHAR') {
+        if (ruleResult.status === 'TEPAT_WAKTU' || ruleResult.type === 'DZUHUR') {
           soundService.playSuccess();
           confetti({
             particleCount: 50,
@@ -444,8 +414,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
           }.`;
         } else if (ruleResult.type === 'DZUHUR') {
           greeting = `Selamat siang ${student.nama}. Presensi sholat dzuhur berjamaah berhasil. Selamat beribadah.`;
-        } else if (ruleResult.type === 'ASHAR') {
-          greeting = `Selamat sore ${student.nama}. Presensi sholat ashar berjamaah berhasil. Selamat beribadah.`;
         } else {
           greeting = `Selamat sore ${student.nama}. Presensi pulang berhasil. Hati-hati di jalan.`;
         }
@@ -466,8 +434,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
             ? `Terlambat ${ruleResult.minutesLate} menit`
             : ruleResult.type === 'DZUHUR'
             ? 'Sholat Dzuhur Berjamaah di Masjid Sekolah'
-            : ruleResult.type === 'ASHAR'
-            ? 'Sholat Ashar Berjamaah di Masjid Sekolah'
             : undefined,
         namaSekolah: config.nama_sekolah,
       });
@@ -1357,11 +1323,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                             🕌 Dzuhur
                           </span>
                         )}
-                        {todayRecord?.jam_ashar && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-900 border border-cyan-300">
-                            🕌 Ashar
-                          </span>
-                        )}
                       </div>
                     </div>
                   </button>
@@ -1390,11 +1351,11 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
               <label className="text-xs sm:text-sm font-bold text-slate-800 mb-2.5 block uppercase tracking-wider">
                 Mode Penilaian Kehadiran:
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-1.5 bg-slate-100 rounded-2xl">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-100 rounded-2xl">
                 <button
                   type="button"
                   onClick={() => setMode('AUTO')}
-                  className={`py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer col-span-2 sm:col-span-1 ${
+                  className={`py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer ${
                     mode === 'AUTO'
                       ? 'bg-slate-950 text-amber-300 shadow-sm'
                       : 'text-slate-700 hover:text-slate-950'
@@ -1429,19 +1390,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode('ASHAR')}
-                  className={`py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer ${
-                    mode === 'ASHAR'
-                      ? 'bg-cyan-700 text-white shadow-sm'
-                      : 'text-slate-700 hover:text-slate-950'
-                  }`}
-                  title="Presensi Sholat Ashar Berjamaah"
-                >
-                  <span>🕌</span>
-                  <span>Ashar</span>
-                </button>
-                <button
-                  type="button"
                   onClick={() => setMode('PULANG')}
                   className={`py-2 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer ${
                     mode === 'PULANG'
@@ -1454,10 +1402,9 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                 </button>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 mt-2.5 leading-relaxed font-medium">
-                {mode === 'AUTO' && '• Otomatis: Mendeteksi Masuk (pagi), Sholat Dzuhur (11:45–13:00), Sholat Ashar (15:15–16:15), dan Pulang sesuai jam kepulangan siswa.'}
+                {mode === 'AUTO' && '• Otomatis: Mendeteksi Masuk (pagi), Sholat Dzuhur (11:45–13:00), dan Pulang sesuai jam kepulangan siswa.'}
                 {mode === 'MASUK' && '• Paksa Masuk: Setiap scan dinilai sebagai absensi kedatangan pagi (Tepat Waktu / Terlambat).'}
                 {mode === 'DZUHUR' && '• Sholat Dzuhur: Setiap scan dinilai sebagai kehadiran Sholat Dzuhur Berjamaah.'}
-                {mode === 'ASHAR' && '• Sholat Ashar: Setiap scan dinilai sebagai kehadiran Sholat Ashar Berjamaah.'}
                 {mode === 'PULANG' && '• Paksa Pulang: Setiap scan dinilai untuk kepulangan siswa.'}
               </p>
             </div>
@@ -1530,13 +1477,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSimulatedTime('15:20')}
-                      className="text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl bg-white text-cyan-950 border border-cyan-300 hover:bg-cyan-50 cursor-pointer"
-                    >
-                      🕌 15:20 (Ashar)
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setSimulatedTime('15:35')}
                       className="text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl bg-white text-indigo-900 border border-indigo-300 hover:bg-indigo-50 cursor-pointer"
                     >
@@ -1578,7 +1518,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                   <div
                     className={`p-5 rounded-2xl flex items-start gap-4 ${
                       lastScanResult.success
-                        ? lastScanResult.type === 'DZUHUR' || lastScanResult.type === 'ASHAR'
+                        ? lastScanResult.type === 'DZUHUR'
                           ? 'bg-teal-50 border-2 border-teal-400 text-teal-950'
                           : lastScanResult.statusDetail === 'TEPAT_WAKTU'
                           ? 'bg-emerald-50 border-2 border-emerald-400 text-emerald-950'
@@ -1589,7 +1529,7 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                     }`}
                   >
                     {lastScanResult.success ? (
-                      lastScanResult.type === 'DZUHUR' || lastScanResult.type === 'ASHAR' ? (
+                      lastScanResult.type === 'DZUHUR' ? (
                         <div className="w-9 h-9 rounded-xl bg-teal-100 border border-teal-300 flex items-center justify-center text-xl shrink-0">
                           🕌
                         </div>
@@ -1610,8 +1550,6 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
                           {lastScanResult.success
                             ? lastScanResult.type === 'DZUHUR'
                               ? 'SHOLAT DZUHUR TERLAKSANA'
-                              : lastScanResult.type === 'ASHAR'
-                              ? 'SHOLAT ASHAR TERLAKSANA'
                               : lastScanResult.statusDetail === 'TEPAT_WAKTU'
                               ? 'HADIR TEPAT WAKTU'
                               : lastScanResult.statusDetail === 'TERLAMBAT'

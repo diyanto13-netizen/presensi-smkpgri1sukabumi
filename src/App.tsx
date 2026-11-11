@@ -419,19 +419,6 @@ export default function App() {
                 <BarChart3 className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'recap' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
                 <span>Rekap Absensi</span>
               </button>
-
-              <button
-                onClick={() => setActiveTab('docs')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
-                  activeTab === 'docs'
-                    ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white shadow-xs border border-blue-900 dark:border-blue-500'
-                    : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-700/60'
-                }`}
-                title="Panduan Skema Database SQL & API"
-              >
-                <BookOpen className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'docs' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
-                <span>SQL &amp; Docs</span>
-              </button>
             </nav>
 
             {/* Header Right Actions: Live WIB Clock & Settings Button */}
@@ -443,11 +430,11 @@ export default function App() {
                 <span className="text-[10px] text-slate-600 dark:text-slate-300 font-sans font-bold">WIB</span>
               </div>
 
-              {/* Settings button (Contains Theme Palette, Dark/Light Mode, Cloud Sync, Slide Penawaran & School Settings) */}
+              {/* Settings button (Contains Theme Palette, Dark/Light Mode, Cloud Sync, Slide Penawaran, SQL & Docs & School Settings) */}
               <button
                 onClick={() => setIsSettingsOpen(true)}
                 className="px-3.5 py-2 text-amber-300 dark:text-slate-950 bg-blue-950 dark:bg-amber-400 hover:bg-blue-900 dark:hover:bg-amber-300 border border-blue-900 dark:border-amber-500 rounded-xl transition flex items-center gap-2 text-xs font-bold shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
-                title="Pengaturan Sistem, Tema Warna PGRI, Mode Gelap/Terang, Cloud Sync & Slide Penawaran"
+                title="Pengaturan Sistem, Tema Warna PGRI, Mode Gelap/Terang, Cloud Sync, SQL & Docs & Slide Penawaran"
               >
                 <Settings className="w-3.5 h-3.5 shrink-0" />
                 <span>Pengaturan</span>
@@ -457,7 +444,7 @@ export default function App() {
         </div>
 
         {/* Mobile Navigation Bar */}
-        <div className="lg:hidden border-t border-slate-200/80 dark:border-slate-800 px-2 py-1.5 grid grid-cols-5 gap-1 bg-white/95 dark:bg-slate-900/95 text-[11px] font-semibold text-center">
+        <div className="lg:hidden border-t border-slate-200/80 dark:border-slate-800 px-2 py-1.5 grid grid-cols-4 gap-1 bg-white/95 dark:bg-slate-900/95 text-[11px] font-semibold text-center">
           <button
             onClick={() => setActiveTab('scanner')}
             className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
@@ -493,15 +480,6 @@ export default function App() {
           >
             <BarChart3 className="w-4 h-4" />
             <span className="truncate w-full">Rekap</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('docs')}
-            className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition ${
-              activeTab === 'docs' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/80 dark:bg-blue-950/60' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span className="truncate w-full">Docs</span>
           </button>
         </div>
       </header>
@@ -592,6 +570,10 @@ export default function App() {
         onManualSync={handleManualSync}
         onPushLocalToCloud={handlePushLocalToCloud}
         onResetAttendance={handleResetAttendance}
+        onOpenSqlDocs={() => {
+          setIsSettingsOpen(false);
+          setActiveTab('docs');
+        }}
         studentsCount={students.length}
         attendanceCount={attendanceRecords.length}
         isSyncing={isSyncing}

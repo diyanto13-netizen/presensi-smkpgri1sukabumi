@@ -84,7 +84,6 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
     let sudahPulang = 0;
     let belumAbsen = 0;
     let sholatDzuhur = 0;
-    let sholatAshar = 0;
 
     consolidatedList.forEach(item => {
       if (!item.record || !item.record.jam_masuk) {
@@ -95,7 +94,6 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
         if (item.record.status_pulang === 'PULANG') sudahPulang++;
       }
       if (item.record?.status_dzuhur === 'TERLAKSANA') sholatDzuhur++;
-      if (item.record?.status_ashar === 'TERLAKSANA') sholatAshar++;
     });
 
     const total = consolidatedList.length;
@@ -108,15 +106,13 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
       sudahPulang,
       belumAbsen,
       sholatDzuhur,
-      sholatAshar,
       persentase,
     };
   }, [consolidatedList]);
 
-  // Handler to toggle prayer status (Dzuhur / Ashar)
+  // Handler to toggle prayer status (Dzuhur)
   const handleToggleSholat = (
     student: Siswa,
-    sholatType: 'DZUHUR' | 'ASHAR',
     status: 'TERLAKSANA' | 'BERHALANGAN'
   ) => {
     const existingIndex = attendanceRecords.findIndex(
@@ -127,13 +123,8 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
     if (existingIndex >= 0) {
       const updated = [...attendanceRecords];
       const rec = { ...updated[existingIndex] };
-      if (sholatType === 'DZUHUR') {
-        rec.jam_dzuhur = status === 'TERLAKSANA' ? (rec.jam_dzuhur || nowTime) : null;
-        rec.status_dzuhur = status;
-      } else {
-        rec.jam_ashar = status === 'TERLAKSANA' ? (rec.jam_ashar || nowTime) : null;
-        rec.status_ashar = status;
-      }
+      rec.jam_dzuhur = status === 'TERLAKSANA' ? (rec.jam_dzuhur || nowTime) : null;
+      rec.status_dzuhur = status;
       updated[existingIndex] = rec;
       onUpdateAttendance(updated);
     } else {
@@ -148,10 +139,8 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
         status_masuk: 'TEPAT_WAKTU',
         jam_pulang: null,
         status_pulang: null,
-        jam_dzuhur: sholatType === 'DZUHUR' && status === 'TERLAKSANA' ? nowTime : null,
-        status_dzuhur: sholatType === 'DZUHUR' ? status : null,
-        jam_ashar: sholatType === 'ASHAR' && status === 'TERLAKSANA' ? nowTime : null,
-        status_ashar: sholatType === 'ASHAR' ? status : null,
+        jam_dzuhur: status === 'TERLAKSANA' ? nowTime : null,
+        status_dzuhur: status,
         status_akhir: 'TEPAT_WAKTU',
         notifikasi_wa_terkirim: false,
         created_at: new Date().toISOString(),
@@ -183,10 +172,10 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
     }
   };
 
-  // 1b. Export Native Excel Khusus Rekap Sholat Dzuhur & Ashar (.xlsx) Siap Cetak
+  // 1b. Export Native Excel Khusus Rekap Sholat Dzuhur (.xlsx) Siap Cetak
   const handleExportSholatExcel = async () => {
     setIsExportingSholatExcel(true);
-    setExportNotice('Menyiapkan file Excel Rekap Sholat Berjamaah (Dzuhur & Ashar) siap cetak dengan Kop PGRI...');
+    setExportNotice('Menyiapkan file Excel Rekap Sholat Dzuhur Berjamaah siap cetak dengan Kop PGRI...');
     try {
       await exportSholatAttendanceToExcel({
         students,
@@ -195,7 +184,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
         selectedClass,
         config,
       });
-      setExportNotice('Berhasil! File Excel Rekap Sholat Berjamaah (.xlsx) telah diunduh.');
+      setExportNotice('Berhasil! File Excel Rekap Sholat Dzuhur Berjamaah (.xlsx) telah diunduh.');
       setTimeout(() => setExportNotice(null), 5000);
     } catch (error) {
       console.error('Failed to export Sholat Excel:', error);
@@ -225,7 +214,6 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
       'Jam Masuk',
       'Status Masuk',
       'Sholat Dzuhur',
-      'Sholat Ashar',
       'Jam Pulang',
       'Status Akhir',
       'Notifikasi WA',
@@ -246,7 +234,6 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
         r?.jam_masuk || '-',
         r?.status_masuk || 'BELUM HADIR',
         r?.status_dzuhur === 'TERLAKSANA' ? `Terlaksana (${r?.jam_dzuhur || '-'})` : r?.status_dzuhur || '-',
-        r?.status_ashar === 'TERLAKSANA' ? `Terlaksana (${r?.jam_ashar || '-'})` : r?.status_ashar || '-',
         r?.jam_pulang || '-',
         r?.status_akhir || 'BELUM_ABSEN',
         r?.notifikasi_wa_terkirim ? 'Terkirim' : 'Belum/Gagal',
@@ -345,11 +332,11 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
             onClick={handleExportSholatExcel}
             disabled={isExportingSholatExcel || consolidatedList.length === 0}
             className="px-4 py-2 rounded-xl font-semibold text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
-            title="Download file Excel (.xlsx) khusus rekapitulasi sholat Dzuhur & Ashar siap cetak"
+            title="Download file Excel (.xlsx) khusus rekapitulasi sholat Dzuhur berjamaah siap cetak"
           >
             <span>🕌</span>
             <span>
-              {isExportingSholatExcel ? 'Menyiapkan...' : 'Ekspor Rekap Shalat (.xlsx)'}
+              {isExportingSholatExcel ? 'Menyiapkan...' : 'Ekspor Rekap Sholat Dzuhur (.xlsx)'}
             </span>
           </button>
 
@@ -422,7 +409,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
       )}
 
       {/* Metric Cards Summary */}
-      <div className="no-print grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="no-print grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
           <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Total Siswa</span>
           <div className="text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight mt-1">{stats.total}</div>
@@ -464,17 +451,6 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
             {stats.sholatDzuhur}
           </div>
           <span className="text-[11px] text-teal-700 dark:text-teal-300 font-semibold">Berjamaah</span>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-sky-200 dark:border-sky-800/70 shadow-2xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold text-sky-800 dark:text-sky-300 uppercase tracking-wider flex items-center justify-between">
-            <span>Sholat Ashar</span>
-            <span>🕌</span>
-          </span>
-          <div className="text-2xl font-mono font-black text-sky-900 dark:text-white tracking-tight mt-1">
-            {stats.sholatAshar}
-          </div>
-          <span className="text-[11px] text-sky-700 dark:text-sky-300 font-semibold">Berjamaah</span>
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-800/70 shadow-2xs flex flex-col justify-between">
@@ -623,8 +599,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                 <th className="py-3 px-3.5">Jurusan</th>
                 <th className="py-3 px-3 text-center">Jam Masuk</th>
                 <th className="py-3 px-3.5 text-center">Status Masuk</th>
-                <th className="py-3 px-3 text-center">Dzuhur 🕌</th>
-                <th className="py-3 px-3 text-center">Ashar 🕌</th>
+                <th className="py-3 px-3 text-center">Sholat Dzuhur 🕌</th>
                 <th className="py-3 px-3 text-center">Jam Pulang</th>
                 <th className="py-3 px-3.5 text-center">Status Akhir</th>
                 <th className="py-3 px-3.5 text-center no-print">Notif WA</th>
@@ -634,7 +609,7 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 border border-slate-200 dark:border-slate-800">
               {consolidatedList.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="py-10 text-center text-slate-500 dark:text-slate-400 text-base">
+                  <td colSpan={13} className="py-10 text-center text-slate-500 dark:text-slate-400 text-base">
                     Tidak ada siswa ditemukan pada filter ini.
                   </td>
                 </tr>
@@ -710,22 +685,6 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                             <span>{record.jam_dzuhur || 'Terlaksana'}</span>
                           </span>
                         ) : record?.status_dzuhur === 'BERHALANGAN' ? (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
-                            Berhalangan
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-500 text-xs italic">-</span>
-                        )}
-                      </td>
-
-                      {/* Sholat Ashar Cell */}
-                      <td className="py-3 px-3 text-center border-r border-slate-200 dark:border-slate-800">
-                        {record?.status_ashar === 'TERLAKSANA' ? (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-300 border border-sky-300 dark:border-sky-700 inline-flex items-center gap-1">
-                            <span>🕌</span>
-                            <span>{record.jam_ashar || 'Terlaksana'}</span>
-                          </span>
-                        ) : record?.status_ashar === 'BERHALANGAN' ? (
                           <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
                             Berhalangan
                           </span>
@@ -810,7 +769,6 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                             onClick={() =>
                               handleToggleSholat(
                                 student,
-                                'DZUHUR',
                                 record?.status_dzuhur === 'TERLAKSANA' ? 'BERHALANGAN' : 'TERLAKSANA'
                               )
                             }
@@ -822,24 +780,6 @@ export const AttendanceRecap: React.FC<AttendanceRecapProps> = ({
                             title="Tandai Sholat Dzuhur Terlaksana"
                           >
                             🕌 Dzuhur
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleToggleSholat(
-                                student,
-                                'ASHAR',
-                                record?.status_ashar === 'TERLAKSANA' ? 'BERHALANGAN' : 'TERLAKSANA'
-                              )
-                            }
-                            className={`px-2 py-1 rounded-lg text-xs font-bold cursor-pointer transition border ${
-                              record?.status_ashar === 'TERLAKSANA'
-                                ? 'bg-sky-700 text-white border-sky-800 hover:bg-sky-800'
-                                : 'bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-300 border-sky-300 dark:border-sky-700 hover:bg-sky-200'
-                            }`}
-                            title="Tandai Sholat Ashar Terlaksana"
-                          >
-                            🕌 Ashar
                           </button>
                           <button
                             type="button"

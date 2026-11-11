@@ -5,8 +5,8 @@
 
 export interface AttendanceRuleResult {
   allowed: boolean;
-  type: 'MASUK' | 'PULANG' | 'DZUHUR' | 'ASHAR' | 'REJECTED' | 'ALREADY_COMPLETED';
-  status: 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'DZUHUR' | 'ASHAR' | 'REJECTED';
+  type: 'MASUK' | 'PULANG' | 'DZUHUR' | 'REJECTED' | 'ALREADY_COMPLETED';
+  status: 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'DZUHUR' | 'REJECTED';
   message: string;
   minutesLate: number;
   minutesEarly: number;
@@ -83,15 +83,12 @@ export function processAttendanceRules(params: {
   hasCheckedIn: boolean;
   hasCheckedOut: boolean;
   hasCheckedDzuhur?: boolean;
-  hasCheckedAshar?: boolean;
-  forcedMode?: 'AUTO' | 'MASUK' | 'DZUHUR' | 'ASHAR' | 'PULANG';
+  forcedMode?: 'AUTO' | 'MASUK' | 'DZUHUR' | 'PULANG';
   isWeekendHoliday?: boolean;
   dayName?: string;
   sholatAbsenEnabled?: boolean;
   sholatDzuhurMulai?: string;
   sholatDzuhurSelesai?: string;
-  sholatAsharMulai?: string;
-  sholatAsharSelesai?: string;
 }): AttendanceRuleResult {
   const {
     currentTime,
@@ -100,15 +97,12 @@ export function processAttendanceRules(params: {
     hasCheckedIn,
     hasCheckedOut,
     hasCheckedDzuhur = false,
-    hasCheckedAshar = false,
     forcedMode = 'AUTO',
     isWeekendHoliday = false,
     dayName = '',
     sholatAbsenEnabled = true,
     sholatDzuhurMulai = '11:45',
     sholatDzuhurSelesai = '13:00',
-    sholatAsharMulai = '15:15',
-    sholatAsharSelesai = '16:15',
   } = params;
 
   // Weekend / Holiday Check in AUTO mode
@@ -145,29 +139,7 @@ export function processAttendanceRules(params: {
     };
   }
 
-  // 2. Forced Mode: SHOLAT ASHAR
-  if (forcedMode === 'ASHAR') {
-    if (hasCheckedAshar) {
-      return {
-        allowed: false,
-        type: 'ALREADY_COMPLETED',
-        status: 'REJECTED',
-        message: 'Siswa sudah tercatat absensi Sholat Ashar berjamaah hari ini.',
-        minutesLate: 0,
-        minutesEarly: 0,
-      };
-    }
-    return {
-      allowed: true,
-      type: 'ASHAR',
-      status: 'ASHAR',
-      message: 'Absensi Sholat Ashar Berhasil. Selamat menunaikan ibadah sholat berjamaah.',
-      minutesLate: 0,
-      minutesEarly: 0,
-    };
-  }
-
-  // 3. Forced Mode: MASUK
+  // 2. Forced Mode: MASUK
   if (forcedMode === 'MASUK') {
     const checkInEval = evaluateCheckInTime(currentTime, jamMasukBatas);
     return {
@@ -183,7 +155,7 @@ export function processAttendanceRules(params: {
     };
   }
 
-  // 4. Forced Mode: PULANG
+  // 3. Forced Mode: PULANG
   if (forcedMode === 'PULANG') {
     const checkOutEval = evaluateCheckOutTime(currentTime, studentJamPulang);
     if (!checkOutEval.allowed) {
@@ -206,7 +178,7 @@ export function processAttendanceRules(params: {
     };
   }
 
-  // 5. AUTO Mode:
+  // 4. AUTO Mode:
   // If not checked in yet, this scan is check-in
   if (!hasCheckedIn) {
     const checkInEval = evaluateCheckInTime(currentTime, jamMasukBatas);
@@ -235,7 +207,7 @@ export function processAttendanceRules(params: {
     };
   }
 
-  // Check Sholat Windows in AUTO Mode
+  // Check Sholat Dzuhur Window in AUTO Mode
   if (sholatAbsenEnabled) {
     const curMin = timeStringToMinutes(currentTime);
     const dzuhurStartMin = timeStringToMinutes(sholatDzuhurMulai);
@@ -247,20 +219,6 @@ export function processAttendanceRules(params: {
         type: 'DZUHUR',
         status: 'DZUHUR',
         message: 'Absensi Sholat Dzuhur Berhasil. Selamat menunaikan ibadah sholat berjamaah.',
-        minutesLate: 0,
-        minutesEarly: 0,
-      };
-    }
-
-    const asharStartMin = timeStringToMinutes(sholatAsharMulai);
-    const asharEndMin = timeStringToMinutes(sholatAsharSelesai);
-
-    if (curMin >= asharStartMin && curMin <= asharEndMin && !hasCheckedAshar && !hasCheckedOut) {
-      return {
-        allowed: true,
-        type: 'ASHAR',
-        status: 'ASHAR',
-        message: 'Absensi Sholat Ashar Berhasil. Selamat menunaikan ibadah sholat berjamaah.',
         minutesLate: 0,
         minutesEarly: 0,
       };
@@ -297,8 +255,8 @@ export function formatWhatsAppMessage(params: {
   namaSiswa: string;
   nis: string;
   kelas: string;
-  jenisAbsen: 'MASUK' | 'PULANG' | 'DZUHUR' | 'ASHAR';
-  status: 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'DZUHUR' | 'ASHAR';
+  jenisAbsen: 'MASUK' | 'PULANG' | 'DZUHUR';
+  status: 'TEPAT_WAKTU' | 'TERLAMBAT' | 'PULANG' | 'DZUHUR';
   waktu: string; // e.g. "06:45:10 WIB"
   tanggal: string; // e.g. "Kamis, 15 Oktober 2026"
   keterangan?: string;
@@ -323,8 +281,6 @@ export function formatWhatsAppMessage(params: {
     statusText = 'SELESAI KBM & PULANG 🏠';
   } else if (status === 'DZUHUR') {
     statusText = 'MELAKSANAKAN SHOLAT DZUHUR BERJAMAAH 🕌';
-  } else if (status === 'ASHAR') {
-    statusText = 'MELAKSANAKAN SHOLAT ASHAR BERJAMAAH 🕌';
   }
 
   const judul =
@@ -332,9 +288,7 @@ export function formatWhatsAppMessage(params: {
       ? 'ABSENSI MASUK'
       : jenisAbsen === 'PULANG'
       ? 'ABSENSI PULANG'
-      : jenisAbsen === 'DZUHUR'
-      ? 'ABSENSI SHOLAT DZUHUR'
-      : 'ABSENSI SHOLAT ASHAR';
+      : 'ABSENSI SHOLAT DZUHUR';
 
   return `*${namaSekolah}*
 *NOTIFIKASI KEHADIRAN SISWA - ${judul}*

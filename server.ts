@@ -7,6 +7,7 @@ import { getAllStudents, upsertStudent, bulkUpsertStudents, deleteStudentById, b
 import { getAttendanceByDate, getAllAttendanceLogs, recordAttendanceLog, bulkUpdateAttendanceLogs, getAttendanceRecapStats, clearAttendanceLogs } from './src/db/attendance.ts';
 import { getDbSchoolConfig, saveDbSchoolConfig } from './src/db/config.ts';
 import { getOrCreateUser } from './src/db/users.ts';
+import { ensureDatabaseSchema } from './src/db/index.ts';
 import { Absensi } from './src/types';
 
 dotenv.config();
@@ -17,6 +18,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const PORT = 3000;
 
 async function startServer() {
+  await ensureDatabaseSchema();
   const app = express();
   app.use(express.json({ limit: '10mb' }));
 

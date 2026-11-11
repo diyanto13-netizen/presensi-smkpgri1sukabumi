@@ -22,8 +22,6 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
     let sholatAbsenEnabled = true;
     let sholatDzuhurMulai = '11:45';
     let sholatDzuhurSelesai = '13:00';
-    let sholatAsharMulai = '15:15';
-    let sholatAsharSelesai = '16:15';
 
     if (r.jamPulangPerKelas) {
       try {
@@ -36,8 +34,6 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
           if (parsed.sholatAbsenEnabled !== undefined) sholatAbsenEnabled = parsed.sholatAbsenEnabled;
           if (parsed.sholatDzuhurMulai) sholatDzuhurMulai = parsed.sholatDzuhurMulai;
           if (parsed.sholatDzuhurSelesai) sholatDzuhurSelesai = parsed.sholatDzuhurSelesai;
-          if (parsed.sholatAsharMulai) sholatAsharMulai = parsed.sholatAsharMulai;
-          if (parsed.sholatAsharSelesai) sholatAsharSelesai = parsed.sholatAsharSelesai;
         } else {
           jamPulangMap = parsed;
         }
@@ -51,8 +47,6 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
     }
     if (r.sholatDzuhurMulai) sholatDzuhurMulai = r.sholatDzuhurMulai;
     if (r.sholatDzuhurSelesai) sholatDzuhurSelesai = r.sholatDzuhurSelesai;
-    if (r.sholatAsharMulai) sholatAsharMulai = r.sholatAsharMulai;
-    if (r.sholatAsharSelesai) sholatAsharSelesai = r.sholatAsharSelesai;
 
     return {
       nama_sekolah: r.namaSekolah,
@@ -73,8 +67,6 @@ export async function getDbSchoolConfig(): Promise<SchoolConfig | null> {
       sholat_absen_enabled: sholatAbsenEnabled,
       sholat_dzuhur_mulai: sholatDzuhurMulai,
       sholat_dzuhur_selesai: sholatDzuhurSelesai,
-      sholat_ashar_mulai: sholatAsharMulai,
-      sholat_ashar_selesai: sholatAsharSelesai,
       fonnte_token: r.fonnteToken || '',
       fonnte_test_mode: r.fonnteTestMode ?? true,
       sound_enabled: r.soundEnabled ?? true,
@@ -96,8 +88,6 @@ export async function saveDbSchoolConfig(cfg: SchoolConfig): Promise<SchoolConfi
       sholatAbsenEnabled: cfg.sholat_absen_enabled !== false,
       sholatDzuhurMulai: cfg.sholat_dzuhur_mulai || '11:45',
       sholatDzuhurSelesai: cfg.sholat_dzuhur_selesai || '13:00',
-      sholatAsharMulai: cfg.sholat_ashar_mulai || '15:15',
-      sholatAsharSelesai: cfg.sholat_ashar_selesai || '16:15',
     });
     
     // Check if row exists
@@ -125,8 +115,6 @@ export async function saveDbSchoolConfig(cfg: SchoolConfig): Promise<SchoolConfi
           sholatAbsenEnabled: cfg.sholat_absen_enabled !== false,
           sholatDzuhurMulai: cfg.sholat_dzuhur_mulai || '11:45',
           sholatDzuhurSelesai: cfg.sholat_dzuhur_selesai || '13:00',
-          sholatAsharMulai: cfg.sholat_ashar_mulai || '15:15',
-          sholatAsharSelesai: cfg.sholat_ashar_selesai || '16:15',
           fonnteToken: cfg.fonnte_token || null,
           fonnteTestMode: cfg.fonnte_test_mode,
           soundEnabled: cfg.sound_enabled,
@@ -151,8 +139,6 @@ export async function saveDbSchoolConfig(cfg: SchoolConfig): Promise<SchoolConfi
         sholatAbsenEnabled: cfg.sholat_absen_enabled !== false,
         sholatDzuhurMulai: cfg.sholat_dzuhur_mulai || '11:45',
         sholatDzuhurSelesai: cfg.sholat_dzuhur_selesai || '13:00',
-        sholatAsharMulai: cfg.sholat_ashar_mulai || '15:15',
-        sholatAsharSelesai: cfg.sholat_ashar_selesai || '16:15',
         fonnteToken: cfg.fonnte_token || null,
         fonnteTestMode: cfg.fonnte_test_mode,
         soundEnabled: cfg.sound_enabled,

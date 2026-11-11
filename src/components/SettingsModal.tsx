@@ -38,6 +38,7 @@ import {
 } from '../utils/theme';
 import { SchoolConfig, HariSekolah, JamMasukHarian, JamPulangHarian } from '../types/index.ts';
 import { SchoolLogo } from './SchoolLogo';
+import { SqlSchemaGuide } from './SqlSchemaGuide';
 import {
   MASTER_KELAS_LIST,
   DAFTAR_JURUSAN,
@@ -56,6 +57,7 @@ interface SettingsModalProps {
   onManualSync?: () => Promise<void>;
   onPushLocalToCloud?: () => Promise<void>;
   onResetAttendance?: (tanggal?: string) => Promise<void>;
+  onOpenSqlDocs?: () => void;
   studentsCount?: number;
   attendanceCount?: number;
   isSyncing?: boolean;
@@ -74,6 +76,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onManualSync,
   onPushLocalToCloud,
   onResetAttendance,
+  onOpenSqlDocs,
   studentsCount = 0,
   attendanceCount = 0,
   isSyncing = false,
@@ -82,7 +85,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onThemeChange,
   onPaletteChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'sholat' | 'umum' | 'fonnte' | 'database'>('jadwal_pulang');
+  const [activeTab, setActiveTab] = useState<'jadwal_pulang' | 'sholat' | 'umum' | 'fonnte' | 'database' | 'sql_docs'>('jadwal_pulang');
   const [selectedDayTab, setSelectedDayTab] = useState<HariSekolah>('senin');
   const [currentTheme, setCurrentTheme] = useState<Theme>(() => propTheme || getInitialTheme());
   const [currentPalette, setCurrentPalette] = useState<ThemePalette>(() => propPalette || getInitialPalette());
@@ -411,7 +414,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Right: Cloud Sync & Slide Penawaran */}
+          {/* Right: Cloud Sync, SQL & Docs & Slide Penawaran */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Cloud Sync Button */}
             {onManualSync && (
@@ -427,6 +430,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <RefreshCw className={`w-3 h-3 text-slate-500 ${isSyncing ? 'animate-spin text-blue-600 dark:text-blue-400' : ''}`} />
               </button>
             )}
+
+            {/* SQL & Docs Button */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('sql_docs')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer whitespace-nowrap border ${
+                activeTab === 'sql_docs'
+                  ? 'bg-blue-950 dark:bg-blue-600 text-amber-300 dark:text-white border-blue-900 dark:border-blue-500'
+                  : 'text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-800'
+              }`}
+              title="Panduan Skema Database SQL & Dokumentasi Sistem"
+            >
+              <BookOpen className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'sql_docs' ? 'text-amber-300 dark:text-amber-200' : 'text-blue-700 dark:text-blue-400'}`} />
+              <span>SQL &amp; Docs</span>
+            </button>
 
             {/* Slide Penawaran Button */}
             <a
@@ -507,6 +525,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <Database className={`w-3.5 h-3.5 ${activeTab === 'database' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
             <span>Database Cloud</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('sql_docs')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
+              activeTab === 'sql_docs'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <BookOpen className={`w-3.5 h-3.5 ${activeTab === 'sql_docs' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+            <span>SQL &amp; Docs</span>
           </button>
         </div>
 
@@ -994,7 +1025,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             )}
 
-            {/* ================= TAB: SHOLAT BERJAMAAH (DZUHUR & ASHAR) ================= */}
+            {/* ================= TAB: SHOLAT DZUHUR BERJAMAAH ================= */}
             {activeTab === 'sholat' && (
               <div className="space-y-4">
                 {/* Master Toggle */}
@@ -1006,10 +1037,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                       <div>
                         <h4 className="font-heading font-black text-sm sm:text-base text-slate-900 dark:text-white">
-                          Presensi Sholat Berjamaah di Masjid Sekolah
+                          Presensi Sholat Dzuhur Berjamaah di Masjid Sekolah
                         </h4>
                         <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
-                          Mencatat kedisiplinan ibadah Sholat Dzuhur dan Sholat Ashar berjamaah siswa SMKS PGRI 1 Sukabumi
+                          Mencatat kedisiplinan ibadah Sholat Dzuhur berjamaah siswa SMKS PGRI 1 Sukabumi
                         </p>
                       </div>
                     </div>
@@ -1029,100 +1060,57 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {/* Sholat Dzuhur Settings */}
-                <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-2xs">
-                  <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <div className="p-4 sm:p-5 bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-4 shadow-2xs">
+                  <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-700 pb-3">
                     <span className="text-lg">☀️</span>
                     <div>
-                      <h4 className="font-heading font-black text-sm text-slate-900">
+                      <h4 className="font-heading font-black text-sm text-slate-900 dark:text-white">
                         Jadwal Rentang Waktu Sholat Dzuhur Berjamaah
                       </h4>
-                      <p className="text-xs text-slate-500 font-medium">
-                        Siswa yang scan pada rentang jam ini otomatis tercatat melaksanakan Sholat Dzuhur
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                        Siswa yang scan pada rentang jam ini otomatis tercatat melaksanakan Sholat Dzuhur Berjamaah
                       </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                      <label className="text-xs sm:text-sm font-bold text-slate-700">Jam Mulai Dzuhur:</label>
-                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                      <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">Jam Mulai Dzuhur:</label>
+                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1">
                         <input
                           type="time"
                           value={formData.sholat_dzuhur_mulai || '11:45'}
                           onChange={e => setFormData({ ...formData, sholat_dzuhur_mulai: e.target.value })}
-                          className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
+                          className="font-mono font-bold text-sm text-slate-900 dark:text-white bg-transparent focus:outline-none w-20"
                         />
-                        <span className="text-xs font-bold text-slate-500">WIB</span>
+                        <span className="text-xs font-bold text-slate-600 dark:text-amber-300">WIB</span>
                       </div>
                     </div>
 
-                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                      <label className="text-xs sm:text-sm font-bold text-slate-700">Jam Selesai Dzuhur:</label>
-                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                      <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">Jam Selesai Dzuhur:</label>
+                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1">
                         <input
                           type="time"
                           value={formData.sholat_dzuhur_selesai || '13:00'}
                           onChange={e => setFormData({ ...formData, sholat_dzuhur_selesai: e.target.value })}
-                          className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
+                          className="font-mono font-bold text-sm text-slate-900 dark:text-white bg-transparent focus:outline-none w-20"
                         />
-                        <span className="text-xs font-bold text-slate-500">WIB</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sholat Ashar Settings */}
-                <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-2xs">
-                  <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                    <span className="text-lg">🌤️</span>
-                    <div>
-                      <h4 className="font-heading font-black text-sm text-slate-900">
-                        Jadwal Rentang Waktu Sholat Ashar Berjamaah
-                      </h4>
-                      <p className="text-xs text-slate-500 font-medium">
-                        Siswa yang scan pada rentang jam ini otomatis tercatat melaksanakan Sholat Ashar sebelum kepulangan
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                      <label className="text-xs sm:text-sm font-bold text-slate-700">Jam Mulai Ashar:</label>
-                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
-                        <input
-                          type="time"
-                          value={formData.sholat_ashar_mulai || '15:15'}
-                          onChange={e => setFormData({ ...formData, sholat_ashar_mulai: e.target.value })}
-                          className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
-                        />
-                        <span className="text-xs font-bold text-slate-500">WIB</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                      <label className="text-xs sm:text-sm font-bold text-slate-700">Jam Selesai Ashar:</label>
-                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
-                        <input
-                          type="time"
-                          value={formData.sholat_ashar_selesai || '16:15'}
-                          onChange={e => setFormData({ ...formData, sholat_ashar_selesai: e.target.value })}
-                          className="font-mono font-bold text-sm text-slate-900 bg-transparent focus:outline-none w-20"
-                        />
-                        <span className="text-xs font-bold text-slate-500">WIB</span>
+                        <span className="text-xs font-bold text-slate-600 dark:text-amber-300">WIB</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Cloud Storage & Stability Assurance Notice */}
-                <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-3">
+                <div className="p-4 bg-emerald-50/80 dark:bg-slate-800/95 border border-emerald-200 dark:border-emerald-700/80 rounded-2xl flex items-start gap-3">
                   <span className="text-2xl shrink-0 mt-0.5">💾</span>
-                  <div className="text-xs sm:text-sm text-emerald-950 space-y-1">
+                  <div className="text-xs sm:text-sm text-emerald-950 dark:text-white space-y-1">
                     <p className="font-bold">
                       Efisiensi Penyimpanan Cloud (Firestore &amp; Cloud SQL PostgreSQL):
                     </p>
-                    <p className="text-emerald-900 leading-relaxed font-medium">
-                      Penambahan absensi Sholat Dzuhur dan Ashar <strong>TIDAK membebani kapasitas cloud</strong> karena tersimpan dalam satu rekaman harian yang sama (hanya bertambah ~50 bytes per siswa/hari). Sistem tetap berjalan sangat stabil, cepat, dan hemat kuota.
+                    <p className="text-emerald-900 dark:text-slate-300 leading-relaxed font-medium">
+                      Pencatatan absensi Sholat Dzuhur Berjamaah <strong>TIDAK membebani kapasitas cloud</strong> karena tersimpan dalam satu rekaman harian yang sama. Sistem berjalan sangat stabil, cepat, dan hemat kuota.
                     </p>
                   </div>
                 </div>
@@ -1565,10 +1553,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {/* Manual Sync Actions */}
-                <div className="p-5 bg-white border border-slate-200 rounded-2xl space-y-4">
+                <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-4">
                   <div>
-                    <h4 className="font-bold text-slate-900 text-sm">Pembaruan &amp; Sinkronisasi Cloud</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">Pembaruan &amp; Sinkronisasi Cloud</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
                       Gunakan tombol di bawah untuk menyegarkan data langsung dari server cloud atau mengunggah pembaruan ke database server.
                     </p>
                   </div>
@@ -1602,17 +1590,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Reset Data Log Presensi (Kembalikan 0 di Database) */}
                 {onResetAttendance && (
-                  <div className="p-5 bg-rose-50/70 border border-rose-200 rounded-2xl space-y-4">
+                  <div className="p-5 bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/80 rounded-2xl space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/80 text-rose-700 dark:text-rose-300 flex items-center justify-center shrink-0 mt-0.5">
                           <RotateCcw className="w-4.5 h-4.5" />
                         </div>
                         <div>
-                          <h4 className="font-bold text-rose-950 text-sm">
+                          <h4 className="font-bold text-rose-950 dark:text-rose-200 text-sm">
                             Reset Data Log Presensi (Kembali 0 pada Database)
                           </h4>
-                          <p className="text-xs text-rose-800 mt-0.5 leading-relaxed">
+                          <p className="text-xs text-rose-800 dark:text-rose-300 mt-0.5 leading-relaxed font-medium">
                             Gunakan fitur ini setelah selesai melakukan uji coba / absen percobaan. Seluruh rekaman log presensi ({attendanceCount} rekaman) akan dikosongkan menjadi 0 di PostgreSQL, Firebase Firestore, dan penyimpanan lokal tanpa menghapus data siswa.
                           </p>
                         </div>
@@ -1632,9 +1620,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
 
                     {confirmResetDbLog && (
-                      <div className="p-4 bg-white rounded-xl border border-rose-300 space-y-3 animate-in fade-in duration-150">
-                        <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-rose-300 dark:border-rose-700 space-y-3 animate-in fade-in duration-150">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                           <span>
                             Konfirmasi: Yakin ingin mengosongkan seluruh {attendanceCount} log presensi agar kembali 0 di database?
                           </span>
@@ -1643,7 +1631,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <button
                             type="button"
                             onClick={() => setConfirmResetDbLog(false)}
-                            className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                            className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer"
                           >
                             Batal
                           </button>
@@ -1668,24 +1656,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 )}
               </div>
             )}
+
+            {/* ================= TAB 5: SQL & DOCS (SKEMA DATABASE & DOKUMENTASI) ================= */}
+            {activeTab === 'sql_docs' && (
+              <div className="space-y-4">
+                {onOpenSqlDocs && (
+                  <div className="p-3.5 bg-blue-50 dark:bg-slate-800/95 border border-blue-200 dark:border-slate-700 rounded-xl flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                      <BookOpen className="w-4 h-4 text-blue-700 dark:text-amber-400 shrink-0" />
+                      <span>Dokumentasi Skema SQL, Struktur Tabel &amp; Panduan Integrasi API</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onOpenSqlDocs}
+                      className="px-3.5 py-1.5 rounded-lg bg-blue-950 dark:bg-amber-400 text-amber-300 dark:text-slate-950 text-xs font-bold flex items-center gap-1.5 hover:bg-blue-900 dark:hover:bg-amber-300 transition cursor-pointer"
+                    >
+                      <span>Buka di Halaman Penuh</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+                <SqlSchemaGuide />
+              </div>
+            )}
           </div>
 
           {/* Action Footer */}
-          <div className="pt-4 mt-4 border-t border-slate-200 flex items-center justify-between shrink-0">
-            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+          <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+            <span className="text-xs text-slate-600 dark:text-slate-300 font-medium hidden sm:inline">
               * Perubahan jadwal jam pulang kelas akan langsung berlaku di Terminal Scanner.
             </span>
             <div className="flex items-center gap-3 ml-auto">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-bold cursor-pointer transition text-sm"
+                className="px-5 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold cursor-pointer transition text-sm"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-xl font-bold bg-blue-950 hover:bg-black text-amber-300 flex items-center gap-2 shadow-md cursor-pointer transition text-sm"
+                className="px-6 py-2.5 rounded-xl font-bold bg-blue-950 dark:bg-amber-400 hover:bg-black dark:hover:bg-amber-300 text-amber-300 dark:text-slate-950 flex items-center gap-2 shadow-md cursor-pointer transition text-sm"
               >
                 <Save className="w-4 h-4" />
                 <span>Simpan Pengaturan</span>
