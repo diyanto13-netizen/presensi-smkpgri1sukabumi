@@ -36,6 +36,7 @@ import {
   ITEM_TIDAK_SHOLAT_DZUHUR,
 } from '../utils/violationRules';
 import { exportViolationReportToExcel } from '../utils/excelExport';
+import { ViolationAnalyticsCharts } from './ViolationAnalyticsCharts';
 
 interface ViolationManagerProps {
   students: Siswa[];
@@ -515,6 +516,14 @@ export const ViolationManager: React.FC<ViolationManagerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Recharts Data Visualization: Tren Akumulasi Poin Per Kelas & Distribusi Jenis Pelanggaran Terbanyak */}
+      <ViolationAnalyticsCharts
+        students={students}
+        violations={violations}
+        selectedClass={selectedClass}
+        onSelectClass={(kls) => setSelectedClass(kls)}
+      />
 
       {/* Navigation Sub-Tabs */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-2 shadow-sm flex flex-wrap gap-1.5 no-print">
