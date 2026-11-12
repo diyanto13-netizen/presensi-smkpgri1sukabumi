@@ -137,35 +137,37 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
     };
   }, []);
 
-  // Clock ticker
+  // Sync audio & voice toggles if config changes
+  useEffect(() => {
+    setSoundActive(config.sound_enabled);
+    setVoiceActive(config.voice_announcement_enabled);
+  }, [config.sound_enabled, config.voice_announcement_enabled]);
+
+  // Clock ticker (always formatted as HH:mm:ss with colons)
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      });
-      setCurrentTimeDisplay(timeStr);
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      setCurrentTimeDisplay(`${hh}:${mm}:${ss}`);
     };
     updateTime();
     const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Determine effective time (Live or Simulated)
+  // Determine effective time (Live or Simulated) strictly in HH:mm:ss format
   const getEffectiveTime = useCallback((): string => {
     if (useSimulatedTime) {
-      return simulatedTime + ':00';
+      const normalizedSim = simulatedTime.trim().replace(/\./g, ':');
+      return normalizedSim.length === 5 ? `${normalizedSim}:00` : normalizedSim;
     }
     const now = new Date();
-    return now.toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    });
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
   }, [useSimulatedTime, simulatedTime]);
 
   // Main Attendance Processing Function with deep multi-format extraction
@@ -808,6 +810,42 @@ export const ScannerTerminal: React.FC<ScannerTerminalProps> = ({
       }
     };
   }, []);
+
+  // Global HID Keyboard Wedge Listener for USB / Bluetooth / Wireless 2D QR Scanners
+  // Automatically captures rapid hardware scanner keystrokes + Enter even when input is not focused
+  const scannerBufferRef = useRef<string>('');
+  const lastKeyTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is actively typing inside an input/textarea/select
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+        return;
+      }
+
+      const now = Date.now();
+      // Reset buffer if delay between characters is > 120ms (human typing vs hardware scanner)
+      if (now - lastKeyTimeRef.current > 120) {
+        scannerBufferRef.current = '';
+      }
+      lastKeyTimeRef.current = now;
+
+      if (e.key === 'Enter') {
+        const scannedValue = scannerBufferRef.current.trim();
+        if (scannedValue.length >= 3) {
+          e.preventDefault();
+          scannerBufferRef.current = '';
+          handleAttendanceScan(scannedValue);
+        }
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        scannerBufferRef.current += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleAttendanceScan]);
 
   // Handle Manual NIS Submit
   const handleManualSubmit = (e: React.FormEvent) => {

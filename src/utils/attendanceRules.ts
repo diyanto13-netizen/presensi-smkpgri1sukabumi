@@ -13,14 +13,15 @@ export interface AttendanceRuleResult {
 }
 
 /**
- * Converts "HH:mm" or "HH:mm:ss" into total minutes from midnight.
+ * Converts "HH:mm", "HH.mm", "HH:mm:ss", or "HH.mm.ss" into total minutes from midnight.
+ * Supports both colon (:) and Indonesian locale dot (.) time separators.
  */
 export function timeStringToMinutes(timeStr: string): number {
   if (!timeStr) return 0;
-  const parts = timeStr.trim().split(':');
+  const parts = timeStr.trim().split(/[:.]/);
   const hours = parseInt(parts[0] || '0', 10);
   const minutes = parseInt(parts[1] || '0', 10);
-  return hours * 60 + minutes;
+  return (isNaN(hours) ? 0 : hours) * 60 + (isNaN(minutes) ? 0 : minutes);
 }
 
 /**

@@ -443,11 +443,29 @@ export function getEffectiveJamMasuk(
   if (isWeekendHoliday(dateOrDay, config)) {
     return '-';
   }
+  const batas = (config?.jam_masuk_batas || '07:00').trim().replace(/\./g, ':');
   const dayKey = getHariKey(dateOrDay);
-  if (config?.jam_masuk_harian?.[dayKey as keyof JamMasukHarian]) {
-    return config.jam_masuk_harian[dayKey as keyof JamMasukHarian]!;
+  const harian = config?.jam_masuk_harian;
+
+  if (harian) {
+    const allDefault0700 =
+      (harian.senin || '07:00').replace(/\./g, ':') === '07:00' &&
+      (harian.selasa || '07:00').replace(/\./g, ':') === '07:00' &&
+      (harian.rabu || '07:00').replace(/\./g, ':') === '07:00' &&
+      (harian.kamis || '07:00').replace(/\./g, ':') === '07:00' &&
+      (harian.jumat || '07:00').replace(/\./g, ':') === '07:00';
+
+    // If jam_masuk_batas was customized (e.g. 06:59) while harian is still all default 07:00, use jam_masuk_batas
+    if (allDefault0700 && batas !== '07:00') {
+      return batas;
+    }
+
+    const dayVal = harian[dayKey as keyof JamMasukHarian];
+    if (dayVal) {
+      return dayVal.trim().replace(/\./g, ':');
+    }
   }
-  return config?.jam_masuk_batas || '07:00';
+  return batas;
 }
 
 /**

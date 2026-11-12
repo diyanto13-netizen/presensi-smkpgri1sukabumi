@@ -115,7 +115,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [formData, setFormData] = useState<SchoolConfig>(() => ({
     ...config,
     sabtu_minggu_libur: config.sabtu_minggu_libur !== false,
-    jam_masuk_batas: config.jam_masuk_batas || '07:00',
+    jam_masuk_batas: (config.jam_masuk_batas || '07:00').replace(/\./g, ':'),
     jam_masuk_harian: {
       ...DEFAULT_JAM_MASUK_HARIAN,
       ...(config.jam_masuk_harian || {}),
@@ -129,6 +129,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       ...(config.jam_pulang_harian_per_kelas || {}),
     },
   }));
+
+  // Keep formData synchronized when modal opens or config updates from Cloud
+  React.useEffect(() => {
+    if (isOpen) {
+      const normalizedBatas = (config.jam_masuk_batas || '07:00').replace(/\./g, ':');
+      setFormData({
+        ...config,
+        sabtu_minggu_libur: config.sabtu_minggu_libur !== false,
+        jam_masuk_batas: normalizedBatas,
+        jam_masuk_harian: {
+          senin: (config.jam_masuk_harian?.senin || normalizedBatas).replace(/\./g, ':'),
+          selasa: (config.jam_masuk_harian?.selasa || normalizedBatas).replace(/\./g, ':'),
+          rabu: (config.jam_masuk_harian?.rabu || normalizedBatas).replace(/\./g, ':'),
+          kamis: (config.jam_masuk_harian?.kamis || normalizedBatas).replace(/\./g, ':'),
+          jumat: (config.jam_masuk_harian?.jumat || normalizedBatas).replace(/\./g, ':'),
+        },
+        jam_pulang_per_kelas: {
+          ...DEFAULT_JAM_PULANG_PER_KELAS,
+          ...(config.jam_pulang_per_kelas || {}),
+        },
+        jam_pulang_harian_per_kelas: {
+          ...DEFAULT_JAM_PULANG_HARIAN_PER_KELAS,
+          ...(config.jam_pulang_harian_per_kelas || {}),
+        },
+      });
+    }
+  }, [isOpen, config]);
 
   const [filterTingkat, setFilterTingkat] = useState<'ALL' | 'XII' | 'XI' | 'X'>('ALL');
   const [filterJurusan, setFilterJurusan] = useState<string>('ALL');
@@ -214,30 +241,56 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Handle daily morning check-in cutoff change for Monday - Friday
   const handleDailyCheckInChange = (dayKey: 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat', newTime: string) => {
-    setFormData(prev => ({
-      ...prev,
-      jam_masuk_batas: dayKey === 'senin' ? newTime : prev.jam_masuk_batas,
-      jam_masuk_harian: {
-        ...(prev.jam_masuk_harian || DEFAULT_JAM_MASUK_HARIAN),
-        [dayKey]: newTime,
-      },
-    }));
+    const cleanTime = newTime.replace(/\./g, ':');
+    setFormData(prev => {
+      const prevHarian = prev.jam_masuk_harian || DEFAULT_JAM_MASUK_HARIAN;
+      // Check if all days previously had the same time; if the user edits Monday (first box), offer seamless sync or update that day + jam_masuk_batas
+      const allWereSame =
+        prevHarian.senin === prevHarian.selasa &&
+        prevHarian.selasa === prevHarian.rabu &&
+        prevHarian.rabu === prevHarian.kamis &&
+        prevHarian.kamis === prevHarian.jumat;
+
+      if (dayKey === 'senin' && allWereSame) {
+        return {
+          ...prev,
+          jam_masuk_batas: cleanTime,
+          jam_masuk_harian: {
+            senin: cleanTime,
+            selasa: cleanTime,
+            rabu: cleanTime,
+            kamis: cleanTime,
+            jumat: cleanTime,
+          },
+        };
+      }
+
+      return {
+        ...prev,
+        jam_masuk_batas: dayKey === 'senin' ? cleanTime : prev.jam_masuk_batas,
+        jam_masuk_harian: {
+          ...prevHarian,
+          [dayKey]: cleanTime,
+        },
+      };
+    });
   };
 
   // Quick apply same check-in time across all 5 school days
   const handleApplySameCheckInAllDays = (time: string) => {
+    const cleanTime = time.replace(/\./g, ':');
     setFormData(prev => ({
       ...prev,
-      jam_masuk_batas: time,
+      jam_masuk_batas: cleanTime,
       jam_masuk_harian: {
-        senin: time,
-        selasa: time,
-        rabu: time,
-        kamis: time,
-        jumat: time,
+        senin: cleanTime,
+        selasa: cleanTime,
+        rabu: cleanTime,
+        kamis: cleanTime,
+        jumat: cleanTime,
       },
     }));
-    setActionNotice(`Batas jam masuk seluruh hari (Senin s.d. Jum'at) disetel ke ${time} WIB.`);
+    setActionNotice(`Batas jam masuk seluruh hari (Senin s.d. Jum'at) disetel seragam ke ${cleanTime} WIB.`);
     setTimeout(() => setActionNotice(null), 3000);
   };
 
@@ -649,13 +702,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-2.5 py-1">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">Semua Hari:</span>
+                        <input
+                          type="time"
+                          value={formData.jam_masuk_batas || '07:00'}
+                          onChange={e => handleApplySameCheckInAllDays(e.target.value)}
+                          className="font-mono font-bold text-xs text-slate-900 dark:text-white bg-transparent focus:outline-none w-20"
+                          title="Ubah untuk menerapkan batas jam masuk ke semua hari (Senin s.d. Jum'at)"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleApplySameCheckInAllDays('07:00')}
-                        className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-400 hover:bg-amber-500 text-slate-950 border border-amber-500 shadow-xs transition cursor-pointer flex items-center gap-1.5 preserve-theme"
+                        className="px-3 py-1.5 rounded-xl text-xs font-black bg-amber-400 hover:bg-amber-500 text-slate-950 border border-amber-500 shadow-xs transition cursor-pointer flex items-center gap-1.5 preserve-theme"
                       >
                         <Clock className="w-3.5 h-3.5 text-slate-950 shrink-0" />
-                        <span>Setel Seragam Semua Hari (07:00 WIB)</span>
+                        <span>Reset 07:00 WIB</span>
                       </button>
                     </div>
                   </div>
@@ -1301,21 +1364,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="flex items-center justify-between">
                     <label className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Clock className="w-4.5 h-4.5 text-amber-600" />
-                      <span>Batas Jam Masuk Pagi (Tepat Waktu):</span>
+                      <span>Batas Jam Masuk Pagi (Tepat Waktu — Senin s.d. Jum'at):</span>
                     </label>
-                    <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-3 py-1.5">
+                    <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-1.5">
                       <input
                         type="time"
                         required
                         value={formData.jam_masuk_batas}
-                        onChange={e => setFormData({ ...formData, jam_masuk_batas: e.target.value })}
-                        className="font-mono font-bold text-base text-slate-900 bg-transparent focus:outline-none w-24"
+                        onChange={e => handleApplySameCheckInAllDays(e.target.value)}
+                        className="font-mono font-bold text-base text-slate-900 dark:text-white bg-transparent focus:outline-none w-24"
                       />
-                      <span className="text-xs font-bold text-slate-600">WIB</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-amber-300">WIB</span>
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                    Siswa yang scan pada atau sebelum jam ini berstatus &quot;Hadir Tepat Waktu&quot;. Jika melebihi batas ini, otomatis berstatus &quot;Terlambat&quot;.
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Siswa yang scan pada atau sebelum jam ini berstatus &quot;Hadir Tepat Waktu&quot;. Jika melebihi batas ini, otomatis berstatus &quot;Terlambat&quot; (+5 Poin Pelanggaran R-01).
                   </p>
                 </div>
 
